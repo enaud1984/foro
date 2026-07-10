@@ -19,7 +19,7 @@ Questo workspace contiene la baseline documentale di prodotto. Non contiene anco
 - [Indice del progetto](PROJECT_INDEX.md)
 - [Decisioni](DECISIONS.md)
 - [Istruzioni per agenti](CLAUDE.md)
-- [Product Book v3](docs/product-book/FORO_Product_Book_v3.docx)
+- [Product Book v4](docs/product-book/FORO_Product_Book_v4.docx)
 - [Presentazione commerciale](docs/commerciale/FORO_Presentazione_Commerciale.docx)
 - [Specifiche](docs/specifications/)
 
@@ -75,4 +75,3 @@ Prima di progettare o implementare una feature:
 ## Nota
 
 Le immagini commerciali illustrano la direzione e le potenzialità. Non costituiscono un contratto pixel-perfect dell’interfaccia.
-

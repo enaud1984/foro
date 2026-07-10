@@ -4,7 +4,7 @@
 
 | Documento | Autorità | Scopo |
 |---|---|---|
-| [Product Book v3](docs/product-book/FORO_Product_Book_v3.docx) | normativa di prodotto | visione completa e baseline |
+| [Product Book v4](../../docs/product-book/FORO_Product_Book_v4.docx) | normativa di prodotto | visione completa, baseline e branding/personalizzazione |
 | [Presentazione commerciale](docs/commerciale/FORO_Presentazione_Commerciale.docx) | comunicazione | illustrazione visuale del prodotto |
 | [Decision Log](DECISIONS.md) | massima | decisioni e ADR |
 | [Project Rules](docs/specifications/09_PROJECT_RULES.md) | normativa | regole di delivery |
@@ -94,4 +94,3 @@ I mockup comunicano gerarchia e potenzialità; non sono specifiche pixel-perfect
 ## Questioni aperte
 
 Consultare la sezione “Open Decisions” in `DECISIONS.md`.
-
