@@ -1,7 +1,7 @@
 <main class="auth-shell" *ngIf="screen() !== 'workspace'; else workspace">
   <section class="brand-panel" aria-label="FORO">
     <div class="brand">
-      <span class="mark">F</span>
+      <img class="foro-logo" src="/assets/foro-logo.png" alt="FORO">
       <div><strong>FORO</strong><small>La Scrivania Digitale dello Studio Legale</small></div>
     </div>
     <div class="promise">
@@ -110,7 +110,7 @@
         <span class="mark logo-preview" *ngIf="studioProfile()?.logoUrl; else fallbackLogo">
           <img [src]="studioProfile()?.logoUrl || ''" alt="Logo studio">
         </span>
-        <ng-template #fallbackLogo><span class="mark">F</span></ng-template>
+        <ng-template #fallbackLogo><img class="foro-logo compact-logo" src="/assets/foro-logo.png" alt="FORO"></ng-template>
         <div>
           <strong>{{ studioProfile()?.name || 'FORO' }}</strong>
           <small>{{ studioProfile()?.city || 'Scrivania digitale' }}</small>
