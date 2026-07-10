@@ -1017,12 +1017,13 @@
 }
 
 .brand-panel > .brand {
-  align-items: flex-start;
+  align-items: center;
+  gap: 26px;
 }
 
 .landing-foro-symbol {
-  width: min(260px, 46vw);
-  max-height: 260px;
+  width: min(210px, 36vw);
+  max-height: 210px;
   object-fit: contain;
   filter: drop-shadow(0 22px 38px rgba(0, 0, 0, .34));
 }
