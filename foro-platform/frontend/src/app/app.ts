@@ -9,6 +9,7 @@ type DensitaScrivania = 'COMFORTABLE' | 'COMPACT';
 type ChiaveWidget = 'calendario' | 'documenti' | 'email' | 'clienti' | 'pratiche';
 type PassoRegistrazione = 'dati' | 'piani' | 'pagamento';
 type PianoDemo = 'essential' | 'professional';
+type VistaCalendario = 'giorno' | 'settimana' | 'mese';
 type PosizioneGriglia = { x: number; y: number; w: number; h: number };
 
 interface ProfiloStudio {
@@ -80,6 +81,8 @@ export class App {
   readonly notificationsOpen = signal(false);
   readonly expandedWidget = signal<WidgetScrivania | null>(null);
   readonly dragPlaceholder = signal<PosizioneGriglia | null>(null);
+  readonly vistaCalendario = signal<VistaCalendario>('settimana');
+  readonly nuovoAppuntamentoAperto = signal(false);
   readonly notificheScrivania: NotificaScrivania[] = [
     {
       icona: '📅',
@@ -144,6 +147,7 @@ export class App {
   readonly registerForm;
   readonly brandingForm;
   readonly dashboardForm;
+  readonly appuntamentoForm;
   private widgetTrascinato: ChiaveWidget | null = null;
 
   constructor(private readonly fb: FormBuilder, private readonly http: HttpClient) {
@@ -182,6 +186,17 @@ export class App {
       themeMode: ['LIGHT' as ModalitaTema],
       dashboardDensity: ['COMFORTABLE' as DensitaScrivania],
       personalAccentColor: ['#0f766e']
+    });
+    this.appuntamentoForm = this.fb.nonNullable.group({
+      titolo: ['Nuovo appuntamento cliente'],
+      calendario: ['Studio'],
+      visibilita: ['Studio'],
+      partecipanti: ['Avv. Laura Verdi, Dott. Marco Neri'],
+      data: ['2026-07-10'],
+      inizio: ['11:30'],
+      fine: ['12:15'],
+      luogo: ['Studio · Sala riunioni 1'],
+      note: ['Preparare fascicolo e documenti cliente.']
     });
   }
 
@@ -323,6 +338,23 @@ export class App {
 
   closeExpandedWidget(): void {
     this.expandedWidget.set(null);
+    this.nuovoAppuntamentoAperto.set(false);
+  }
+
+  cambiaVistaCalendario(vista: VistaCalendario): void {
+    this.vistaCalendario.set(vista);
+  }
+
+  apriNuovoAppuntamento(): void {
+    this.nuovoAppuntamentoAperto.set(true);
+  }
+
+  chiudiNuovoAppuntamento(): void {
+    this.nuovoAppuntamentoAperto.set(false);
+  }
+
+  salvaAppuntamentoDemo(): void {
+    this.nuovoAppuntamentoAperto.set(false);
   }
 
   saveBranding(): void {

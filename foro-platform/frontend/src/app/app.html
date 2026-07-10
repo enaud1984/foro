@@ -248,17 +248,86 @@
       <p>{{ widget.description }}</p>
 
       <div class="outlook-calendar" *ngIf="widget.key === 'calendario'; else widgetStandard">
-        <div class="calendar-toolbar"><strong>Luglio 2026</strong><span>Calendari: Studio · Avv. Verdi · Udienze · Scadenze</span></div>
-        <div class="calendar-week">
-          <div>Lunedì</div><div>Martedì</div><div>Mercoledì</div><div>Giovedì</div><div>Venerdì</div>
-        </div>
-        <div class="calendar-days">
-          <article><b>8</b><span>08:45 Revisione fascicolo</span><span>12:15 Deposito memoria</span></article>
-          <article><b>9</b><span>10:30 Udienza civile</span></article>
-          <article><b>10</b><span>15:00 Cliente in studio</span><span>17:30 Call controparte</span></article>
-          <article><b>11</b><span>09:30 Scadenza ricorso</span></article>
-          <article><b>12</b><span>11:00 Riunione Studio</span></article>
-        </div>
+        <aside class="calendar-sidebar">
+          <div class="mini-month">
+            <header><button type="button">‹</button><strong>Luglio 2026</strong><button type="button">›</button></header>
+            <div class="mini-week"><span>L</span><span>M</span><span>M</span><span>G</span><span>V</span><span>S</span><span>D</span></div>
+            <div class="mini-days">
+              <span>29</span><span>30</span><b>1</b><b>2</b><b>3</b><b>4</b><b>5</b>
+              <i>6</i><i>7</i><i>8</i><i>9</i><em>10</em><i>11</i><i>12</i>
+              <span>13</span><span>14</span><span>15</span><span>16</span><span>17</span><span>18</span><span>19</span>
+              <span>20</span><span>21</span><span>22</span><span>23</span><span>24</span><span>25</span><span>26</span>
+            </div>
+          </div>
+          <button class="calendar-add" type="button" (click)="apriNuovoAppuntamento()">＋ Nuovo appuntamento</button>
+          <section class="calendar-list">
+            <h4>Calendari</h4>
+            <label><input type="checkbox" checked><span class="dot studio"></span>Studio Legale Verdi</label>
+            <label><input type="checkbox" checked><span class="dot private"></span>Calendario privato</label>
+            <label><input type="checkbox" checked><span class="dot hearings"></span>Udienze</label>
+            <label><input type="checkbox"><span class="dot deadlines"></span>Scadenze deposito</label>
+          </section>
+          <section class="calendar-list">
+            <h4>Persone Studio</h4>
+            <label><input type="checkbox" checked>Avv. Laura Verdi</label>
+            <label><input type="checkbox" checked>Avv. Marco Neri</label>
+            <label><input type="checkbox">Dott.ssa Giulia Conti</label>
+          </section>
+        </aside>
+
+        <section class="calendar-main">
+          <div class="calendar-commandbar">
+            <button class="primary" type="button" (click)="apriNuovoAppuntamento()">Nuovo appuntamento</button>
+            <button type="button">Oggi</button>
+            <button type="button">‹</button>
+            <button type="button">›</button>
+            <strong>06–12 Luglio 2026</strong>
+            <div class="view-switch">
+              <button type="button" [class.active]="vistaCalendario() === 'giorno'" (click)="cambiaVistaCalendario('giorno')">Giorno</button>
+              <button type="button" [class.active]="vistaCalendario() === 'settimana'" (click)="cambiaVistaCalendario('settimana')">Settimana</button>
+              <button type="button" [class.active]="vistaCalendario() === 'mese'" (click)="cambiaVistaCalendario('mese')">Mese</button>
+            </div>
+          </div>
+
+          <div class="week-calendar">
+            <div class="time-head"></div>
+            <div class="day-head"><b>06</b><span>Lun</span></div>
+            <div class="day-head"><b>07</b><span>Mar</span></div>
+            <div class="day-head"><b>08</b><span>Mer</span></div>
+            <div class="day-head"><b>09</b><span>Gio</span></div>
+            <div class="day-head today"><b>10</b><span>Ven</span><button type="button" (click)="apriNuovoAppuntamento()">＋</button></div>
+            <div class="day-head weekend"><b>11</b><span>Sab</span></div>
+            <div class="day-head weekend"><b>12</b><span>Dom</span></div>
+
+            <div class="time-col">08</div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot today-line"><span>Ora attuale</span></div><div class="slot"></div><div class="slot"></div>
+            <div class="time-col">09</div><div class="slot"></div><div class="event studio">Riunione Studio</div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
+            <div class="time-col">10</div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="event hearing">Udienza civile<br><small>Tribunale Milano</small></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
+            <div class="time-col">11</div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="event private">Appuntamento privato</div><div class="slot"></div><div class="slot"></div>
+            <div class="time-col">12</div><div class="slot"></div><div class="slot"></div><div class="event deadline">Deposito memoria</div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
+            <div class="time-col">13</div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
+            <div class="time-col">14</div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="event studio">Revisione contratto</div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
+            <div class="time-col">15</div><div class="slot"></div><div class="event studio">Cliente Alfa S.r.l.</div><div class="slot"></div><div class="slot"></div><div class="event studio">Call controparte<br><small>Avv. Neri invitato</small></div><div class="slot"></div><div class="slot"></div>
+            <div class="time-col">16</div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
+          </div>
+        </section>
+
+        <form class="appointment-panel" *ngIf="nuovoAppuntamentoAperto()" [formGroup]="appuntamentoForm" (ngSubmit)="salvaAppuntamentoDemo()">
+          <header><strong>Nuovo appuntamento</strong><button type="button" (click)="chiudiNuovoAppuntamento()">×</button></header>
+          <label>Titolo<input formControlName="titolo"></label>
+          <div class="two-cols">
+            <label>Calendario<select formControlName="calendario"><option>Studio</option><option>Privato</option><option>Udienze</option></select></label>
+            <label>Visibilità<select formControlName="visibilita"><option>Studio</option><option>Privato</option></select></label>
+          </div>
+          <label>Invita avvocati/collaboratori<input formControlName="partecipanti"></label>
+          <div class="three-cols">
+            <label>Data<input type="date" formControlName="data"></label>
+            <label>Inizio<input type="time" formControlName="inizio"></label>
+            <label>Fine<input type="time" formControlName="fine"></label>
+          </div>
+          <label>Luogo<input formControlName="luogo"></label>
+          <label>Note<textarea formControlName="note"></textarea></label>
+          <button class="primary" type="submit">Salva appuntamento demo</button>
+        </form>
       </div>
 
       <ng-template #widgetStandard>
