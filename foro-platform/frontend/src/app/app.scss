@@ -1027,6 +1027,21 @@
   filter: drop-shadow(0 22px 38px rgba(0, 0, 0, .34));
 }
 
+.landing-brand-copy strong {
+  color: #fff;
+  font: 800 42px/1 "Inter", "Segoe UI", Arial, sans-serif;
+  letter-spacing: .18em;
+}
+
+.landing-brand-copy small {
+  display: block;
+  margin-top: 10px;
+  color: #dce7ec;
+  font-size: 13px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
 .form-card .mobile-brand-logo {
   width: 148px;
   max-height: 148px;
