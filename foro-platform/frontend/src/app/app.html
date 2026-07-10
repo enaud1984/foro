@@ -125,12 +125,23 @@
         <button class="icon-action" type="button" aria-label="Impostazioni" (click)="toggleSettings()">⚙️</button>
         <button class="logout-btn" type="button" (click)="logout()">Esci</button>
       </div>
-      <section class="notifications-panel" *ngIf="notificationsOpen()">
-        <h3>Notifiche recenti</h3>
-        <article><strong>Scadenza fra 2 giorni</strong><small>Deposito memoria — Rossi / Alfa S.r.l.</small></article>
-        <article><strong>Nuova email da lavorare</strong><small>Tribunale di Milano — 2 allegati</small></article>
-        <article><strong>Documento caricato</strong><small>Procura firmata — Cliente Esposito</small></article>
-        <article><strong>Udienza confermata</strong><small>Sezione Lavoro — ore 10:30</small></article>
+      <section class="notifications-panel" *ngIf="notificationsOpen()" aria-label="Notifiche recenti">
+        <div class="notifications-head">
+          <div>
+            <span class="eyebrow">CENTRO NOTIFICHE</span>
+            <h3>Azioni recenti</h3>
+          </div>
+          <strong>{{ notificheScrivania.length }}</strong>
+        </div>
+        <button class="notification-card" type="button" *ngFor="let notifica of notificheScrivania" (click)="apriNotifica(notifica)">
+          <span class="notification-icon">{{ notifica.icona }}</span>
+          <span class="notification-body">
+            <small>{{ notifica.categoria }} · {{ notifica.orario }}</small>
+            <strong>{{ notifica.titolo }}</strong>
+            <em>{{ notifica.descrizione }}</em>
+          </span>
+          <span class="notification-arrow">→</span>
+        </button>
       </section>
     </header>
 

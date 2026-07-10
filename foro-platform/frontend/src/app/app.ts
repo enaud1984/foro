@@ -51,6 +51,15 @@ interface WidgetScrivania extends DefinizioneWidget {
   details: string[];
 }
 
+interface NotificaScrivania {
+  icona: string;
+  categoria: string;
+  titolo: string;
+  descrizione: string;
+  orario: string;
+  widget: ChiaveWidget;
+}
+
 @Component({
   selector: 'app-root',
   imports: [CommonModule, ReactiveFormsModule],
@@ -71,6 +80,40 @@ export class App {
   readonly notificationsOpen = signal(false);
   readonly expandedWidget = signal<WidgetScrivania | null>(null);
   readonly dragPlaceholder = signal<PosizioneGriglia | null>(null);
+  readonly notificheScrivania: NotificaScrivania[] = [
+    {
+      icona: '📅',
+      categoria: 'Appuntamento',
+      titolo: 'Udienza civile confermata',
+      descrizione: 'Tribunale di Milano · Rossi / Alfa S.r.l. · ore 10:30',
+      orario: '09:12',
+      widget: 'calendario'
+    },
+    {
+      icona: '📁',
+      categoria: 'Documento',
+      titolo: 'Procura firmata caricata',
+      descrizione: 'Nuovo file nel fascicolo Esposito Successione',
+      orario: '08:47',
+      widget: 'documenti'
+    },
+    {
+      icona: '✉️',
+      categoria: 'Email',
+      titolo: 'PEC da associare a pratica',
+      descrizione: 'Cancelleria civile · ricevuta deposito telematico',
+      orario: 'Ieri',
+      widget: 'email'
+    },
+    {
+      icona: '⚖️',
+      categoria: 'Pratica',
+      titolo: 'Scadenza fra 2 giorni',
+      descrizione: 'Deposito memoria istruttoria · RG 1842/2025',
+      orario: '2 gg',
+      widget: 'pratiche'
+    }
+  ];
 
   readonly widgetLibrary: DefinizioneWidget[] = [
     { key: 'calendario', icon: '📅', title: 'Calendario', description: 'Agenda stile Outlook, udienze e scadenze' },
@@ -156,6 +199,17 @@ export class App {
   toggleNotifications(): void {
     this.notificationsOpen.update(value => !value);
     this.settingsOpen.set(false);
+  }
+
+  apriNotifica(notifica: NotificaScrivania): void {
+    const widget = this.activeWidgets().find(item => item.key === notifica.widget)
+      ?? this.creaWidgetDaDefinizione(notifica.widget, 1, 1);
+    if (!widget) return;
+    if (!this.activeWidgets().some(item => item.key === widget.key)) {
+      this.activeWidgets.update(widgets => this.reorderWidgets([...widgets, widget], widget.key));
+    }
+    this.notificationsOpen.set(false);
+    this.openWidget(widget);
   }
 
   studioFullAddress(): string {
@@ -353,7 +407,14 @@ export class App {
     }
     const definition = this.widgetLibrary.find(widget => widget.key === key);
     if (!definition) return;
-    this.activeWidgets.update(widgets => this.reorderWidgets([...widgets, {
+    const nuovoWidget = this.creaWidgetDaDefinizione(key, x, y);
+    if (nuovoWidget) this.activeWidgets.update(widgets => this.reorderWidgets([...widgets, nuovoWidget], key));
+  }
+
+  private creaWidgetDaDefinizione(key: ChiaveWidget, x: number, y: number): WidgetScrivania | null {
+    const definition = this.widgetLibrary.find(widget => widget.key === key);
+    if (!definition) return null;
+    return {
       ...definition,
       x,
       y,
@@ -362,7 +423,7 @@ export class App {
       metric: 'Nuovo',
       preview: 'Widget aggiunto alla scrivania.',
       details: ['Anteprima operativa', 'Azioni rapide', 'Vista estesa']
-    }], key));
+    };
   }
 
   private positionFromPointer(event: DragEvent): { x: number; y: number } | null {
