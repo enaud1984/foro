@@ -1,0 +1,15 @@
+.docx-tools/
+**/node_modules/
+foro-platform/frontend/node/
+**/dist/
+**/target/
+**/.angular/
+**/.idea/
+**/.vscode/
+*.iml
+*.log
+.env
+.env.*
+!.env.example
+Thumbs.db
+desktop.ini

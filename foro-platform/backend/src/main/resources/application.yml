@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: foro
+  datasource:
+    url: ${FORO_DB_URL:jdbc:postgresql://localhost:5432/foro}
+    username: ${FORO_DB_USER:foro}
+    password: ${FORO_DB_PASSWORD:foro_dev_only}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 25MB
+server:
+  port: ${PORT:8080}
+  servlet:
+    context-path: ${FORO_CONTEXT_PATH:/}
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+foro:
+  security:
+    jwt-secret: ${FORO_JWT_SECRET:change-this-development-secret-with-at-least-32-bytes}
+    access-token-minutes: 15
