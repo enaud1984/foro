@@ -1052,3 +1052,48 @@
 :host-context([data-foro-mode=dark]) .shell-dashboard {
   background: #111827;
 }
+
+.top-actions {
+  position: relative;
+  z-index: 90;
+}
+
+.top-actions .icon-action,
+.top-actions .logout-btn {
+  min-width: 58px;
+  height: 50px;
+  background: #ffffff;
+  color: #111827;
+  border: 1px solid #dbe4ee;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, .10);
+  opacity: 1;
+}
+
+.top-actions .icon-action {
+  min-width: 58px;
+  font-size: 22px;
+}
+
+.top-actions .icon-action:hover,
+.top-actions .logout-btn:hover {
+  transform: translateY(-1px);
+  background: #f8fafc;
+  border-color: color-mix(in srgb, var(--foro-accent) 42%, #cbd5e1);
+}
+
+.top-actions .logout-btn {
+  padding: 0 18px;
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.top-actions .icon-action span {
+  background: #dc2626;
+  color: #fff;
+  border-color: #fff;
+  box-shadow: 0 6px 14px rgba(220, 38, 38, .28);
+}
+
+.notifications-panel {
+  pointer-events: auto;
+}

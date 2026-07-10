@@ -162,6 +162,8 @@ export class App {
   readonly dashboardForm;
   readonly appuntamentoForm;
   private widgetTrascinato: ChiaveWidget | null = null;
+  private layoutPrimaDelTrascinamento: WidgetScrivania[] | null = null;
+  private trascinamentoConfermato = false;
 
   private creaWidgetIniziali(): WidgetScrivania[] {
     return [
@@ -379,6 +381,8 @@ export class App {
 
   startWidgetDrag(key: ChiaveWidget): void {
     this.widgetTrascinato = key;
+    this.trascinamentoConfermato = false;
+    this.layoutPrimaDelTrascinamento = this.activeWidgets().map(widget => ({ ...widget }));
     const widget = this.activeWidgets().find(item => item.key === key);
     if (widget) this.dragPlaceholder.set({ x: widget.x, y: widget.y, w: widget.w, h: widget.h });
   }
@@ -387,15 +391,16 @@ export class App {
     event.preventDefault();
     if (!this.widgetTrascinato) return;
     const posizione = this.positionFromPointer(event);
-    const widget = this.activeWidgets().find(item => item.key === this.widgetTrascinato);
+    const layoutBase = this.layoutPrimaDelTrascinamento ?? this.activeWidgets();
+    const widget = layoutBase.find(item => item.key === this.widgetTrascinato);
     if (!posizione || !widget) return;
     const nuovaPosizione = { x: posizione.x, y: posizione.y, w: widget.w, h: widget.h };
     const posizioneCorrente = this.dragPlaceholder();
     if (posizioneCorrente && this.samePosition(posizioneCorrente, nuovaPosizione)) return;
     this.dragPlaceholder.set(nuovaPosizione);
-    this.activeWidgets.update(widgets =>
+    this.activeWidgets.set(
       this.reorderWidgets(
-        widgets.map(item => item.key === this.widgetTrascinato ? { ...item, x: posizione.x, y: posizione.y } : item),
+        layoutBase.map(item => item.key === this.widgetTrascinato ? { ...item, x: posizione.x, y: posizione.y } : item),
         this.widgetTrascinato as ChiaveWidget
       )
     );
@@ -405,13 +410,22 @@ export class App {
     event.preventDefault();
     if (!this.widgetTrascinato) return;
     const posizione = this.positionFromPointer(event);
+    const layoutBase = this.layoutPrimaDelTrascinamento;
+    if (layoutBase) this.activeWidgets.set(layoutBase.map(widget => ({ ...widget })));
     if (posizione) this.moveOrAddWidget(this.widgetTrascinato, posizione.x, posizione.y);
+    this.trascinamentoConfermato = true;
     this.widgetTrascinato = null;
+    this.layoutPrimaDelTrascinamento = null;
     this.dragPlaceholder.set(null);
   }
 
   endWidgetDrag(): void {
+    if (!this.trascinamentoConfermato && this.layoutPrimaDelTrascinamento) {
+      this.activeWidgets.set(this.compactWidgets(this.layoutPrimaDelTrascinamento.map(widget => ({ ...widget }))));
+    }
     this.widgetTrascinato = null;
+    this.layoutPrimaDelTrascinamento = null;
+    this.trascinamentoConfermato = false;
     this.dragPlaceholder.set(null);
   }
 
@@ -603,6 +617,19 @@ export class App {
         if (next.x + next.w > 13) next = { ...next, x: 1, y: next.y + 1 };
       }
       placed.push(next);
+    }
+    return placed.sort((a, b) => a.y - b.y || a.x - b.x);
+  }
+
+  private compactWidgets(widgets: WidgetScrivania[]): WidgetScrivania[] {
+    const ordered = [...widgets].sort((a, b) => a.y - b.y || a.x - b.x);
+    const placed: WidgetScrivania[] = [];
+    for (const widget of ordered) {
+      let best = { ...widget, y: 1 };
+      while (best.y < widget.y && placed.some(other => this.overlaps(best, other))) {
+        best = { ...best, y: best.y + 1 };
+      }
+      placed.push(best);
     }
     return placed.sort((a, b) => a.y - b.y || a.x - b.x);
   }
