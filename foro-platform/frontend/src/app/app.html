@@ -14,7 +14,7 @@
 
   <section class="form-panel">
     <div class="form-card" *ngIf="screen() === 'login'">
-      <span class="mobile-brand">FORO</span>
+      <img class="mobile-brand-logo" src="/assets/foro-logo.png" alt="FORO">
       <h2>Bentornato</h2>
       <p class="lead">Accedi alla tua Scrivania Digitale.</p>
       <form [formGroup]="loginForm" (ngSubmit)="login()">
@@ -40,7 +40,7 @@
     </div>
 
     <div class="form-card" *ngIf="screen() === 'register' && registrationStep() === 'details'">
-      <span class="mobile-brand">FORO</span>
+      <img class="mobile-brand-logo" src="/assets/foro-logo.png" alt="FORO">
       <button class="back" type="button" (click)="show('login')">← Torna all’accesso</button>
       <h2>Registra lo Studio</h2>
       <p class="lead">Crea lo spazio organizzativo e il primo account amministratore.</p>
@@ -104,8 +104,8 @@
 </main>
 
 <ng-template #workspace>
-  <main class="workspace">
-    <header>
+  <main class="workspace shell-dashboard">
+    <header class="topbar">
       <div class="brand compact">
         <span class="mark logo-preview" *ngIf="studioProfile()?.logoUrl; else fallbackLogo">
           <img [src]="studioProfile()?.logoUrl || ''" alt="Logo studio">
@@ -116,89 +116,111 @@
           <small>{{ studioProfile()?.city || 'Scrivania digitale' }}</small>
         </div>
       </div>
-      <button (click)="logout()">Esci</button>
+      <div class="top-actions">
+        <button class="icon-action" type="button" aria-label="Notifiche">🔔<span>5</span></button>
+        <button class="icon-action" type="button" aria-label="Impostazioni" (click)="toggleSettings()">⚙️</button>
+        <button class="logout-btn" type="button" (click)="logout()">Esci</button>
+      </div>
     </header>
 
-    <section>
-      <span class="eyebrow">AREA DI LAVORO PERSONALIZZABILE</span>
-      <h1>Benvenuto, {{ userName() }}</h1>
-      <p>Il branding dello Studio è centralizzato; la disposizione e il tema della dashboard restano personali.</p>
-
-      <div class="settings-grid">
-        <article class="settings-card">
-          <div class="card-title">
-            <span class="pill">Solo titolare/admin</span>
-            <h2>Identità dello Studio</h2>
-            <p>Logo, nome, indirizzo e colori condivisi da tutto lo Studio.</p>
-          </div>
-          <form [formGroup]="brandingForm" (ngSubmit)="saveBranding()">
-            <label>Nome Studio<input formControlName="name" [readonly]="!studioProfile()?.canEditBranding"></label>
-            <label>Logo URL o base64<input formControlName="logoUrl" placeholder="https://.../logo.png oppure data:image/png..." [readonly]="!studioProfile()?.canEditBranding"></label>
-            <div class="two-cols">
-              <label>Indirizzo<input formControlName="addressLine" [readonly]="!studioProfile()?.canEditBranding"></label>
-              <label>Città<input formControlName="city" [readonly]="!studioProfile()?.canEditBranding"></label>
-            </div>
-            <div class="three-cols">
-              <label>CAP<input formControlName="postalCode" [readonly]="!studioProfile()?.canEditBranding"></label>
-              <label>Paese<input formControlName="country" [readonly]="!studioProfile()?.canEditBranding"></label>
-              <label>Telefono<input formControlName="phone" [readonly]="!studioProfile()?.canEditBranding"></label>
-            </div>
-            <label>Sito web<input formControlName="website" [readonly]="!studioProfile()?.canEditBranding"></label>
-            <div class="colors">
-              <label>Primario<input type="color" formControlName="primaryColor" [disabled]="!studioProfile()?.canEditBranding"></label>
-              <label>Accento<input type="color" formControlName="accentColor" [disabled]="!studioProfile()?.canEditBranding"></label>
-              <label>Secondario<input type="color" formControlName="secondaryColor" [disabled]="!studioProfile()?.canEditBranding"></label>
-            </div>
-            <label>Preset tema
-              <select formControlName="themePreset" [disabled]="!studioProfile()?.canEditBranding">
-                <option value="foro-classic">FORO Classic</option>
-                <option value="legal-minimal">Legal Minimal</option>
-                <option value="executive-dark">Executive Dark</option>
-              </select>
-            </label>
-            <button class="primary" type="submit" [disabled]="loading() || !studioProfile()?.canEditBranding">Salva branding Studio</button>
-            <p class="demo-note" *ngIf="!studioProfile()?.canEditBranding">Puoi vedere questi dati, ma solo il titolare/amministratore può modificarli.</p>
-          </form>
+    <div class="dashboard-shell">
+      <aside class="widget-sidebar">
+        <img src="/assets/foro-logo.png" alt="FORO" class="sidebar-logo">
+        <h3>Widget disponibili</h3>
+        <p>Trascina o aggiungi i widget alla scrivania. Nel MVP sono predisposti i cinque widget principali.</p>
+        <article class="widget-source" *ngFor="let item of widgetLibrary">
+          <span>{{ item.icon }}</span>
+          <div><strong>{{ item.title }}</strong><small>{{ item.description }}</small></div>
         </article>
+      </aside>
 
-        <article class="settings-card">
-          <div class="card-title">
-            <span class="pill personal">Personale</span>
-            <h2>La mia dashboard</h2>
-            <p>Ogni avvocato o collaboratore può scegliere tema, densità e preferenze widget.</p>
+      <section class="dashboard-content">
+        <div class="dash-head">
+          <div>
+            <span class="eyebrow">SCRIVANIA DIGITALE</span>
+            <h1>Dashboard operativa</h1>
+            <p>Benvenuto, {{ userName() }}. Vista demo dello Studio con widget e dati fittizi realistici.</p>
           </div>
-          <form [formGroup]="dashboardForm" (ngSubmit)="saveDashboardPreferences()">
-            <label>Modalità
-              <select formControlName="themeMode">
-                <option value="LIGHT">Chiara</option>
-                <option value="DARK">Scura</option>
-              </select>
-            </label>
-            <label>Densità widget
-              <select formControlName="dashboardDensity">
-                <option value="COMFORTABLE">Comoda</option>
-                <option value="COMPACT">Compatta</option>
-              </select>
-            </label>
-            <label>Accento personale<input type="color" formControlName="personalAccentColor"></label>
-            <button class="secondary" type="submit" [disabled]="loading()">Salva la mia dashboard</button>
-          </form>
-          <div class="theme-sample">
-            <strong>Anteprima tema</strong>
-            <span>Pratica urgente</span>
-            <small>Il colore personale non cambia il brand dello Studio.</small>
-          </div>
-        </article>
+          <button class="primary add-widget" type="button">+ Aggiungi widget</button>
+        </div>
+
+        <div class="operational-grid">
+          <article class="op-widget large">
+            <div class="op-head"><h3>📅 Calendario Outlook style</h3><span>⋮⋮</span></div>
+            <div class="event-row"><strong>10:30 — Udienza civile</strong><small>Tribunale di Milano, Sez. Lavoro</small><em>Oggi</em></div>
+            <div class="event-row"><strong>15:00 — Appuntamento cliente</strong><small>Studio, sala riunioni 2</small><em>Confermato</em></div>
+            <div class="event-row"><strong>17:30 — Call controparte</strong><small>Transazione Ferri / Immobiliare Nord</small><em>Da preparare</em></div>
+          </article>
+          <article class="op-widget">
+            <div class="op-head"><h3>📁 Documenti</h3><span>⋮⋮</span></div>
+            <b>248 file</b><p>Contratti, memorie, procure e versioni organizzate per pratica.</p>
+          </article>
+          <article class="op-widget">
+            <div class="op-head"><h3>✉️ Email</h3><span>⋮⋮</span></div>
+            <b>37 non lette</b><p>Messaggi associabili a clienti e fascicoli, con priorità operative.</p>
+          </article>
+          <article class="op-widget">
+            <div class="op-head"><h3>👥 Clienti</h3><span>⋮⋮</span></div>
+            <b>18 attivi</b><p>Anagrafiche, referenti e contesto sempre raggiungibili.</p>
+          </article>
+          <article class="op-widget wide">
+            <div class="op-head"><h3>⚖️ Pratiche / Fascicolo</h3><span>⋮⋮</span></div>
+            <div class="matter-row"><strong>Rossi / Alfa S.r.l.</strong><span class="status urgent">Urgente</span></div>
+            <div class="matter-row"><strong>Esposito Successione</strong><span class="status open">Aperta</span></div>
+            <div class="matter-row"><strong>De Luca recupero crediti</strong><span class="status wait">In lavorazione</span></div>
+          </article>
+        </div>
+      </section>
+    </div>
+
+    <div class="settings-backdrop" *ngIf="settingsOpen()" (click)="toggleSettings()"></div>
+    <aside class="settings-drawer" *ngIf="settingsOpen()">
+      <div class="drawer-head">
+        <div><span class="eyebrow">IMPOSTAZIONI</span><h2>Studio e dashboard</h2></div>
+        <button type="button" (click)="toggleSettings()">×</button>
       </div>
+      <p class="drawer-note">Il titolare modifica il branding dello Studio. Ogni utente personalizza la propria scrivania.</p>
 
+      <form [formGroup]="brandingForm" (ngSubmit)="saveBranding()" class="drawer-form">
+        <label>Logo dello Studio
+          <input type="file" accept="image/png,image/jpeg,image/svg+xml" (change)="onLogoSelected($event)" [disabled]="!studioProfile()?.canEditBranding">
+        </label>
+        <div class="logo-current" *ngIf="brandingForm.controls.logoUrl.value">
+          <img [src]="brandingForm.controls.logoUrl.value" alt="Logo caricato">
+          <span>Anteprima logo</span>
+        </div>
+        <label>Nome Studio<input formControlName="name" [readonly]="!studioProfile()?.canEditBranding"></label>
+        <div class="two-cols">
+          <label>Indirizzo<input formControlName="addressLine" [readonly]="!studioProfile()?.canEditBranding"></label>
+          <label>Città<input formControlName="city" [readonly]="!studioProfile()?.canEditBranding"></label>
+        </div>
+        <div class="colors">
+          <label>Primario<input type="color" formControlName="primaryColor" [disabled]="!studioProfile()?.canEditBranding"></label>
+          <label>Accento<input type="color" formControlName="accentColor" [disabled]="!studioProfile()?.canEditBranding"></label>
+          <label>Secondario<input type="color" formControlName="secondaryColor" [disabled]="!studioProfile()?.canEditBranding"></label>
+        </div>
+        <button class="primary" type="submit" [disabled]="loading() || !studioProfile()?.canEditBranding">Salva branding Studio</button>
+      </form>
+
+      <form [formGroup]="dashboardForm" (ngSubmit)="saveDashboardPreferences()" class="drawer-form personal-form">
+        <h3>La mia dashboard</h3>
+        <label>Modalità
+          <select formControlName="themeMode">
+            <option value="LIGHT">Chiara</option>
+            <option value="DARK">Scura</option>
+          </select>
+        </label>
+        <label>Densità widget
+          <select formControlName="dashboardDensity">
+            <option value="COMFORTABLE">Comoda</option>
+            <option value="COMPACT">Compatta</option>
+          </select>
+        </label>
+        <label>Accento personale<input type="color" formControlName="personalAccentColor"></label>
+        <button class="secondary" type="submit" [disabled]="loading()">Salva la mia dashboard</button>
+      </form>
       <p class="success" *ngIf="settingsMessage()">{{ settingsMessage() }}</p>
       <p class="error" role="alert" *ngIf="error()">{{ error() }}</p>
-
-      <div class="widget-grid">
-        <article *ngFor="let item of demoWidgets">
-          <span>⋮⋮</span><h3>{{ item.title }}</h3><strong>{{ item.metric }}</strong><p>{{ item.description }}</p>
-        </article>
-      </div>
-    </section>
+    </aside>
   </main>
 </ng-template>

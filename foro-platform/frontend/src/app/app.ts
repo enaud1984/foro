@@ -46,12 +46,20 @@ export class App {
   readonly studioProfile = signal<StudioProfile | null>(null);
   readonly dashboardPreference = signal<DashboardPreference | null>(null);
   readonly settingsMessage = signal('');
+  readonly settingsOpen = signal(false);
   readonly demoWidgets = [
     { title: 'Calendario Outlook style', metric: '12 eventi oggi', description: 'Udienze, scadenze e calendari condivisi dello Studio.' },
     { title: 'Documenti', metric: '248 file', description: 'Contratti, memorie, procure e versioni organizzate per pratica.' },
     { title: 'Email', metric: '37 non lette', description: 'Posta ordinaria associabile a clienti e pratiche.' },
     { title: 'Clienti', metric: '18 attivi', description: 'Anagrafiche, referenti e contesto operativo sempre raggiungibili.' },
     { title: 'Pratiche / Fascicolo', metric: '31 aperte', description: 'Stati, scadenze e documenti collegati alla singola posizione.' }
+  ];
+  readonly widgetLibrary = [
+    { icon: '📅', title: 'Calendario', description: 'Agenda Outlook style, udienze e scadenze' },
+    { icon: '📁', title: 'Documenti', description: 'Atti, versioni, firme e fascicoli' },
+    { icon: '✉️', title: 'Email', description: 'Posta ordinaria e associazioni pratica' },
+    { icon: '👥', title: 'Clienti', description: 'Anagrafiche e referenti' },
+    { icon: '⚖️', title: 'Pratiche', description: 'Fascicolo interno e stato attività' }
   ];
 
   readonly loginForm;
@@ -96,6 +104,25 @@ export class App {
       email: 'admin@studioverdi-demo.it',
       password: 'DemoFORO2026!'
     });
+  }
+
+  toggleSettings(): void {
+    this.settingsOpen.update(value => !value);
+    this.error.set('');
+    this.settingsMessage.set('');
+  }
+
+  onLogoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.brandingForm.patchValue({ logoUrl: String(reader.result) });
+      this.settingsMessage.set('Logo caricato dal PC. Premi "Salva branding Studio" per renderlo definitivo.');
+    };
+    reader.onerror = () => this.error.set('Logo non leggibile. Prova con un PNG o JPG più leggero.');
+    reader.readAsDataURL(file);
   }
 
   show(screen: Screen): void {
@@ -150,6 +177,7 @@ export class App {
         this.studioProfile.set(profile);
         this.applyTheme(profile, this.dashboardPreference());
         this.settingsMessage.set('Branding dello Studio aggiornato.');
+        this.settingsOpen.set(false);
         this.loading.set(false);
       },
       error: response => {

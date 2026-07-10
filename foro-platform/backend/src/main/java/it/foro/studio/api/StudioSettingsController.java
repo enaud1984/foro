@@ -27,7 +27,7 @@ public class StudioSettingsController {
   public record StudioProfileResponse(String name,String addressLine,String city,String postalCode,String country,String phone,String website,
     String logoUrl,String primaryColor,String accentColor,String secondaryColor,String themePreset,boolean canEditBranding){}
   public record UpdateStudioProfileRequest(@NotBlank @Size(max=200) String name,@Size(max=240) String addressLine,@Size(max=120) String city,
-    @Size(max=20) String postalCode,@Size(max=80) String country,@Size(max=40) String phone,@Size(max=200) String website,@Size(max=8000) String logoUrl,
+    @Size(max=20) String postalCode,@Size(max=80) String country,@Size(max=40) String phone,@Size(max=200) String website,@Size(max=250000) String logoUrl,
     @Pattern(regexp="^#[0-9a-fA-F]{6}$") String primaryColor,@Pattern(regexp="^#[0-9a-fA-F]{6}$") String accentColor,
     @Pattern(regexp="^#[0-9a-fA-F]{6}$") String secondaryColor,@NotBlank @Size(max=40) String themePreset){}
 
