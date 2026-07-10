@@ -229,3 +229,16 @@ Log strutturati con correlation ID, tenant pseudonimizzato, actor ID e operation
 - nessun segreto o PII nei log;
 - acceptance criteria del widget soddisfatti.
 
+## 13. Aggiornamento v3.1 — Endpoint foundation implementati
+
+Nella foundation attuale gli endpoint implementati sono:
+
+- `POST /api/v1/auth/register/studio`;
+- `POST /api/v1/auth/login`;
+- `GET /api/v1/studio/profile`;
+- `PUT /api/v1/studio/profile`;
+- `GET /api/v1/workspace/widgets`;
+- `GET /api/v1/workspace/preferences`;
+- `PUT /api/v1/workspace/preferences`.
+
+`POST /api/v1/auth/register/studio` accetta anche logo/dati Studio iniziali. `PUT /api/v1/studio/profile` è riservato al titolare/admin Studio. Le preferenze workspace sono per singolo utente.

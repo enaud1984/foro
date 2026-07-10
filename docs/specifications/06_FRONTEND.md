@@ -252,3 +252,18 @@ La gestione documentale avanzata e il calendario settimanale possono richiedere 
 - performance misurata;
 - acceptance criteria soddisfatti.
 
+## 17. Aggiornamento v3.1 — Scrivania desktop-style e impostazioni
+
+La home autenticata deve essere sempre la Scrivania operativa, non la pagina impostazioni.
+
+- Il logo mostrato in alto dopo il login è quello dello Studio configurato in registrazione o nelle impostazioni.
+- La registrazione Studio deve consentire upload logo da disco locale.
+- Le impostazioni sono accessibili da icona in alto a destra come pannello/drawer.
+- Le impostazioni Studio consentono a titolare/admin di cambiare logo, indirizzo e dati generici.
+- Ogni utente associato allo Studio può cambiare solo il tema/colore della propria dashboard.
+- Su desktop la lista widget deve essere visibile a sinistra.
+- I widget stanno su una griglia invisibile.
+- I widget devono essere spostabili con drag & drop, con alternativa accessibile.
+- Ogni widget mostra una preview in Dashboard.
+- Click su un widget apre una vista espansa con più funzionalità e link alla gestione completa.
+- Ogni widget può essere chiuso/rimosso dalla Scrivania come una finestra desktop; i dati sottostanti non vengono cancellati.

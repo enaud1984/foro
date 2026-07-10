@@ -148,3 +148,17 @@ Esempi:
 - `DOCUMENT_QUARANTINED`;
 - `EMAIL_SEND_UNKNOWN`;
 - `CALENDAR_RECURRENCE_SCOPE_REQUIRED`.
+
+## 12. Aggiornamento v3.1 — Studio, tema e widget desktop
+
+| ID | Regola |
+|---|---|
+| BR-STD-010 | Il logo dello Studio viene caricato da file locale in registrazione e nelle impostazioni; non si richiede inserimento manuale di URL/base64 all’utente. |
+| BR-STD-011 | Il logo visibile nell’header dopo il login è quello configurato per lo Studio, con fallback al logo FORO. |
+| BR-STD-012 | Titolare/Admin può modificare logo, indirizzo, contatti e dati generici dello Studio. |
+| BR-STD-013 | Un utente non amministratore non può modificare branding o dati generici dello Studio. |
+| BR-WDG-009 | La Dashboard mostra una lista widget a sinistra su desktop. |
+| BR-WDG-010 | I widget devono essere spostabili su griglia invisibile tramite drag & drop o alternativa accessibile. |
+| BR-WDG-011 | Ogni widget mostra una preview in Dashboard e una vista espansa al click. |
+| BR-WDG-012 | Ogni widget può essere chiuso/rimosso dalla Scrivania come una finestra desktop; la chiusura non cancella i dati sottostanti. |
+| BR-WDG-013 | Ogni utente può modificare il tema della propria dashboard, ma non il branding dello Studio salvo ruolo autorizzato. |

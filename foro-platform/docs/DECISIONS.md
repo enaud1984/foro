@@ -111,6 +111,13 @@ Le decisioni accettate prevalgono sugli altri documenti. Una decisione modificat
 - **Decisione:** logo, nome, indirizzo, contatti e palette istituzionale sono configurazioni dello Studio modificabili solo da `STUDIO_ADMIN`/titolare. Ogni utente può invece personalizzare la propria dashboard: modalità chiara/scura, densità, accento personale e layout widget.
 - **Conseguenza:** la personalizzazione personale non modifica il brand condiviso dello Studio; i permessi backend devono impedire modifiche di branding ai collaboratori.
 
+### DEC-018 — Dashboard desktop-style
+
+- **Stato:** ACCEPTED
+- **Data:** 2026-07-10
+- **Decisione:** dopo il login la home è una Dashboard operativa con catalogo widget a sinistra e widget su griglia invisibile. Le impostazioni sono accessibili da icona in alto a destra e non sostituiscono la Scrivania.
+- **Conseguenza:** i widget devono supportare preview, drag & drop/spostamento, chiusura dalla Scrivania e vista espansa al click. La registrazione Studio include upload logo da file locale.
+
 ## Open Decisions
 
 ### OPEN-001 — Limiti documenti
