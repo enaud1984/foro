@@ -47,6 +47,24 @@ docker-compose up --build
 - OpenAPI JSON: http://localhost:8080/v3/api-docs
 - Health: http://localhost:8080/actuator/health
 
+### Utente demo precaricato
+
+Flyway crea uno Studio demo completo di branding, logo e preferenze dashboard.
+
+```text
+Studio: Studio Legale Verdi & Associati
+Email: admin@studioverdi-demo.it
+Password: DemoFORO2026!
+Ruolo: STUDIO_ADMIN
+```
+
+Se il database Docker esiste già, la migration `V3__demo_studio_seed.sql` viene applicata al successivo avvio del backend. Per ripartire da zero:
+
+```powershell
+docker compose down -v
+docker compose up --build
+```
+
 ## Solo frontend
 
 ```powershell

@@ -46,6 +46,13 @@ export class App {
   readonly studioProfile = signal<StudioProfile | null>(null);
   readonly dashboardPreference = signal<DashboardPreference | null>(null);
   readonly settingsMessage = signal('');
+  readonly demoWidgets = [
+    { title: 'Calendario Outlook style', metric: '12 eventi oggi', description: 'Udienze, scadenze e calendari condivisi dello Studio.' },
+    { title: 'Documenti', metric: '248 file', description: 'Contratti, memorie, procure e versioni organizzate per pratica.' },
+    { title: 'Email', metric: '37 non lette', description: 'Posta ordinaria associabile a clienti e pratiche.' },
+    { title: 'Clienti', metric: '18 attivi', description: 'Anagrafiche, referenti e contesto operativo sempre raggiungibili.' },
+    { title: 'Pratiche / Fascicolo', metric: '31 aperte', description: 'Stati, scadenze e documenti collegati alla singola posizione.' }
+  ];
 
   readonly loginForm;
   readonly registerForm;
@@ -81,6 +88,13 @@ export class App {
       themeMode: ['LIGHT' as ThemeMode],
       dashboardDensity: ['COMFORTABLE' as DashboardDensity],
       personalAccentColor: ['#c9993a']
+    });
+  }
+
+  useDemoLogin(): void {
+    this.loginForm.setValue({
+      email: 'admin@studioverdi-demo.it',
+      password: 'DemoFORO2026!'
     });
   }
 

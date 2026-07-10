@@ -26,6 +26,12 @@
         </label>
         <button class="primary" type="submit" [disabled]="loading()">{{ loading() ? 'Accesso…' : 'Accedi' }}</button>
       </form>
+      <div class="demo-login">
+        <strong>Accesso demo precaricato</strong>
+        <span>admin@studioverdi-demo.it</span>
+        <span>DemoFORO2026!</span>
+        <button class="secondary" type="button" (click)="useDemoLogin()">Usa credenziali demo</button>
+      </div>
       <p class="error" role="alert" *ngIf="error()">{{ error() }}</p>
       <button class="link" type="button">Password dimenticata?</button>
       <div class="divider"><span>oppure</span></div>
@@ -189,8 +195,8 @@
       <p class="error" role="alert" *ngIf="error()">{{ error() }}</p>
 
       <div class="widget-grid">
-        <article *ngFor="let item of ['Calendario Outlook style','Documenti','Email','Clienti','Pratiche / Fascicolo']">
-          <span>⋮⋮</span><h3>{{ item }}</h3><p>Widget predisposto e riposizionabile</p>
+        <article *ngFor="let item of demoWidgets">
+          <span>⋮⋮</span><h3>{{ item.title }}</h3><strong>{{ item.metric }}</strong><p>{{ item.description }}</p>
         </article>
       </div>
     </section>
