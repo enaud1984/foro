@@ -153,3 +153,11 @@ Quando il repository sarà inizializzato:
 - PR con scope, regole coperte, test, rischio e screenshot;
 - nessuna modifica generata massivamente senza review.
 
+## 13. Lingua di progetto
+
+- Tutti i commenti su GitHub, PR, issue, review e discussioni tecniche devono essere in italiano.
+- Tutta la documentazione di progetto deve essere in italiano.
+- I commenti nel codice devono essere in italiano.
+- Nei file applicativi di proprietà FORO, usare nomi italiani per variabili, funzioni, classi, componenti, servizi, DTO e metodi.
+- Sono ammesse parole tecniche obbligate dal framework o dalle librerie, ad esempio `Controller`, `Service`, `Repository`, `Component`, `Observable`, `Signal`, `Request`, `Response`, quando fanno parte di convenzioni tecniche consolidate.
+- Gli endpoint, le chiavi JSON e i nomi database già esistenti possono essere mantenuti se cambiarli romperebbe compatibilità o aumenterebbe il rischio; le nuove superfici devono preferire terminologia italiana coerente.

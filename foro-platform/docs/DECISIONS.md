@@ -118,6 +118,13 @@ Le decisioni accettate prevalgono sugli altri documenti. Una decisione modificat
 - **Decisione:** dopo il login la home è una Dashboard operativa con catalogo widget a sinistra e widget su griglia invisibile. Le impostazioni sono accessibili da icona in alto a destra e non sostituiscono la Scrivania.
 - **Conseguenza:** i widget devono supportare preview, drag & drop/spostamento, chiusura dalla Scrivania e vista espansa al click. La registrazione Studio include upload logo da file locale.
 
+### DEC-019 — Lingua italiana per progetto e codice
+
+- **Stato:** ACCEPTED
+- **Data:** 2026-07-10
+- **Decisione:** commenti GitHub, PR, issue, review, documentazione, commenti nel codice e naming del codice applicativo FORO devono essere in italiano.
+- **Conseguenza:** nuove variabili, funzioni, classi, servizi, DTO e componenti devono usare nomi italiani, salvo termini tecnici imposti da framework/librerie o compatibilità già esistenti.
+
 ## Open Decisions
 
 ### OPEN-001 — Limiti documenti
