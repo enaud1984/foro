@@ -50,6 +50,14 @@ interface WidgetScrivania extends DefinizioneWidget {
   metric: string;
   preview: string;
   details: string[];
+  righeAnteprima: RigaWidget[];
+}
+
+interface RigaWidget {
+  titolo: string;
+  descrizione: string;
+  stato: string;
+  evidenza?: string;
 }
 
 interface NotificaScrivania {
@@ -126,7 +134,10 @@ export class App {
     { key: 'pratiche', icon: '⚖️', title: 'Pratiche', description: 'Fascicolo interno e stato attività' }
   ];
 
-  readonly activeWidgets = signal<WidgetScrivania[]>([
+  readonly activeWidgets = signal<WidgetScrivania[]>(this.creaWidgetIniziali());
+
+  /*
+  readonly activeWidgetsVecchi = signal<WidgetScrivania[]>([
     {
       ...this.widgetLibrary[0],
       x: 1,
@@ -142,6 +153,7 @@ export class App {
     { ...this.widgetLibrary[3], x: 7, y: 3, w: 3, h: 2, metric: '18 attivi', preview: 'Clienti e referenti principali.', details: ['Cliente Alfa S.r.l.', 'Mario Rossi', 'Beta Fiduciaria S.p.A.'] },
     { ...this.widgetLibrary[4], x: 1, y: 4, w: 6, h: 2, metric: '31 aperte', preview: 'Fascicoli e stati operativi.', details: ['Rossi / Alfa S.r.l. — Urgente', 'Esposito Successione — Aperta', 'De Luca recupero crediti — In lavorazione'] }
   ]);
+  */
 
   readonly loginForm;
   readonly registerForm;
@@ -149,6 +161,86 @@ export class App {
   readonly dashboardForm;
   readonly appuntamentoForm;
   private widgetTrascinato: ChiaveWidget | null = null;
+
+  private creaWidgetIniziali(): WidgetScrivania[] {
+    return [
+      {
+        ...this.widgetLibrary[0],
+        x: 1,
+        y: 1,
+        w: 6,
+        h: 3,
+        metric: '12 eventi oggi',
+        preview: 'Appuntamenti in ordine cronologico',
+        details: ['08:45 — Revisione fascicolo Beta', '10:30 — Udienza civile, Tribunale di Milano', '12:15 — Scadenza deposito memoria', '15:00 — Appuntamento cliente in studio', '17:30 — Call con controparte'],
+        righeAnteprima: [
+          { titolo: '08:45 — Revisione fascicolo Beta', descrizione: 'Studio · Avv. Verdi', stato: 'Studio' },
+          { titolo: '10:30 — Udienza civile', descrizione: 'Tribunale di Milano · RG 1842/2025', stato: 'Udienza' },
+          { titolo: '15:00 — Appuntamento cliente', descrizione: 'Sala riunioni 1 · Cliente Alfa', stato: 'Cliente' }
+        ]
+      },
+      {
+        ...this.widgetLibrary[1],
+        x: 7,
+        y: 1,
+        w: 3,
+        h: 2,
+        metric: '248 file',
+        preview: 'Documenti recenti e da validare',
+        details: ['Comparsa_costituzione_v3.pdf', 'Procura_firmata_Esposito.p7m', 'Verbale_udienza_10-07.docx'],
+        righeAnteprima: [
+          { titolo: 'Comparsa costituzione v3.pdf', descrizione: 'Rossi / Alfa S.r.l.', stato: 'Da firmare' },
+          { titolo: 'Procura firmata Esposito.p7m', descrizione: 'Caricata oggi alle 09:14', stato: 'Firmato' },
+          { titolo: 'Verbale udienza 10-07.docx', descrizione: 'Bozza da revisionare', stato: 'Bozza' }
+        ]
+      },
+      {
+        ...this.widgetLibrary[2],
+        x: 10,
+        y: 1,
+        w: 3,
+        h: 2,
+        metric: '37 non lette',
+        preview: 'Messaggi da lavorare e associare',
+        details: ['Tribunale di Milano — notifica provvedimento', 'cliente.rossi@pec.it — documenti integrativi', 'Cancelleria civile — ricevuta deposito'],
+        righeAnteprima: [
+          { titolo: 'Tribunale di Milano', descrizione: 'Notifica provvedimento · 2 allegati', stato: 'Nuova' },
+          { titolo: 'cliente.rossi@pec.it', descrizione: 'Documenti integrativi pratica lavoro', stato: 'Associare' },
+          { titolo: 'Cancelleria civile', descrizione: 'Ricevuta deposito telematico', stato: 'Archiviata' }
+        ]
+      },
+      {
+        ...this.widgetLibrary[3],
+        x: 7,
+        y: 3,
+        w: 3,
+        h: 2,
+        metric: '18 attivi',
+        preview: 'Clienti e referenti principali',
+        details: ['Cliente Alfa S.r.l.', 'Mario Rossi', 'Beta Fiduciaria S.p.A.'],
+        righeAnteprima: [
+          { titolo: 'Cliente Alfa S.r.l.', descrizione: 'Milano · referente: Laura Riva', stato: 'Attivo' },
+          { titolo: 'Mario Rossi', descrizione: 'Roma · persona fisica', stato: 'Attivo' },
+          { titolo: 'Beta Fiduciaria S.p.A.', descrizione: 'Torino · 4 pratiche aperte', stato: 'VIP' }
+        ]
+      },
+      {
+        ...this.widgetLibrary[4],
+        x: 1,
+        y: 4,
+        w: 6,
+        h: 2,
+        metric: '31 aperte',
+        preview: 'Pratiche aperte e prossime attività',
+        details: ['Rossi / Alfa S.r.l. — Urgente', 'Esposito Successione — Aperta', 'De Luca recupero crediti — In lavorazione'],
+        righeAnteprima: [
+          { titolo: 'Rossi / Alfa S.r.l.', descrizione: 'Opposizione decreto ingiuntivo · scadenza 12/07', stato: 'Urgente', evidenza: '2 gg' },
+          { titolo: 'Esposito Successione', descrizione: 'Volontaria giurisdizione · documenti mancanti', stato: 'Aperta', evidenza: '45%' },
+          { titolo: 'De Luca recupero crediti', descrizione: 'Diffida stragiudiziale · bozza in corso', stato: 'In lavorazione', evidenza: '28%' }
+        ]
+      }
+    ];
+  }
 
   constructor(private readonly fb: FormBuilder, private readonly http: HttpClient) {
     this.loginForm = this.fb.nonNullable.group({
@@ -469,7 +561,10 @@ export class App {
       h: 2,
       metric: 'Nuovo',
       preview: 'Widget aggiunto alla scrivania.',
-      details: ['Anteprima operativa', 'Azioni rapide', 'Vista estesa']
+      details: ['Anteprima operativa', 'Azioni rapide', 'Vista estesa'],
+      righeAnteprima: [
+        { titolo: definition.title, descrizione: 'Nuovo elemento operativo', stato: 'Nuovo' }
+      ]
     };
   }
 

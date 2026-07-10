@@ -185,8 +185,14 @@
             </div>
             <b>{{ widget.metric }}</b>
             <p>{{ widget.preview }}</p>
-            <div class="agenda-preview" *ngIf="widget.key === 'calendario'">
-              <div *ngFor="let row of widget.details.slice(0,4)"><time>{{ row.split(' — ')[0] }}</time><span>{{ row.split(' — ')[1] }}</span></div>
+            <div class="widget-preview-list">
+              <button type="button" *ngFor="let riga of widget.righeAnteprima" (click)="expandWidget(widget,$event)">
+                <span>
+                  <strong>{{ riga.titolo }}</strong>
+                  <small>{{ riga.descrizione }}</small>
+                </span>
+                <em>{{ riga.evidenza || riga.stato }}</em>
+              </button>
             </div>
             <small class="resize-corner">↘</small>
           </article>
@@ -330,8 +336,46 @@
       </div>
 
       <ng-template #widgetStandard>
-        <div class="expanded-list">
-          <article *ngFor="let row of widget.details"><strong>{{ row }}</strong><small>Azione rapida · associa a pratica · apri dettaglio</small></article>
+        <div class="gestione-widget">
+          <aside>
+            <button class="primary" type="button">+ Nuovo</button>
+            <button type="button">Importa</button>
+            <button type="button">Filtri</button>
+            <button type="button">Esporta</button>
+            <button type="button">Permessi</button>
+          </aside>
+          <section>
+            <div class="gestione-toolbar">
+              <div>
+                <span class="eyebrow">GESTIONE {{ widget.title }}</span>
+                <h3>{{ widget.title }} dello Studio</h3>
+              </div>
+              <label>Cerca<input placeholder="Cerca in {{ widget.title }}"></label>
+            </div>
+            <div class="gestione-table">
+              <article *ngFor="let riga of widget.righeAnteprima">
+                <div>
+                  <strong>{{ riga.titolo }}</strong>
+                  <small>{{ riga.descrizione }}</small>
+                </div>
+                <span>{{ riga.stato }}</span>
+                <nav>
+                  <button type="button">Apri</button>
+                  <button type="button">Modifica</button>
+                  <button type="button" *ngIf="widget.key === 'pratiche'">Attività</button>
+                  <button type="button" *ngIf="widget.key === 'documenti'">Versioni</button>
+                  <button type="button" *ngIf="widget.key === 'email'">Associa</button>
+                </nav>
+              </article>
+            </div>
+            <div class="gestione-dettaglio">
+              <h4>Pannello operativo</h4>
+              <p *ngIf="widget.key === 'pratiche'">Da qui l’utente potrà creare una nuova pratica, aggiornare stato, scadenze, documenti collegati, note, attività e responsabili.</p>
+              <p *ngIf="widget.key === 'documenti'">Da qui l’utente potrà caricare file, versionare atti, collegare documenti a pratiche, scaricare anteprime e gestire firme/validazioni.</p>
+              <p *ngIf="widget.key === 'email'">Da qui l’utente potrà leggere messaggi, associare email a pratiche/clienti, archiviare, rispondere e gestire allegati.</p>
+              <p *ngIf="widget.key === 'clienti'">Da qui l’utente potrà creare anagrafiche, modificare referenti, collegare pratiche, contatti, sedi e documenti cliente.</p>
+            </div>
+          </section>
         </div>
       </ng-template>
     </section>
