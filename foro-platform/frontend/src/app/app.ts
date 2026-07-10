@@ -3,12 +3,15 @@ import { Component, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 
-type Screen = 'login' | 'register' | 'workspace';
-type ThemeMode = 'LIGHT' | 'DARK';
-type DashboardDensity = 'COMFORTABLE' | 'COMPACT';
-type WidgetKey = 'calendar' | 'documents' | 'email' | 'clients' | 'matters';
+type Schermata = 'login' | 'registrazione' | 'scrivania';
+type ModalitaTema = 'LIGHT' | 'DARK';
+type DensitaScrivania = 'COMFORTABLE' | 'COMPACT';
+type ChiaveWidget = 'calendario' | 'documenti' | 'email' | 'clienti' | 'pratiche';
+type PassoRegistrazione = 'dati' | 'piani' | 'pagamento';
+type PianoDemo = 'essential' | 'professional';
+type PosizioneGriglia = { x: number; y: number; w: number; h: number };
 
-interface StudioProfile {
+interface ProfiloStudio {
   name: string;
   addressLine: string | null;
   city: string | null;
@@ -24,21 +27,21 @@ interface StudioProfile {
   canEditBranding: boolean;
 }
 
-interface DashboardPreference {
-  themeMode: ThemeMode;
-  dashboardDensity: DashboardDensity;
+interface PreferenzeScrivania {
+  themeMode: ModalitaTema;
+  dashboardDensity: DensitaScrivania;
   personalAccentColor: string | null;
   widgetLayout: string;
 }
 
-interface WidgetDefinition {
-  key: WidgetKey;
+interface DefinizioneWidget {
+  key: ChiaveWidget;
   icon: string;
   title: string;
   description: string;
 }
 
-interface WorkspaceWidget extends WidgetDefinition {
+interface WidgetScrivania extends DefinizioneWidget {
   x: number;
   y: number;
   w: number;
@@ -55,39 +58,50 @@ interface WorkspaceWidget extends WidgetDefinition {
   styleUrl: './app.scss'
 })
 export class App {
-  readonly screen = signal<Screen>('login');
+  readonly screen = signal<Schermata>('login');
   readonly loading = signal(false);
   readonly error = signal('');
   readonly userName = signal('');
-  readonly registrationStep = signal<'details' | 'plans' | 'payment'>('details');
-  readonly selectedPlan = signal<'essential' | 'professional'>('essential');
-  readonly studioProfile = signal<StudioProfile | null>(null);
-  readonly dashboardPreference = signal<DashboardPreference | null>(null);
+  readonly registrationStep = signal<PassoRegistrazione>('dati');
+  readonly selectedPlan = signal<PianoDemo>('essential');
+  readonly studioProfile = signal<ProfiloStudio | null>(null);
+  readonly dashboardPreference = signal<PreferenzeScrivania | null>(null);
   readonly settingsMessage = signal('');
   readonly settingsOpen = signal(false);
-  readonly expandedWidget = signal<WorkspaceWidget | null>(null);
+  readonly notificationsOpen = signal(false);
+  readonly expandedWidget = signal<WidgetScrivania | null>(null);
+  readonly dragPlaceholder = signal<PosizioneGriglia | null>(null);
 
-  readonly widgetLibrary: WidgetDefinition[] = [
-    { key: 'calendar', icon: '📅', title: 'Calendario', description: 'Agenda Outlook style, udienze e scadenze' },
-    { key: 'documents', icon: '📁', title: 'Documenti', description: 'Atti, versioni, firme e fascicoli' },
+  readonly widgetLibrary: DefinizioneWidget[] = [
+    { key: 'calendario', icon: '📅', title: 'Calendario', description: 'Agenda stile Outlook, udienze e scadenze' },
+    { key: 'documenti', icon: '📁', title: 'Documenti', description: 'Atti, versioni, firme e fascicoli' },
     { key: 'email', icon: '✉️', title: 'Email', description: 'Posta ordinaria e associazioni pratica' },
-    { key: 'clients', icon: '👥', title: 'Clienti', description: 'Anagrafiche e referenti' },
-    { key: 'matters', icon: '⚖️', title: 'Pratiche', description: 'Fascicolo interno e stato attività' }
+    { key: 'clienti', icon: '👥', title: 'Clienti', description: 'Anagrafiche e referenti' },
+    { key: 'pratiche', icon: '⚖️', title: 'Pratiche', description: 'Fascicolo interno e stato attività' }
   ];
 
-  readonly activeWidgets = signal<WorkspaceWidget[]>([
-    { ...this.widgetLibrary[0], x: 1, y: 1, w: 2, h: 2, metric: '12 eventi oggi', preview: 'Udienze, scadenze e calendari condivisi.', details: ['10:30 — Udienza civile, Tribunale di Milano', '15:00 — Appuntamento cliente in studio', '17:30 — Call con controparte'] },
-    { ...this.widgetLibrary[1], x: 3, y: 1, w: 1, h: 1, metric: '248 file', preview: 'Ultimi atti e versioni disponibili.', details: ['Comparsa_costituzione_v3.pdf', 'Procura_firmata_Esposito.p7m', 'Verbale_udienza_10-07.docx'] },
-    { ...this.widgetLibrary[2], x: 4, y: 1, w: 1, h: 1, metric: '37 non lette', preview: 'Messaggi da lavorare e associare.', details: ['Tribunale di Milano — notifica provvedimento', 'cliente.rossi@pec.it — documenti integrativi', 'Cancelleria civile — ricevuta deposito'] },
-    { ...this.widgetLibrary[3], x: 1, y: 3, w: 1, h: 1, metric: '18 attivi', preview: 'Clienti e referenti principali.', details: ['Cliente Alfa S.r.l.', 'Mario Rossi', 'Beta Fiduciaria S.p.A.'] },
-    { ...this.widgetLibrary[4], x: 2, y: 3, w: 2, h: 1, metric: '31 aperte', preview: 'Fascicoli e stati operativi.', details: ['Rossi / Alfa S.r.l. — Urgente', 'Esposito Successione — Aperta', 'De Luca recupero crediti — In lavorazione'] }
+  readonly activeWidgets = signal<WidgetScrivania[]>([
+    {
+      ...this.widgetLibrary[0],
+      x: 1,
+      y: 1,
+      w: 6,
+      h: 3,
+      metric: '12 eventi oggi',
+      preview: '08:45 Revisione fascicolo · 10:30 Udienza · 15:00 Cliente · 17:30 Call',
+      details: ['08:45 — Revisione fascicolo Beta', '10:30 — Udienza civile, Tribunale di Milano', '12:15 — Scadenza deposito memoria', '15:00 — Appuntamento cliente in studio', '17:30 — Call con controparte']
+    },
+    { ...this.widgetLibrary[1], x: 7, y: 1, w: 3, h: 2, metric: '248 file', preview: 'Ultimi atti e versioni disponibili.', details: ['Comparsa_costituzione_v3.pdf', 'Procura_firmata_Esposito.p7m', 'Verbale_udienza_10-07.docx'] },
+    { ...this.widgetLibrary[2], x: 10, y: 1, w: 3, h: 2, metric: '37 non lette', preview: 'Messaggi da lavorare e associare.', details: ['Tribunale di Milano — notifica provvedimento', 'cliente.rossi@pec.it — documenti integrativi', 'Cancelleria civile — ricevuta deposito'] },
+    { ...this.widgetLibrary[3], x: 7, y: 3, w: 3, h: 2, metric: '18 attivi', preview: 'Clienti e referenti principali.', details: ['Cliente Alfa S.r.l.', 'Mario Rossi', 'Beta Fiduciaria S.p.A.'] },
+    { ...this.widgetLibrary[4], x: 1, y: 4, w: 6, h: 2, metric: '31 aperte', preview: 'Fascicoli e stati operativi.', details: ['Rossi / Alfa S.r.l. — Urgente', 'Esposito Successione — Aperta', 'De Luca recupero crediti — In lavorazione'] }
   ]);
 
   readonly loginForm;
   readonly registerForm;
   readonly brandingForm;
   readonly dashboardForm;
-  private draggedWidgetKey: WidgetKey | null = null;
+  private widgetTrascinato: ChiaveWidget | null = null;
 
   constructor(private readonly fb: FormBuilder, private readonly http: HttpClient) {
     this.loginForm = this.fb.nonNullable.group({
@@ -116,15 +130,15 @@ export class App {
       phone: [''],
       website: [''],
       logoUrl: [''],
-      primaryColor: ['#092746'],
-      accentColor: ['#c9993a'],
-      secondaryColor: ['#128c8c'],
-      themePreset: ['foro-classic']
+      primaryColor: ['#111827'],
+      accentColor: ['#0f766e'],
+      secondaryColor: ['#475569'],
+      themePreset: ['foro-minimal-essential']
     });
     this.dashboardForm = this.fb.nonNullable.group({
-      themeMode: ['LIGHT' as ThemeMode],
-      dashboardDensity: ['COMFORTABLE' as DashboardDensity],
-      personalAccentColor: ['#c9993a']
+      themeMode: ['LIGHT' as ModalitaTema],
+      dashboardDensity: ['COMFORTABLE' as DensitaScrivania],
+      personalAccentColor: ['#0f766e']
     });
   }
 
@@ -134,14 +148,26 @@ export class App {
 
   toggleSettings(): void {
     this.settingsOpen.update(value => !value);
+    this.notificationsOpen.set(false);
     this.error.set('');
     this.settingsMessage.set('');
+  }
+
+  toggleNotifications(): void {
+    this.notificationsOpen.update(value => !value);
+    this.settingsOpen.set(false);
+  }
+
+  studioFullAddress(): string {
+    const profilo = this.studioProfile();
+    if (!profilo) return 'Scrivania digitale';
+    return [profilo.addressLine, profilo.postalCode, profilo.city, profilo.country].filter(Boolean).join(' · ') || 'Scrivania digitale';
   }
 
   onLogoSelected(event: Event): void {
     this.readLogoFile(event, logoUrl => {
       this.brandingForm.patchValue({ logoUrl });
-      this.settingsMessage.set('Logo caricato dal PC. Premi "Salva branding Studio" per renderlo definitivo.');
+      this.settingsMessage.set('Logo caricato dal PC. Premi “Salva dati Studio” per renderlo definitivo.');
     });
   }
 
@@ -149,9 +175,9 @@ export class App {
     this.readLogoFile(event, logoUrl => this.registerForm.patchValue({ logoUrl }));
   }
 
-  show(screen: Screen): void {
+  show(screen: Schermata): void {
     this.error.set('');
-    if (screen === 'register') this.registrationStep.set('details');
+    if (screen === 'registrazione') this.registrationStep.set('dati');
     this.screen.set(screen);
   }
 
@@ -168,12 +194,12 @@ export class App {
       this.registerForm.markAllAsTouched();
       return;
     }
-    this.registrationStep.set('plans');
+    this.registrationStep.set('piani');
   }
 
-  choosePlan(plan: 'essential' | 'professional'): void {
+  choosePlan(plan: PianoDemo): void {
     this.selectedPlan.set(plan);
-    this.registrationStep.set('payment');
+    this.registrationStep.set('pagamento');
   }
 
   completeDemoPayment(): void {
@@ -189,36 +215,40 @@ export class App {
     this.show('login');
   }
 
-  startWidgetDrag(key: WidgetKey): void {
-    this.draggedWidgetKey = key;
+  startWidgetDrag(key: ChiaveWidget): void {
+    this.widgetTrascinato = key;
+    const widget = this.activeWidgets().find(item => item.key === key);
+    if (widget) this.dragPlaceholder.set({ x: widget.x, y: widget.y, w: widget.w, h: widget.h });
+  }
+
+  updateDragPreview(event: DragEvent): void {
+    event.preventDefault();
+    if (!this.widgetTrascinato) return;
+    const posizione = this.positionFromPointer(event);
+    const widget = this.activeWidgets().find(item => item.key === this.widgetTrascinato);
+    if (posizione) this.dragPlaceholder.set({ x: posizione.x, y: posizione.y, w: widget?.w ?? 3, h: widget?.h ?? 2 });
   }
 
   dropWidget(event: DragEvent): void {
     event.preventDefault();
-    if (!this.draggedWidgetKey) return;
-    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    const x = Math.min(4, Math.max(1, Math.ceil(((event.clientX - rect.left) / rect.width) * 4)));
-    const y = Math.min(4, Math.max(1, Math.ceil((event.clientY - rect.top) / 190)));
-    this.moveOrAddWidget(this.draggedWidgetKey, x, y);
-    this.draggedWidgetKey = null;
+    if (!this.widgetTrascinato) return;
+    const posizione = this.positionFromPointer(event);
+    if (posizione) this.moveOrAddWidget(this.widgetTrascinato, posizione.x, posizione.y);
+    this.widgetTrascinato = null;
+    this.dragPlaceholder.set(null);
   }
 
-  moveWidget(key: WidgetKey, direction: 'left' | 'right' | 'up' | 'down', event: Event): void {
+  expandWidget(widget: WidgetScrivania, event: Event): void {
     event.stopPropagation();
-    this.activeWidgets.update(widgets => widgets.map(widget => {
-      if (widget.key !== key) return widget;
-      const dx = direction === 'left' ? -1 : direction === 'right' ? 1 : 0;
-      const dy = direction === 'up' ? -1 : direction === 'down' ? 1 : 0;
-      return { ...widget, x: Math.min(4, Math.max(1, widget.x + dx)), y: Math.min(4, Math.max(1, widget.y + dy)) };
-    }));
+    this.openWidget(widget);
   }
 
-  closeWidget(key: WidgetKey, event: Event): void {
+  closeWidget(key: ChiaveWidget, event: Event): void {
     event.stopPropagation();
     this.activeWidgets.update(widgets => widgets.filter(widget => widget.key !== key));
   }
 
-  openWidget(widget: WorkspaceWidget): void {
+  openWidget(widget: WidgetScrivania): void {
     this.expandedWidget.set(widget);
   }
 
@@ -233,16 +263,16 @@ export class App {
     }
     this.loading.set(true);
     this.settingsMessage.set('');
-    this.http.put<StudioProfile>('/api/v1/studio/profile', this.brandingForm.getRawValue()).subscribe({
+    this.http.put<ProfiloStudio>('/api/v1/studio/profile', this.brandingForm.getRawValue()).subscribe({
       next: profile => {
         this.studioProfile.set(profile);
         this.applyTheme(profile, this.dashboardPreference());
-        this.settingsMessage.set('Branding dello Studio aggiornato.');
+        this.settingsMessage.set('Dati dello Studio aggiornati.');
         this.settingsOpen.set(false);
         this.loading.set(false);
       },
       error: response => {
-        this.error.set(response?.error?.message ?? 'Non puoi modificare il branding dello Studio.');
+        this.error.set(response?.error?.message ?? 'Non puoi modificare i dati dello Studio.');
         this.loading.set(false);
       }
     });
@@ -253,11 +283,11 @@ export class App {
     this.settingsMessage.set('');
     const value = this.dashboardForm.getRawValue();
     const widgetLayout = JSON.stringify(this.activeWidgets().map(({ key, x, y, w, h }) => ({ key, x, y, w, h })));
-    this.http.put<DashboardPreference>('/api/v1/workspace/preferences', { ...value, widgetLayout }).subscribe({
+    this.http.put<PreferenzeScrivania>('/api/v1/workspace/preferences', { ...value, widgetLayout }).subscribe({
       next: preference => {
         this.dashboardPreference.set(preference);
         this.applyTheme(this.studioProfile(), preference);
-        this.settingsMessage.set('Tema personale aggiornato.');
+        this.settingsMessage.set('Aspetto personale aggiornato.');
         this.loading.set(false);
       },
       error: response => {
@@ -274,7 +304,7 @@ export class App {
       next: response => {
         sessionStorage.setItem('foro_access_token', response.accessToken);
         this.userName.set(response.displayName);
-        this.screen.set('workspace');
+        this.screen.set('scrivania');
         this.loadWorkspaceSettings();
         this.loading.set(false);
       },
@@ -286,7 +316,7 @@ export class App {
   }
 
   private loadWorkspaceSettings(): void {
-    this.http.get<StudioProfile>('/api/v1/studio/profile').subscribe(profile => {
+    this.http.get<ProfiloStudio>('/api/v1/studio/profile').subscribe(profile => {
       this.studioProfile.set(profile);
       this.brandingForm.patchValue({
         name: profile.name,
@@ -304,28 +334,69 @@ export class App {
       });
       this.applyTheme(profile, this.dashboardPreference());
     });
-    this.http.get<DashboardPreference>('/api/v1/workspace/preferences').subscribe(preference => {
+    this.http.get<PreferenzeScrivania>('/api/v1/workspace/preferences').subscribe(preference => {
       this.dashboardPreference.set(preference);
       this.dashboardForm.patchValue({
         themeMode: preference.themeMode,
         dashboardDensity: preference.dashboardDensity,
-        personalAccentColor: preference.personalAccentColor ?? this.studioProfile()?.accentColor ?? '#c9993a'
+        personalAccentColor: preference.personalAccentColor ?? this.studioProfile()?.accentColor ?? '#0f766e'
       });
       this.applyTheme(this.studioProfile(), preference);
     });
   }
 
-  private moveOrAddWidget(key: WidgetKey, x: number, y: number): void {
+  private moveOrAddWidget(key: ChiaveWidget, x: number, y: number): void {
     const existing = this.activeWidgets().find(widget => widget.key === key);
     if (existing) {
-      this.activeWidgets.update(widgets => widgets.map(widget => widget.key === key ? { ...widget, x, y } : widget));
+      this.activeWidgets.update(widgets => this.reorderWidgets(widgets.map(widget => widget.key === key ? { ...widget, x, y } : widget), key));
       return;
     }
     const definition = this.widgetLibrary.find(widget => widget.key === key);
     if (!definition) return;
-    this.activeWidgets.update(widgets => [...widgets, {
-      ...definition, x, y, w: 1, h: 1, metric: 'Nuovo', preview: 'Widget aggiunto alla scrivania.', details: ['Anteprima operativa', 'Azioni rapide', 'Vista estesa']
-    }]);
+    this.activeWidgets.update(widgets => this.reorderWidgets([...widgets, {
+      ...definition,
+      x,
+      y,
+      w: 3,
+      h: 2,
+      metric: 'Nuovo',
+      preview: 'Widget aggiunto alla scrivania.',
+      details: ['Anteprima operativa', 'Azioni rapide', 'Vista estesa']
+    }], key));
+  }
+
+  private positionFromPointer(event: DragEvent): { x: number; y: number } | null {
+    const element = event.currentTarget as HTMLElement;
+    const rect = element.getBoundingClientRect();
+    const colWidth = rect.width / 12;
+    const rowHeight = 110;
+    const dragged = this.widgetTrascinato ? this.activeWidgets().find(widget => widget.key === this.widgetTrascinato) : null;
+    const width = dragged?.w ?? 3;
+    const x = Math.min(13 - width, Math.max(1, Math.floor((event.clientX - rect.left) / colWidth) + 1));
+    const y = Math.max(1, Math.floor((event.clientY - rect.top) / rowHeight) + 1);
+    return { x, y };
+  }
+
+  private reorderWidgets(widgets: WidgetScrivania[], activeKey: ChiaveWidget): WidgetScrivania[] {
+    const ordered = [...widgets].sort((a, b) => {
+      if (a.key === activeKey) return -1;
+      if (b.key === activeKey) return 1;
+      return a.y - b.y || a.x - b.x;
+    });
+    const placed: WidgetScrivania[] = [];
+    for (const widget of ordered) {
+      let next = { ...widget, x: Math.min(widget.x, 13 - widget.w), y: Math.max(1, widget.y) };
+      while (placed.some(other => this.overlaps(next, other))) {
+        next = { ...next, x: next.x + 1 };
+        if (next.x + next.w > 13) next = { ...next, x: 1, y: next.y + 1 };
+      }
+      placed.push(next);
+    }
+    return placed.sort((a, b) => a.y - b.y || a.x - b.x);
+  }
+
+  private overlaps(a: PosizioneGriglia, b: PosizioneGriglia): boolean {
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
   }
 
   private readLogoFile(event: Event, onLoad: (logoUrl: string) => void): void {
@@ -338,11 +409,11 @@ export class App {
     reader.readAsDataURL(file);
   }
 
-  private applyTheme(profile: StudioProfile | null, preference: DashboardPreference | null): void {
+  private applyTheme(profile: ProfiloStudio | null, preference: PreferenzeScrivania | null): void {
     const root = document.documentElement;
-    root.style.setProperty('--foro-primary', profile?.primaryColor ?? '#092746');
-    root.style.setProperty('--foro-accent', preference?.personalAccentColor || profile?.accentColor || '#c9993a');
-    root.style.setProperty('--foro-secondary', profile?.secondaryColor ?? '#128c8c');
+    root.style.setProperty('--foro-primary', profile?.primaryColor ?? '#111827');
+    root.style.setProperty('--foro-accent', preference?.personalAccentColor || profile?.accentColor || '#0f766e');
+    root.style.setProperty('--foro-secondary', profile?.secondaryColor ?? '#475569');
     root.dataset['foroMode'] = preference?.themeMode === 'DARK' ? 'dark' : 'light';
     root.dataset['foroDensity'] = preference?.dashboardDensity === 'COMPACT' ? 'compact' : 'comfortable';
   }

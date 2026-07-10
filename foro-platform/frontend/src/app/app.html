@@ -1,4 +1,4 @@
-<main class="auth-shell" *ngIf="screen() !== 'workspace'; else workspace">
+<main class="auth-shell" *ngIf="screen() !== 'scrivania'; else workspace">
   <section class="brand-panel" aria-label="FORO">
     <div class="brand">
       <img class="foro-logo" src="/assets/foro-logo.png" alt="FORO">
@@ -32,21 +32,23 @@
       <button class="link" type="button">Password dimenticata?</button>
       <div class="divider"><span>oppure</span></div>
       <p class="switch">Il tuo Studio non è ancora su FORO?</p>
-      <button class="secondary" type="button" (click)="show('register')">Registra lo Studio</button>
+      <button class="secondary" type="button" (click)="show('registrazione')">Registra lo Studio</button>
     </div>
 
-    <div class="form-card" *ngIf="screen() === 'register' && registrationStep() === 'details'">
+    <div class="form-card" *ngIf="screen() === 'registrazione' && registrationStep() === 'dati'">
       <img class="mobile-brand-logo" src="/assets/foro-logo.png" alt="FORO">
       <button class="back" type="button" (click)="show('login')">← Torna all’accesso</button>
       <h2>Registra lo Studio</h2>
       <p class="lead">Crea lo spazio organizzativo, carica il logo e crea il primo amministratore.</p>
       <form [formGroup]="registerForm" (ngSubmit)="register()">
         <label>Nome dello Studio<input formControlName="studioName" autocomplete="organization" placeholder="Studio Legale Rossi"></label>
-        <label>Logo dello Studio<input type="file" accept="image/png,image/jpeg,image/svg+xml" (change)="onRegisterLogoSelected($event)"></label>
-        <div class="logo-current compact-preview" *ngIf="registerForm.controls.logoUrl.value">
-          <img [src]="registerForm.controls.logoUrl.value" alt="Logo Studio">
-          <span>Logo precaricato per lo Studio</span>
-        </div>
+        <input #logoRegistrazioneInput class="hidden-file" type="file" accept="image/png,image/jpeg,image/svg+xml" (change)="onRegisterLogoSelected($event)">
+        <button class="logo-picker" type="button" (click)="logoRegistrazioneInput.click()">
+          <img *ngIf="registerForm.controls.logoUrl.value; else logoRegistrazioneVuoto" [src]="registerForm.controls.logoUrl.value" alt="Logo Studio">
+          <ng-template #logoRegistrazioneVuoto><span>+</span></ng-template>
+          <strong>{{ registerForm.controls.logoUrl.value ? 'Logo selezionato' : 'Carica logo Studio' }}</strong>
+          <small>Clicca qui e scegli un file dal PC</small>
+        </button>
         <div class="two-cols">
           <label>Indirizzo<input formControlName="addressLine" placeholder="Via dei Tribunali 42"></label>
           <label>Città<input formControlName="city" placeholder="Milano"></label>
@@ -65,8 +67,8 @@
       <p class="error" role="alert" *ngIf="error()">{{ error() }}</p>
     </div>
 
-    <div class="form-card plans-card" *ngIf="screen() === 'register' && registrationStep() === 'plans'">
-      <button class="back" type="button" (click)="registrationStep.set('details')">← Dati dello Studio</button>
+    <div class="form-card plans-card" *ngIf="screen() === 'registrazione' && registrationStep() === 'piani'">
+      <button class="back" type="button" (click)="registrationStep.set('dati')">← Dati dello Studio</button>
       <h2>Scegli il piano demo</h2>
       <p class="lead">Prezzi indicativi: nessun addebito verrà effettuato.</p>
       <div class="plans">
@@ -88,8 +90,8 @@
       <p class="demo-note">Task e KPI non fanno parte del MVP e non saranno operativi nella prima release.</p>
     </div>
 
-    <div class="form-card" *ngIf="screen() === 'register' && registrationStep() === 'payment'">
-      <button class="back" type="button" (click)="registrationStep.set('plans')">← Cambia piano</button>
+    <div class="form-card" *ngIf="screen() === 'registrazione' && registrationStep() === 'pagamento'">
+      <button class="back" type="button" (click)="registrationStep.set('piani')">← Cambia piano</button>
       <span class="demo-badge">PAGAMENTO SIMULATO</span>
       <h2>Completa la demo</h2>
       <p class="lead">Piano {{ selectedPlan() === 'essential' ? 'Essenziale · € 29' : 'Professional Demo · € 49' }} per utente/mese.</p>
@@ -115,21 +117,27 @@
         <ng-template #fallbackLogo><img class="foro-logo compact-logo" src="/assets/foro-logo.png" alt="FORO"></ng-template>
         <div>
           <strong>{{ studioProfile()?.name || 'FORO' }}</strong>
-          <small>{{ studioProfile()?.city || 'Scrivania digitale' }}</small>
+          <small>{{ studioFullAddress() }}</small>
         </div>
       </div>
       <div class="top-actions">
-        <button class="icon-action" type="button" aria-label="Notifiche">🔔<span>5</span></button>
+        <button class="icon-action" type="button" aria-label="Notifiche" (click)="toggleNotifications()">🔔<span>5</span></button>
         <button class="icon-action" type="button" aria-label="Impostazioni" (click)="toggleSettings()">⚙️</button>
         <button class="logout-btn" type="button" (click)="logout()">Esci</button>
       </div>
+      <section class="notifications-panel" *ngIf="notificationsOpen()">
+        <h3>Notifiche recenti</h3>
+        <article><strong>Scadenza fra 2 giorni</strong><small>Deposito memoria — Rossi / Alfa S.r.l.</small></article>
+        <article><strong>Nuova email da lavorare</strong><small>Tribunale di Milano — 2 allegati</small></article>
+        <article><strong>Documento caricato</strong><small>Procura firmata — Cliente Esposito</small></article>
+        <article><strong>Udienza confermata</strong><small>Sezione Lavoro — ore 10:30</small></article>
+      </section>
     </header>
 
     <div class="dashboard-shell">
       <aside class="widget-sidebar">
-        <img src="/assets/foro-logo.png" alt="FORO" class="sidebar-logo">
         <h3>Widget disponibili</h3>
-        <p>Trascina un widget nella dashboard. Ogni card può essere spostata sulla griglia, chiusa o aperta in vista estesa.</p>
+        <p>Trascina un widget nella dashboard. La griglia evita le sovrapposizioni e riordina automaticamente gli elementi.</p>
         <article class="widget-source" *ngFor="let item of widgetLibrary" draggable="true" (dragstart)="startWidgetDrag(item.key)">
           <span>{{ item.icon }}</span>
           <div><strong>{{ item.title }}</strong><small>{{ item.description }}</small></div>
@@ -141,49 +149,62 @@
           <div>
             <span class="eyebrow">SCRIVANIA DIGITALE</span>
             <h1>Dashboard operativa</h1>
-            <p>Benvenuto, {{ userName() }}. I widget sono anteprime operative: clicca per espanderli.</p>
+            <p>Benvenuto, {{ userName() }}. Le card mostrano l’anteprima; usa il tasto espandi per aprire la vista completa.</p>
           </div>
-          <button class="primary add-widget" type="button">+ Aggiungi widget</button>
         </div>
 
-        <div class="operational-grid" (dragover)="$event.preventDefault()" (drop)="dropWidget($event)">
+        <div class="operational-grid" (dragover)="updateDragPreview($event)" (drop)="dropWidget($event)">
+          <div class="drop-placeholder"
+            *ngIf="dragPlaceholder() as placeholder"
+            [style.grid-column]="placeholder.x + ' / span ' + placeholder.w"
+            [style.grid-row]="placeholder.y + ' / span ' + placeholder.h"></div>
           <article class="op-widget"
             *ngFor="let widget of activeWidgets()"
             draggable="true"
             (dragstart)="startWidgetDrag(widget.key)"
-            (click)="openWidget(widget)"
+            [class.dragging]="dragPlaceholder() && dragPlaceholder()?.x === widget.x && dragPlaceholder()?.y === widget.y"
             [style.grid-column]="widget.x + ' / span ' + widget.w"
             [style.grid-row]="widget.y + ' / span ' + widget.h">
             <div class="op-head">
               <h3>{{ widget.icon }} {{ widget.title }}</h3>
               <div class="window-actions">
-                <button type="button" title="Sposta a sinistra" (click)="moveWidget(widget.key,'left',$event)">‹</button>
-                <button type="button" title="Sposta a destra" (click)="moveWidget(widget.key,'right',$event)">›</button>
-                <button type="button" title="Sposta in alto" (click)="moveWidget(widget.key,'up',$event)">⌃</button>
-                <button type="button" title="Sposta in basso" (click)="moveWidget(widget.key,'down',$event)">⌄</button>
+                <button type="button" class="expand-window" title="Ingrandisci widget" (click)="expandWidget(widget,$event)">□</button>
                 <button type="button" class="close-window" title="Chiudi widget" (click)="closeWidget(widget.key,$event)">×</button>
               </div>
             </div>
             <b>{{ widget.metric }}</b>
             <p>{{ widget.preview }}</p>
-            <small class="open-hint">Click per aprire la vista estesa</small>
+            <div class="agenda-preview" *ngIf="widget.key === 'calendario'">
+              <div *ngFor="let row of widget.details.slice(0,4)"><time>{{ row.split(' — ')[0] }}</time><span>{{ row.split(' — ')[1] }}</span></div>
+            </div>
+            <small class="resize-corner">↘</small>
           </article>
         </div>
       </section>
     </div>
 
+    <footer class="dashboard-footer">
+      <span>FORO · Scrivania Digitale</span>
+      <span>Ambiente demo · dati fittizi · © 2026</span>
+    </footer>
+
     <div class="settings-backdrop" *ngIf="settingsOpen()" (click)="toggleSettings()"></div>
     <aside class="settings-drawer" *ngIf="settingsOpen()">
       <div class="drawer-head">
-        <div><span class="eyebrow">IMPOSTAZIONI</span><h2>Studio e tema</h2></div>
+        <div><span class="eyebrow">IMPOSTAZIONI</span><h2>Studio e scrivania</h2></div>
         <button type="button" (click)="toggleSettings()">×</button>
       </div>
-      <p class="drawer-note">Il titolare modifica logo e dati Studio. Ogni utente può cambiare solo il tema della propria dashboard.</p>
+      <p class="drawer-note">Il titolare modifica logo e dati Studio. Ogni utente può cambiare solo l’aspetto della propria dashboard.</p>
 
       <form [formGroup]="brandingForm" (ngSubmit)="saveBranding()" class="drawer-form">
         <h3>Dati dello Studio</h3>
-        <label>Logo dello Studio<input type="file" accept="image/png,image/jpeg,image/svg+xml" (change)="onLogoSelected($event)" [disabled]="!studioProfile()?.canEditBranding"></label>
-        <div class="logo-current" *ngIf="brandingForm.controls.logoUrl.value"><img [src]="brandingForm.controls.logoUrl.value" alt="Logo caricato"><span>Anteprima logo</span></div>
+        <input #logoStudioInput class="hidden-file" type="file" accept="image/png,image/jpeg,image/svg+xml" (change)="onLogoSelected($event)" [disabled]="!studioProfile()?.canEditBranding">
+        <button class="logo-picker settings-logo-picker" type="button" (click)="logoStudioInput.click()" [disabled]="!studioProfile()?.canEditBranding">
+          <img *ngIf="brandingForm.controls.logoUrl.value; else logoStudioVuoto" [src]="brandingForm.controls.logoUrl.value" alt="Logo Studio">
+          <ng-template #logoStudioVuoto><img src="/assets/foro-logo.png" alt="FORO"></ng-template>
+          <strong>Logo dello Studio</strong>
+          <small>Clicca sul logo per sostituirlo dal PC</small>
+        </button>
         <label>Nome Studio<input formControlName="name" [readonly]="!studioProfile()?.canEditBranding"></label>
         <div class="two-cols">
           <label>Indirizzo<input formControlName="addressLine" [readonly]="!studioProfile()?.canEditBranding"></label>
@@ -198,25 +219,41 @@
       </form>
 
       <form [formGroup]="dashboardForm" (ngSubmit)="saveDashboardPreferences()" class="drawer-form personal-form">
-        <h3>Tema personale dashboard</h3>
+        <h3>Aspetto della mia dashboard</h3>
         <label>Modalità<select formControlName="themeMode"><option value="LIGHT">Chiara</option><option value="DARK">Scura</option></select></label>
-        <label>Accento personale<input type="color" formControlName="personalAccentColor"></label>
-        <button class="secondary" type="submit" [disabled]="loading()">Salva tema personale</button>
+        <label>Colore titoli sezioni e widget<input type="color" formControlName="personalAccentColor"></label>
+        <button class="secondary" type="submit" [disabled]="loading()">Salva aspetto personale</button>
       </form>
       <p class="success" *ngIf="settingsMessage()">{{ settingsMessage() }}</p>
       <p class="error" role="alert" *ngIf="error()">{{ error() }}</p>
     </aside>
 
     <div class="widget-modal-backdrop" *ngIf="expandedWidget()" (click)="closeExpandedWidget()"></div>
-    <section class="widget-modal" *ngIf="expandedWidget() as widget">
+    <section class="widget-modal" *ngIf="expandedWidget() as widget" [class.calendar-modal]="widget.key === 'calendario'">
       <button class="modal-close" type="button" (click)="closeExpandedWidget()">×</button>
-      <span class="eyebrow">VISTA ESPANSA WIDGET</span>
+      <span class="eyebrow">VISTA INGRANDITA</span>
       <h2>{{ widget.icon }} {{ widget.title }}</h2>
       <p>{{ widget.description }}</p>
-      <div class="expanded-list">
-        <article *ngFor="let row of widget.details"><strong>{{ row }}</strong><small>Azione rapida · associa a pratica · apri dettaglio</small></article>
+
+      <div class="outlook-calendar" *ngIf="widget.key === 'calendario'; else widgetStandard">
+        <div class="calendar-toolbar"><strong>Luglio 2026</strong><span>Calendari: Studio · Avv. Verdi · Udienze · Scadenze</span></div>
+        <div class="calendar-week">
+          <div>Lunedì</div><div>Martedì</div><div>Mercoledì</div><div>Giovedì</div><div>Venerdì</div>
+        </div>
+        <div class="calendar-days">
+          <article><b>8</b><span>08:45 Revisione fascicolo</span><span>12:15 Deposito memoria</span></article>
+          <article><b>9</b><span>10:30 Udienza civile</span></article>
+          <article><b>10</b><span>15:00 Cliente in studio</span><span>17:30 Call controparte</span></article>
+          <article><b>11</b><span>09:30 Scadenza ricorso</span></article>
+          <article><b>12</b><span>11:00 Riunione Studio</span></article>
+        </div>
       </div>
-      <button class="primary" type="button">Apri gestione completa</button>
+
+      <ng-template #widgetStandard>
+        <div class="expanded-list">
+          <article *ngFor="let row of widget.details"><strong>{{ row }}</strong><small>Azione rapida · associa a pratica · apri dettaglio</small></article>
+        </div>
+      </ng-template>
     </section>
   </main>
 </ng-template>
