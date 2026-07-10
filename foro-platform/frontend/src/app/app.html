@@ -1,8 +1,7 @@
 <main class="auth-shell" *ngIf="screen() !== 'scrivania'; else workspace">
   <section class="brand-panel" aria-label="FORO">
     <div class="brand">
-      <img class="foro-logo" src="/assets/foro-logo.png" alt="FORO">
-      <div><strong>FORO</strong><small>La Scrivania Digitale dello Studio Legale</small></div>
+      <img class="foro-logo landing-foro-symbol" src="/assets/foro-simbolo.png" alt="FORO">
     </div>
     <div class="promise">
       <span class="eyebrow">PIATTAFORMA CLOUD PER STUDI LEGALI</span>
@@ -14,7 +13,7 @@
 
   <section class="form-panel">
     <div class="form-card" *ngIf="screen() === 'login'">
-      <img class="mobile-brand-logo" src="/assets/foro-logo.png" alt="FORO">
+      <img class="mobile-brand-logo" src="/assets/foro-simbolo.png" alt="FORO">
       <h2>Bentornato</h2>
       <p class="lead">Accedi alla tua Scrivania Digitale.</p>
       <form [formGroup]="loginForm" (ngSubmit)="login()">
@@ -36,7 +35,7 @@
     </div>
 
     <div class="form-card" *ngIf="screen() === 'registrazione' && registrationStep() === 'dati'">
-      <img class="mobile-brand-logo" src="/assets/foro-logo.png" alt="FORO">
+      <img class="mobile-brand-logo" src="/assets/foro-simbolo.png" alt="FORO">
       <button class="back" type="button" (click)="show('login')">← Torna all’accesso</button>
       <h2>Registra lo Studio</h2>
       <p class="lead">Crea lo spazio organizzativo, carica il logo e crea il primo amministratore.</p>

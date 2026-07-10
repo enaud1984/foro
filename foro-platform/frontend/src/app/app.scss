@@ -810,6 +810,23 @@
   padding: 10px 12px;
 }
 
+.brand-panel > .brand {
+  align-items: flex-start;
+}
+
+.landing-foro-symbol {
+  width: min(260px, 46vw);
+  max-height: 260px;
+  object-fit: contain;
+  filter: drop-shadow(0 22px 38px rgba(0, 0, 0, .34));
+}
+
+.form-card .mobile-brand-logo {
+  width: 148px;
+  max-height: 148px;
+  object-fit: contain;
+}
+
 :host-context([data-foro-mode=dark]) .shell-dashboard {
   background: #111827;
 }
