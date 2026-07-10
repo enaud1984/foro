@@ -6,6 +6,7 @@ import { HttpClient } from '@angular/common/http';
 type Screen = 'login' | 'register' | 'workspace';
 type ThemeMode = 'LIGHT' | 'DARK';
 type DashboardDensity = 'COMFORTABLE' | 'COMPACT';
+type WidgetKey = 'calendar' | 'documents' | 'email' | 'clients' | 'matters';
 
 interface StudioProfile {
   name: string;
@@ -30,6 +31,23 @@ interface DashboardPreference {
   widgetLayout: string;
 }
 
+interface WidgetDefinition {
+  key: WidgetKey;
+  icon: string;
+  title: string;
+  description: string;
+}
+
+interface WorkspaceWidget extends WidgetDefinition {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  metric: string;
+  preview: string;
+  details: string[];
+}
+
 @Component({
   selector: 'app-root',
   imports: [CommonModule, ReactiveFormsModule],
@@ -47,25 +65,29 @@ export class App {
   readonly dashboardPreference = signal<DashboardPreference | null>(null);
   readonly settingsMessage = signal('');
   readonly settingsOpen = signal(false);
-  readonly demoWidgets = [
-    { title: 'Calendario Outlook style', metric: '12 eventi oggi', description: 'Udienze, scadenze e calendari condivisi dello Studio.' },
-    { title: 'Documenti', metric: '248 file', description: 'Contratti, memorie, procure e versioni organizzate per pratica.' },
-    { title: 'Email', metric: '37 non lette', description: 'Posta ordinaria associabile a clienti e pratiche.' },
-    { title: 'Clienti', metric: '18 attivi', description: 'Anagrafiche, referenti e contesto operativo sempre raggiungibili.' },
-    { title: 'Pratiche / Fascicolo', metric: '31 aperte', description: 'Stati, scadenze e documenti collegati alla singola posizione.' }
+  readonly expandedWidget = signal<WorkspaceWidget | null>(null);
+
+  readonly widgetLibrary: WidgetDefinition[] = [
+    { key: 'calendar', icon: '📅', title: 'Calendario', description: 'Agenda Outlook style, udienze e scadenze' },
+    { key: 'documents', icon: '📁', title: 'Documenti', description: 'Atti, versioni, firme e fascicoli' },
+    { key: 'email', icon: '✉️', title: 'Email', description: 'Posta ordinaria e associazioni pratica' },
+    { key: 'clients', icon: '👥', title: 'Clienti', description: 'Anagrafiche e referenti' },
+    { key: 'matters', icon: '⚖️', title: 'Pratiche', description: 'Fascicolo interno e stato attività' }
   ];
-  readonly widgetLibrary = [
-    { icon: '📅', title: 'Calendario', description: 'Agenda Outlook style, udienze e scadenze' },
-    { icon: '📁', title: 'Documenti', description: 'Atti, versioni, firme e fascicoli' },
-    { icon: '✉️', title: 'Email', description: 'Posta ordinaria e associazioni pratica' },
-    { icon: '👥', title: 'Clienti', description: 'Anagrafiche e referenti' },
-    { icon: '⚖️', title: 'Pratiche', description: 'Fascicolo interno e stato attività' }
-  ];
+
+  readonly activeWidgets = signal<WorkspaceWidget[]>([
+    { ...this.widgetLibrary[0], x: 1, y: 1, w: 2, h: 2, metric: '12 eventi oggi', preview: 'Udienze, scadenze e calendari condivisi.', details: ['10:30 — Udienza civile, Tribunale di Milano', '15:00 — Appuntamento cliente in studio', '17:30 — Call con controparte'] },
+    { ...this.widgetLibrary[1], x: 3, y: 1, w: 1, h: 1, metric: '248 file', preview: 'Ultimi atti e versioni disponibili.', details: ['Comparsa_costituzione_v3.pdf', 'Procura_firmata_Esposito.p7m', 'Verbale_udienza_10-07.docx'] },
+    { ...this.widgetLibrary[2], x: 4, y: 1, w: 1, h: 1, metric: '37 non lette', preview: 'Messaggi da lavorare e associare.', details: ['Tribunale di Milano — notifica provvedimento', 'cliente.rossi@pec.it — documenti integrativi', 'Cancelleria civile — ricevuta deposito'] },
+    { ...this.widgetLibrary[3], x: 1, y: 3, w: 1, h: 1, metric: '18 attivi', preview: 'Clienti e referenti principali.', details: ['Cliente Alfa S.r.l.', 'Mario Rossi', 'Beta Fiduciaria S.p.A.'] },
+    { ...this.widgetLibrary[4], x: 2, y: 3, w: 2, h: 1, metric: '31 aperte', preview: 'Fascicoli e stati operativi.', details: ['Rossi / Alfa S.r.l. — Urgente', 'Esposito Successione — Aperta', 'De Luca recupero crediti — In lavorazione'] }
+  ]);
 
   readonly loginForm;
   readonly registerForm;
   readonly brandingForm;
   readonly dashboardForm;
+  private draggedWidgetKey: WidgetKey | null = null;
 
   constructor(private readonly fb: FormBuilder, private readonly http: HttpClient) {
     this.loginForm = this.fb.nonNullable.group({
@@ -74,6 +96,13 @@ export class App {
     });
     this.registerForm = this.fb.nonNullable.group({
       studioName: ['', Validators.required],
+      logoUrl: [''],
+      addressLine: [''],
+      city: [''],
+      postalCode: [''],
+      country: ['Italia'],
+      phone: [''],
+      website: [''],
       displayName: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(12)]]
@@ -100,10 +129,7 @@ export class App {
   }
 
   useDemoLogin(): void {
-    this.loginForm.setValue({
-      email: 'admin@studioverdi-demo.it',
-      password: 'DemoFORO2026!'
-    });
+    this.loginForm.setValue({ email: 'admin@studioverdi-demo.it', password: 'DemoFORO2026!' });
   }
 
   toggleSettings(): void {
@@ -113,16 +139,14 @@ export class App {
   }
 
   onLogoSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.brandingForm.patchValue({ logoUrl: String(reader.result) });
+    this.readLogoFile(event, logoUrl => {
+      this.brandingForm.patchValue({ logoUrl });
       this.settingsMessage.set('Logo caricato dal PC. Premi "Salva branding Studio" per renderlo definitivo.');
-    };
-    reader.onerror = () => this.error.set('Logo non leggibile. Prova con un PNG o JPG più leggero.');
-    reader.readAsDataURL(file);
+    });
+  }
+
+  onRegisterLogoSelected(event: Event): void {
+    this.readLogoFile(event, logoUrl => this.registerForm.patchValue({ logoUrl }));
   }
 
   show(screen: Screen): void {
@@ -165,6 +189,43 @@ export class App {
     this.show('login');
   }
 
+  startWidgetDrag(key: WidgetKey): void {
+    this.draggedWidgetKey = key;
+  }
+
+  dropWidget(event: DragEvent): void {
+    event.preventDefault();
+    if (!this.draggedWidgetKey) return;
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = Math.min(4, Math.max(1, Math.ceil(((event.clientX - rect.left) / rect.width) * 4)));
+    const y = Math.min(4, Math.max(1, Math.ceil((event.clientY - rect.top) / 190)));
+    this.moveOrAddWidget(this.draggedWidgetKey, x, y);
+    this.draggedWidgetKey = null;
+  }
+
+  moveWidget(key: WidgetKey, direction: 'left' | 'right' | 'up' | 'down', event: Event): void {
+    event.stopPropagation();
+    this.activeWidgets.update(widgets => widgets.map(widget => {
+      if (widget.key !== key) return widget;
+      const dx = direction === 'left' ? -1 : direction === 'right' ? 1 : 0;
+      const dy = direction === 'up' ? -1 : direction === 'down' ? 1 : 0;
+      return { ...widget, x: Math.min(4, Math.max(1, widget.x + dx)), y: Math.min(4, Math.max(1, widget.y + dy)) };
+    }));
+  }
+
+  closeWidget(key: WidgetKey, event: Event): void {
+    event.stopPropagation();
+    this.activeWidgets.update(widgets => widgets.filter(widget => widget.key !== key));
+  }
+
+  openWidget(widget: WorkspaceWidget): void {
+    this.expandedWidget.set(widget);
+  }
+
+  closeExpandedWidget(): void {
+    this.expandedWidget.set(null);
+  }
+
   saveBranding(): void {
     if (this.brandingForm.invalid) {
       this.brandingForm.markAllAsTouched();
@@ -191,18 +252,12 @@ export class App {
     this.loading.set(true);
     this.settingsMessage.set('');
     const value = this.dashboardForm.getRawValue();
-    const widgetLayout = JSON.stringify([
-      { key: 'calendar', x: 0, y: 0, w: 2, h: 2 },
-      { key: 'documents', x: 2, y: 0, w: 2, h: 2 },
-      { key: 'email', x: 4, y: 0, w: 2, h: 2 },
-      { key: 'clients', x: 0, y: 2, w: 2, h: 2 },
-      { key: 'matters', x: 2, y: 2, w: 4, h: 2 }
-    ]);
+    const widgetLayout = JSON.stringify(this.activeWidgets().map(({ key, x, y, w, h }) => ({ key, x, y, w, h })));
     this.http.put<DashboardPreference>('/api/v1/workspace/preferences', { ...value, widgetLayout }).subscribe({
       next: preference => {
         this.dashboardPreference.set(preference);
         this.applyTheme(this.studioProfile(), preference);
-        this.settingsMessage.set('Dashboard personale aggiornata.');
+        this.settingsMessage.set('Tema personale aggiornato.');
         this.loading.set(false);
       },
       error: response => {
@@ -258,6 +313,29 @@ export class App {
       });
       this.applyTheme(this.studioProfile(), preference);
     });
+  }
+
+  private moveOrAddWidget(key: WidgetKey, x: number, y: number): void {
+    const existing = this.activeWidgets().find(widget => widget.key === key);
+    if (existing) {
+      this.activeWidgets.update(widgets => widgets.map(widget => widget.key === key ? { ...widget, x, y } : widget));
+      return;
+    }
+    const definition = this.widgetLibrary.find(widget => widget.key === key);
+    if (!definition) return;
+    this.activeWidgets.update(widgets => [...widgets, {
+      ...definition, x, y, w: 1, h: 1, metric: 'Nuovo', preview: 'Widget aggiunto alla scrivania.', details: ['Anteprima operativa', 'Azioni rapide', 'Vista estesa']
+    }]);
+  }
+
+  private readLogoFile(event: Event, onLoad: (logoUrl: string) => void): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => onLoad(String(reader.result));
+    reader.onerror = () => this.error.set('Logo non leggibile. Prova con un PNG, JPG o SVG.');
+    reader.readAsDataURL(file);
   }
 
   private applyTheme(profile: StudioProfile | null, preference: DashboardPreference | null): void {
