@@ -88,6 +88,7 @@ export class App {
   readonly settingsOpen = signal(false);
   readonly notificationsOpen = signal(false);
   readonly expandedWidget = signal<WidgetScrivania | null>(null);
+  readonly rigaWidgetSelezionata = signal<RigaWidget | null>(null);
   readonly dragPlaceholder = signal<PosizioneGriglia | null>(null);
   readonly vistaCalendario = signal<VistaCalendario>('settimana');
   readonly nuovoAppuntamentoAperto = signal(false);
@@ -416,6 +417,13 @@ export class App {
 
   expandWidget(widget: WidgetScrivania, event: Event): void {
     event.stopPropagation();
+    this.rigaWidgetSelezionata.set(null);
+    this.openWidget(widget);
+  }
+
+  apriRigaWidget(widget: WidgetScrivania, riga: RigaWidget, event: Event): void {
+    event.stopPropagation();
+    this.rigaWidgetSelezionata.set(riga);
     this.openWidget(widget);
   }
 
@@ -430,6 +438,7 @@ export class App {
 
   closeExpandedWidget(): void {
     this.expandedWidget.set(null);
+    this.rigaWidgetSelezionata.set(null);
     this.nuovoAppuntamentoAperto.set(false);
   }
 

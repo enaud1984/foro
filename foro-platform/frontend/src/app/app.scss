@@ -269,7 +269,7 @@
   position: relative;
   min-height: 0;
   resize: both;
-  cursor: grab;
+  cursor: default;
   background: rgba(255, 255, 255, .92);
   border: 1px solid rgba(148, 163, 184, .24);
   border-radius: 24px;
@@ -280,9 +280,21 @@
 }
 
 .op-widget:active {
-  cursor: grabbing;
   transform: scale(1.015);
   box-shadow: 0 28px 70px rgba(15, 23, 42, .18);
+}
+
+.op-head {
+  cursor: grab;
+  user-select: none;
+}
+
+.op-head:active {
+  cursor: grabbing;
+}
+
+.window-actions button {
+  cursor: pointer;
 }
 
 .op-widget.dragging {
@@ -942,6 +954,12 @@
   background: #fff;
   border-radius: 16px;
   padding: 14px;
+}
+
+.gestione-table article.selected {
+  border-color: color-mix(in srgb, var(--foro-accent) 52%, #cbd5e1);
+  background: color-mix(in srgb, var(--foro-accent) 7%, #fff);
+  box-shadow: 0 14px 36px rgba(15, 23, 42, .08);
 }
 
 .gestione-table strong,
