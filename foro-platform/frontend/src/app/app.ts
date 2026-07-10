@@ -67,6 +67,7 @@ interface NotificaScrivania {
   descrizione: string;
   orario: string;
   widget: ChiaveWidget;
+  oggettoTitolo: string;
 }
 
 @Component({
@@ -99,7 +100,8 @@ export class App {
       titolo: 'Udienza civile confermata',
       descrizione: 'Tribunale di Milano · Rossi / Alfa S.r.l. · ore 10:30',
       orario: '09:12',
-      widget: 'calendario'
+      widget: 'calendario',
+      oggettoTitolo: '10:30 — Udienza civile'
     },
     {
       icona: '📁',
@@ -107,7 +109,8 @@ export class App {
       titolo: 'Procura firmata caricata',
       descrizione: 'Nuovo file nel fascicolo Esposito Successione',
       orario: '08:47',
-      widget: 'documenti'
+      widget: 'documenti',
+      oggettoTitolo: 'Procura firmata Esposito.p7m'
     },
     {
       icona: '✉️',
@@ -115,7 +118,8 @@ export class App {
       titolo: 'PEC da associare a pratica',
       descrizione: 'Cancelleria civile · ricevuta deposito telematico',
       orario: 'Ieri',
-      widget: 'email'
+      widget: 'email',
+      oggettoTitolo: 'Cancelleria civile'
     },
     {
       icona: '⚖️',
@@ -123,7 +127,8 @@ export class App {
       titolo: 'Scadenza fra 2 giorni',
       descrizione: 'Deposito memoria istruttoria · RG 1842/2025',
       orario: '2 gg',
-      widget: 'pratiche'
+      widget: 'pratiche',
+      oggettoTitolo: 'Rossi / Alfa S.r.l.'
     }
   ];
 
@@ -318,6 +323,13 @@ export class App {
     if (!this.activeWidgets().some(item => item.key === widget.key)) {
       this.activeWidgets.update(widgets => this.reorderWidgets([...widgets, widget], widget.key));
     }
+    const riga = widget.righeAnteprima.find(item => item.titolo === notifica.oggettoTitolo)
+      ?? widget.righeAnteprima.find(item => item.titolo.includes(notifica.oggettoTitolo) || notifica.oggettoTitolo.includes(item.titolo));
+    this.rigaWidgetSelezionata.set(riga ?? {
+      titolo: notifica.oggettoTitolo,
+      descrizione: notifica.descrizione,
+      stato: notifica.categoria
+    });
     this.notificationsOpen.set(false);
     this.openWidget(widget);
   }

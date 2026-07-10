@@ -140,7 +140,7 @@
             <strong>{{ notifica.titolo }}</strong>
             <em>{{ notifica.descrizione }}</em>
           </span>
-          <span class="notification-arrow">→</span>
+          <span class="notification-arrow"><small>Apri oggetto</small>→</span>
         </button>
       </section>
     </header>
@@ -290,6 +290,11 @@
               <button type="button" [class.active]="vistaCalendario() === 'settimana'" (click)="cambiaVistaCalendario('settimana')">Settimana</button>
               <button type="button" [class.active]="vistaCalendario() === 'mese'" (click)="cambiaVistaCalendario('mese')">Mese</button>
             </div>
+          </div>
+          <div class="calendar-opened-item" *ngIf="rigaWidgetSelezionata() as riga">
+            <span>Oggetto aperto</span>
+            <strong>{{ riga.titolo }}</strong>
+            <small>{{ riga.descrizione }} · {{ riga.stato }}</small>
           </div>
 
           <div class="week-calendar">

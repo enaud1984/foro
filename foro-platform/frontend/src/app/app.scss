@@ -203,13 +203,24 @@
 }
 
 .notification-arrow {
-  width: 28px;
-  height: 28px;
-  display: grid;
+  min-width: 92px;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   place-items: center;
   color: var(--foro-accent);
   background: #f8fafc;
   border-radius: 999px;
+  font-weight: 900;
+}
+
+.notification-arrow small {
+  font-size: 10px;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: .04em;
 }
 
 .dashboard-shell {
@@ -584,7 +595,7 @@
 .calendar-main {
   min-width: 0;
   display: grid;
-  grid-template-rows: 64px 1fr;
+  grid-template-rows: 64px auto 1fr;
 }
 
 .calendar-commandbar {
@@ -627,6 +638,35 @@
   background: #fff;
   color: #0b67b2;
   box-shadow: 0 4px 12px rgba(15, 23, 42, .10);
+}
+
+.calendar-opened-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #d7dee8;
+  background: #eff6ff;
+  color: #0b4f8a;
+}
+
+.calendar-opened-item span {
+  border-radius: 999px;
+  background: #0b67b2;
+  color: #fff;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.calendar-opened-item strong {
+  color: #0f172a;
+}
+
+.calendar-opened-item small {
+  color: #475569;
 }
 
 .week-calendar {
