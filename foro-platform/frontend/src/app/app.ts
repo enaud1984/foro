@@ -280,7 +280,17 @@ export class App {
     if (!this.widgetTrascinato) return;
     const posizione = this.positionFromPointer(event);
     const widget = this.activeWidgets().find(item => item.key === this.widgetTrascinato);
-    if (posizione) this.dragPlaceholder.set({ x: posizione.x, y: posizione.y, w: widget?.w ?? 3, h: widget?.h ?? 2 });
+    if (!posizione || !widget) return;
+    const nuovaPosizione = { x: posizione.x, y: posizione.y, w: widget.w, h: widget.h };
+    const posizioneCorrente = this.dragPlaceholder();
+    if (posizioneCorrente && this.samePosition(posizioneCorrente, nuovaPosizione)) return;
+    this.dragPlaceholder.set(nuovaPosizione);
+    this.activeWidgets.update(widgets =>
+      this.reorderWidgets(
+        widgets.map(item => item.key === this.widgetTrascinato ? { ...item, x: posizione.x, y: posizione.y } : item),
+        this.widgetTrascinato as ChiaveWidget
+      )
+    );
   }
 
   dropWidget(event: DragEvent): void {
@@ -288,6 +298,11 @@ export class App {
     if (!this.widgetTrascinato) return;
     const posizione = this.positionFromPointer(event);
     if (posizione) this.moveOrAddWidget(this.widgetTrascinato, posizione.x, posizione.y);
+    this.widgetTrascinato = null;
+    this.dragPlaceholder.set(null);
+  }
+
+  endWidgetDrag(): void {
     this.widgetTrascinato = null;
     this.dragPlaceholder.set(null);
   }
@@ -458,6 +473,10 @@ export class App {
 
   private overlaps(a: PosizioneGriglia, b: PosizioneGriglia): boolean {
     return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  }
+
+  private samePosition(a: PosizioneGriglia, b: PosizioneGriglia): boolean {
+    return a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h;
   }
 
   private readLogoFile(event: Event, onLoad: (logoUrl: string) => void): void {

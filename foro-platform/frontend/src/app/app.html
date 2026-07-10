@@ -173,6 +173,7 @@
             *ngFor="let widget of activeWidgets()"
             draggable="true"
             (dragstart)="startWidgetDrag(widget.key)"
+            (dragend)="endWidgetDrag()"
             [class.dragging]="dragPlaceholder() && dragPlaceholder()?.x === widget.x && dragPlaceholder()?.y === widget.y"
             [style.grid-column]="widget.x + ' / span ' + widget.w"
             [style.grid-row]="widget.y + ' / span ' + widget.h">
