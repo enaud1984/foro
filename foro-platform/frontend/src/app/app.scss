@@ -286,7 +286,9 @@
   border-radius: 24px;
   box-shadow: 0 16px 38px rgba(15, 23, 42, .08);
   padding: 18px;
-  transition: transform .22s ease, box-shadow .22s ease, grid-column .22s ease, grid-row .22s ease;
+  transition: transform .2s cubic-bezier(.2, .8, .2, 1), box-shadow .2s ease,
+    grid-column .2s cubic-bezier(.2, .8, .2, 1), grid-row .2s cubic-bezier(.2, .8, .2, 1);
+  will-change: transform;
   overflow: auto;
 }
 
@@ -298,6 +300,7 @@
 .op-head {
   cursor: grab;
   user-select: none;
+  touch-action: none;
 }
 
 .op-head:active {
@@ -309,8 +312,15 @@
 }
 
 .op-widget.dragging {
-  opacity: .82;
-  box-shadow: 0 32px 80px rgba(15, 23, 42, .22);
+  z-index: 5;
+  opacity: .96;
+  box-shadow: 0 34px 82px rgba(15, 23, 42, .24);
+  transition: box-shadow .16s ease;
+}
+
+.op-widget.dragging,
+.op-widget.dragging .op-head {
+  cursor: grabbing;
 }
 
 .op-head h3 {
@@ -359,10 +369,20 @@
 }
 
 .drop-placeholder {
-  border: 2px dashed color-mix(in srgb, var(--foro-accent) 54%, #94a3b8);
+  border: 2px dashed color-mix(in srgb, var(--foro-accent) 64%, #94a3b8);
   border-radius: 24px;
-  background: color-mix(in srgb, var(--foro-accent) 10%, transparent);
-  animation: placeholderPulse 1s ease-in-out infinite alternate;
+  background: color-mix(in srgb, var(--foro-accent) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--foro-accent) 12%, transparent);
+  transition: grid-column .16s cubic-bezier(.2, .8, .2, 1), grid-row .16s cubic-bezier(.2, .8, .2, 1);
+  animation: placeholderPulse .8s ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .op-widget,
+  .drop-placeholder {
+    transition: none;
+    animation: none;
+  }
 }
 
 @keyframes placeholderPulse {

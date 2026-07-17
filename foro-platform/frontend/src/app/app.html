@@ -170,11 +170,13 @@
             [style.grid-column]="placeholder.x + ' / span ' + placeholder.w"
             [style.grid-row]="placeholder.y + ' / span ' + placeholder.h"></div>
           <article class="op-widget"
-            *ngFor="let widget of activeWidgets()"
-            [class.dragging]="dragPlaceholder() && dragPlaceholder()?.x === widget.x && dragPlaceholder()?.y === widget.y"
+            *ngFor="let widget of activeWidgets(); trackBy: identificaWidget"
+            [class.dragging]="trascinamentoWidget()?.key === widget.key"
+            [style.transform]="trasformazioneTrascinamento(widget)"
             [style.grid-column]="widget.x + ' / span ' + widget.w"
             [style.grid-row]="widget.y + ' / span ' + widget.h">
-            <div class="op-head" draggable="true" (dragstart)="startWidgetDrag(widget.key)" (dragend)="endWidgetDrag()">
+            <div class="op-head"
+              (pointerdown)="iniziaTrascinamentoWidget(widget,$event)">
               <h3>{{ widget.icon }} {{ widget.title }}</h3>
               <div class="window-actions">
                 <button type="button" class="expand-window" title="Ingrandisci widget" (click)="expandWidget(widget,$event)">□</button>
