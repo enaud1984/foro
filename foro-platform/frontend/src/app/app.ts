@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, signal } from '@angular/core';
+import { Component, HostListener, computed, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 
@@ -10,6 +10,7 @@ type ChiaveWidget = 'calendario' | 'documenti' | 'email' | 'clienti' | 'pratiche
 type PassoRegistrazione = 'dati' | 'piani' | 'pagamento';
 type PianoDemo = 'essential' | 'professional';
 type VistaCalendario = 'giorno' | 'settimana' | 'mese';
+type ChiaveCalendario = 'studio' | 'privato' | 'udienze' | 'scadenze' | string;
 type PosizioneGriglia = { x: number; y: number; w: number; h: number };
 type TrascinamentoWidget = {
   key: ChiaveWidget;
@@ -80,6 +81,40 @@ interface NotificaScrivania {
   oggettoTitolo: string;
 }
 
+interface CalendarioAgenda {
+  chiave: ChiaveCalendario;
+  nome: string;
+  classeColore: string;
+  selezionato: boolean;
+  condivisoCon: string[];
+  condivisoConTuttoLoStudio?: boolean;
+}
+
+interface CalendarioApi { id: string; nome: string; colore: string; condivisoTuttoStudio: boolean; condivisoCon: string[]; }
+interface PersonaStudioApi { id: string; nome: string; }
+interface NotificaApi { id:string; tipo:string; titolo:string; descrizione:string; eventoId:string; letta:boolean; creataIl:string; }
+interface EventoApi { id: string; calendarioId: string; creatoreId: string; calendarioNome: string; colore: string; titolo: string; inizio: string; fine: string; note?: string; partecipanti?: string; statoDisponibilita: string; promemoriaMinuti?: number; categoria?: string; tuttoGiorno: boolean; serieId?: string; ricorrenza: string; fineRicorrenza?: string; }
+
+interface EventoAgenda {
+  id?: string;
+  data: string;
+  ora: number;
+  minuti?: number;
+  calendario: ChiaveCalendario;
+  titolo: string;
+  dettaglio?: string;
+  persona: string;
+  personaId?: string;
+  colore?: string;
+  fine?: string;
+  note?: string;
+  partecipanti?: string;
+  statoDisponibilita?: string;
+  promemoriaMinuti?: number;
+  categoria?: string;
+  ricorrenza?: string;
+}
+
 @Component({
   selector: 'app-root',
   imports: [CommonModule, ReactiveFormsModule],
@@ -103,7 +138,47 @@ export class App {
   readonly dragPlaceholder = signal<PosizioneGriglia | null>(null);
   readonly trascinamentoWidget = signal<TrascinamentoWidget | null>(null);
   readonly vistaCalendario = signal<VistaCalendario>('settimana');
+  readonly dataCalendario = signal(this.inizioGiorno(new Date()));
+  readonly oraAttuale = signal(new Date());
   readonly nuovoAppuntamentoAperto = signal(false);
+  readonly nuovoCalendarioAperto = signal(false);
+  readonly erroreAppuntamento = signal('');
+  readonly eventoSelezionato = signal<EventoAgenda | null>(null);
+  readonly slotSelezionato = signal<string | null>(null);
+  readonly calendariAgenda = signal<CalendarioAgenda[]>([
+    { chiave: 'studio', nome: 'Studio Legale Verdi', classeColore: 'studio', selezionato: true, condivisoCon: [], condivisoConTuttoLoStudio: true },
+    { chiave: 'privato', nome: 'Calendario privato', classeColore: 'private', selezionato: true, condivisoCon: [] },
+    { chiave: 'udienze', nome: 'Udienze', classeColore: 'hearings', selezionato: true, condivisoCon: [] },
+    { chiave: 'scadenze', nome: 'Scadenze deposito', classeColore: 'deadlines', selezionato: false, condivisoCon: [] }
+  ]);
+  readonly personeStudio = signal<{id:string;nome:string;selezionata:boolean}[]>([]);
+  readonly personeCondivisione = signal<{id:string;nome:string;selezionata:boolean}[]>([]);
+  readonly personeInvitate = signal<{id:string;nome:string;selezionata:boolean}[]>([]);
+  readonly eventiAgenda = signal<EventoAgenda[]>([
+    { data: '2026-07-07', ora: 9, calendario: 'studio', titolo: 'Riunione Studio', persona: 'Avv. Laura Verdi' },
+    { data: '2026-07-09', ora: 10, calendario: 'udienze', titolo: 'Udienza civile', dettaglio: 'Tribunale Milano', persona: 'Avv. Laura Verdi' },
+    { data: '2026-07-10', ora: 11, calendario: 'privato', titolo: 'Appuntamento privato', persona: 'Avv. Laura Verdi' },
+    { data: '2026-07-08', ora: 12, calendario: 'scadenze', titolo: 'Deposito memoria', persona: 'Avv. Laura Verdi' },
+    { data: '2026-07-09', ora: 14, calendario: 'studio', titolo: 'Revisione contratto', persona: 'Avv. Marco Neri' },
+    { data: '2026-07-07', ora: 15, calendario: 'studio', titolo: 'Cliente Alfa S.r.l.', persona: 'Avv. Laura Verdi' },
+    { data: '2026-07-10', ora: 15, calendario: 'studio', titolo: 'Call controparte', dettaglio: 'Avv. Neri invitato', persona: 'Avv. Marco Neri' }
+  ]);
+  readonly oreCalendario = Array.from({ length: 16 }, (_, indice) => indice + 7);
+  readonly slotCalendario = Array.from({ length: 32 }, (_, indice) => ({ ora: 7 + Math.floor(indice / 2), minuti: indice % 2 ? 30 : 0 }));
+  readonly giorniVisualizzati = computed(() => {
+    if (this.vistaCalendario() === 'giorno') return [this.creaGiornoVista(this.dataCalendario())];
+    const lunedi = this.inizioSettimana(this.dataCalendario());
+    return Array.from({ length: 7 }, (_, indice) => this.creaGiornoVista(this.aggiungiGiorni(lunedi, indice)));
+  });
+  readonly celleMese = computed(() => {
+    const riferimento = this.dataCalendario();
+    const primo = new Date(riferimento.getFullYear(), riferimento.getMonth(), 1);
+    const inizio = this.inizioSettimana(primo);
+    return Array.from({ length: 42 }, (_, indice) => this.creaGiornoVista(this.aggiungiGiorni(inizio, indice)));
+  });
+  readonly intestazioneCalendario = computed(() => this.creaIntestazioneCalendario());
+  readonly intestazioneMiniCalendario = computed(() => new Intl.DateTimeFormat('it-IT',{month:'long',year:'numeric'}).format(this.dataCalendario()));
+  readonly notificheInviti = signal<NotificaScrivania[]>([]);
   readonly notificheScrivania: NotificaScrivania[] = [
     {
       icona: '📅',
@@ -142,6 +217,7 @@ export class App {
       oggettoTitolo: 'Rossi / Alfa S.r.l.'
     }
   ];
+  readonly tutteNotifiche = computed(() => [...this.notificheInviti(), ...this.notificheScrivania]);
 
   readonly widgetLibrary: DefinizioneWidget[] = [
     { key: 'calendario', icon: '📅', title: 'Calendario', description: 'Agenda stile Outlook, udienze e scadenze' },
@@ -177,6 +253,7 @@ export class App {
   readonly brandingForm;
   readonly dashboardForm;
   readonly appuntamentoForm;
+  readonly calendarioCondivisoForm;
   private widgetTrascinato: ChiaveWidget | null = null;
   private layoutPrimaDelTrascinamento: WidgetScrivania[] | null = null;
   private trascinamentoConfermato = false;
@@ -299,15 +376,22 @@ export class App {
       personalAccentColor: ['#0f766e']
     });
     this.appuntamentoForm = this.fb.nonNullable.group({
-      titolo: ['Nuovo appuntamento cliente'],
-      calendario: ['Studio'],
-      visibilita: ['Studio'],
-      partecipanti: ['Avv. Laura Verdi, Dott. Marco Neri'],
-      data: ['2026-07-10'],
-      inizio: ['11:30'],
-      fine: ['12:15'],
-      luogo: ['Studio · Sala riunioni 1'],
+      titolo: ['Nuovo appuntamento cliente', Validators.required],
+      calendario: ['studio', Validators.required],
+      data: [this.dataIsoLocale(new Date()), Validators.required],
+      inizio: ['11:30', Validators.required],
+      fine: ['12:15', Validators.required],
+      tuttoGiorno: [false],
+      statoDisponibilita: ['OCCUPATO'],
+      promemoriaMinuti: [15],
+      categoria: ['GENERALE'],
+      ricorrenza: ['NESSUNA'],
+      fineRicorrenza: [''],
       note: ['Preparare fascicolo e documenti cliente.']
+    });
+    this.calendarioCondivisoForm = this.fb.nonNullable.group({
+      nome: ['', Validators.required],
+      colore: ['#d97706', Validators.required]
     });
   }
 
@@ -563,6 +647,7 @@ export class App {
 
   openWidget(widget: WidgetScrivania): void {
     this.expandedWidget.set(widget);
+    if (widget.key === 'calendario') this.allineaPlannerOraAttuale();
   }
 
   closeExpandedWidget(): void {
@@ -573,18 +658,181 @@ export class App {
 
   cambiaVistaCalendario(vista: VistaCalendario): void {
     this.vistaCalendario.set(vista);
+    if (vista !== 'mese') this.allineaPlannerOraAttuale();
+  }
+
+  vaiOggi(): void {
+    const adesso = new Date();
+    this.oraAttuale.set(adesso);
+    this.dataCalendario.set(this.inizioGiorno(adesso));
+    if (this.vistaCalendario() !== 'mese') this.allineaPlannerOraAttuale();
+  }
+
+  navigaCalendario(direzione: -1 | 1): void {
+    const passo = this.vistaCalendario() === 'giorno' ? 1 : this.vistaCalendario() === 'settimana' ? 7 : 0;
+    const data = this.dataCalendario();
+    this.dataCalendario.set(passo
+      ? this.aggiungiGiorni(data, passo * direzione)
+      : new Date(data.getFullYear(), data.getMonth() + direzione, 1));
+  }
+
+  navigaMiniCalendario(direzione: -1 | 1): void { const data=this.dataCalendario(); this.dataCalendario.set(new Date(data.getFullYear(),data.getMonth()+direzione,1)); }
+  selezionaGiornoMiniCalendario(iso:string):void { this.dataCalendario.set(this.dataDaIso(iso)); this.vistaCalendario.set('giorno'); this.allineaPlannerOraAttuale(); }
+
+  private allineaPlannerOraAttuale(): void {
+    window.setTimeout(() => {
+      const planner = document.querySelector('.week-calendar') as HTMLElement | null;
+      if (!planner) return;
+      const ora = new Date();
+      this.oraAttuale.set(ora);
+      const posizione = 82 + ((ora.getHours() - 7) * 86) + (ora.getMinutes() / 60 * 86);
+      planner.scrollTop = Math.max(0, Math.min(planner.scrollHeight - planner.clientHeight, posizione - planner.clientHeight * .35));
+    });
   }
 
   apriNuovoAppuntamento(): void {
+    this.nuovoCalendarioAperto.set(false);
+    this.erroreAppuntamento.set('');
     this.nuovoAppuntamentoAperto.set(true);
+  }
+
+  selezionaSlot(data:string,ora:number,minuti:number):void { this.slotSelezionato.set(`${data}-${ora}-${minuti}`); }
+  slotAttivo(data:string,ora:number,minuti:number):boolean { return this.slotSelezionato() === `${data}-${ora}-${minuti}`; }
+  apriNuovoAppuntamentoDaCella(data: string, ora: number, minuti = 0): void {
+    const fineTotale = ora * 60 + minuti + 30;
+    this.appuntamentoForm.patchValue({
+      titolo: 'Nuovo appuntamento',
+      data,
+      inizio: `${String(ora).padStart(2, '0')}:${String(minuti).padStart(2,'0')}`,
+      fine: `${String(Math.floor(fineTotale / 60)).padStart(2, '0')}:${String(fineTotale % 60).padStart(2,'0')}`
+    });
+    this.apriNuovoAppuntamento();
   }
 
   chiudiNuovoAppuntamento(): void {
     this.nuovoAppuntamentoAperto.set(false);
   }
 
-  salvaAppuntamentoDemo(): void {
+  salvaAppuntamento(): void {
+    this.erroreAppuntamento.set('');
+    if (this.appuntamentoForm.invalid) { this.appuntamentoForm.markAllAsTouched(); this.erroreAppuntamento.set('Compila il titolo, la data e gli orari prima di salvare.'); return; }
+    const valore = this.appuntamentoForm.getRawValue();
+    const inizio = new Date(`${valore.data}T${valore.inizio}:00`);
+    const fine = new Date(`${valore.data}T${valore.fine}:00`);
+    if (fine <= inizio) { this.erroreAppuntamento.set('L’orario di fine deve essere successivo a quello di inizio.'); return; }
+    this.loading.set(true); this.error.set('');
+    this.http.post<EventoApi>('/api/v1/calendario/eventi', {
+      calendarioId: valore.calendario, titolo: valore.titolo, inizio: inizio.toISOString(), fine: fine.toISOString(),
+      note: valore.note, invitatiIds: this.personeInvitate().filter(p=>p.selezionata).map(p=>p.id),
+      statoDisponibilita: valore.statoDisponibilita, promemoriaMinuti: valore.promemoriaMinuti,
+      categoria: valore.categoria, tuttoGiorno: valore.tuttoGiorno, ricorrenza: valore.ricorrenza,
+      fineRicorrenza: valore.ricorrenza === 'NESSUNA' ? null : valore.fineRicorrenza
+    }).subscribe({
+      next: () => { this.caricaAgenda(); this.caricaNotifiche(); this.nuovoAppuntamentoAperto.set(false); this.loading.set(false); },
+      error: response => { this.erroreAppuntamento.set(response?.error?.message ?? 'Appuntamento non salvato. Riprova.'); this.loading.set(false); }
+    });
+  }
+  apriDettaglioEvento(evento:EventoAgenda,event:Event):void { event.stopPropagation(); this.nuovoAppuntamentoAperto.set(false); this.eventoSelezionato.set(evento); }
+  chiudiDettaglioEvento():void { this.eventoSelezionato.set(null); }
+  coloreEvento(evento:EventoAgenda):string { const colori:Record<string,string>={studio:'#0b67b2',private:'#7c3aed',hearings:'#0f766e',deadlines:'#dc2626',shared:'#d97706'};return colori[evento.colore||'']||evento.colore||'#0b67b2'; }
+  etichettaStato(stato?:string):string { return ({LIBERO:'Libero',PROVVISORIO:'Provvisorio',OCCUPATO:'Occupato',FUORI_SEDE:'Fuori sede'} as Record<string,string>)[stato||'']||'Occupato'; }
+  formattaOra(ora:number,minuti=0):string { return `${String(ora).padStart(2,'0')}:${String(minuti).padStart(2,'0')}`; }
+  nomeCalendario(chiave:ChiaveCalendario):string { return this.calendariAgenda().find(c=>c.chiave===chiave)?.nome||'Calendario'; }
+
+  cambiaVisibilitaCalendario(chiave: ChiaveCalendario, selezionato: boolean): void {
+    this.calendariAgenda.update(calendari => calendari.map(calendario =>
+      calendario.chiave === chiave ? { ...calendario, selezionato } : calendario
+    ));
+  }
+
+  cambiaVisibilitaPersona(nome: string, selezionata: boolean): void {
+    this.personeStudio.update(persone => persone.map(persona =>
+      persona.nome === nome ? { ...persona, selezionata } : persona
+    ));
+  }
+
+  cambiaCondivisionePersona(nome: string, selezionata: boolean): void {
+    this.personeCondivisione.update(persone => persone.map(persona =>
+      persona.nome === nome ? { ...persona, selezionata } : persona
+    ));
+  }
+  cambiaInvitoPersona(id:string,selezionata:boolean):void { this.personeInvitate.update(lista=>lista.map(p=>p.id===id?{...p,selezionata}:p)); }
+  aggiornaInvitati(event: Event): void {
+    const selezionati = new Set(Array.from((event.target as HTMLSelectElement).selectedOptions).map(opzione => opzione.value));
+    this.personeInvitate.update(lista => lista.map(persona => ({ ...persona, selezionata: selezionati.has(persona.id) })));
+  }
+
+  eventoVisibile(evento: EventoAgenda): boolean {
+    const organizzatore = this.personeStudio().find(persona => persona.id === evento.personaId);
+    return !!this.calendariAgenda().find(calendario => calendario.chiave === evento.calendario)?.selezionato
+      && (organizzatore?.selezionata ?? true);
+  }
+
+  eventiNellaCella(data: string, ora: number, minuti: number): EventoAgenda[] {
+    return this.eventiAgenda().filter(evento => evento.data === data && evento.ora === ora && (evento.minuti ?? 0) === minuti && this.eventoVisibile(evento));
+  }
+
+  eventiDelGiorno(data: string): EventoAgenda[] {
+    return this.eventiAgenda().filter(evento => evento.data === data && this.eventoVisibile(evento));
+  }
+
+  posizioneOraAttuale(): number {
+    const ora = this.oraAttuale();
+    return ((ora.getHours() - this.oreCalendario[0]) * 86) + (ora.getMinutes() / 60 * 86);
+  }
+
+  private creaIntestazioneCalendario(): string {
+    const formato = new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: 'long', year: 'numeric' });
+    if (this.vistaCalendario() === 'giorno') return formato.format(this.dataCalendario());
+    if (this.vistaCalendario() === 'mese') return new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeric' }).format(this.dataCalendario());
+    const giorni = this.giorniVisualizzati();
+    return `${formato.format(this.dataDaIso(giorni[0].iso))} – ${formato.format(this.dataDaIso(giorni[6].iso))}`;
+  }
+
+  private creaGiornoVista(data: Date): { iso: string; numero: string; nome: string; oggi: boolean; meseCorrente: boolean } {
+    return {
+      iso: this.dataIsoLocale(data),
+      numero: String(data.getDate()).padStart(2, '0'),
+      nome: new Intl.DateTimeFormat('it-IT', { weekday: 'short' }).format(data),
+      oggi: this.dataIsoLocale(data) === this.dataIsoLocale(new Date()),
+      meseCorrente: data.getMonth() === this.dataCalendario().getMonth()
+    };
+  }
+
+  private inizioGiorno(data: Date): Date { return new Date(data.getFullYear(), data.getMonth(), data.getDate()); }
+  private inizioSettimana(data: Date): Date {
+    const giorno = data.getDay() || 7;
+    return this.aggiungiGiorni(this.inizioGiorno(data), 1 - giorno);
+  }
+  private aggiungiGiorni(data: Date, giorni: number): Date { return new Date(data.getFullYear(), data.getMonth(), data.getDate() + giorni); }
+  dataIsoLocale(data: Date): string {
+    return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(data.getDate()).padStart(2, '0')}`;
+  }
+  private dataDaIso(iso: string): Date { const [anno, mese, giorno] = iso.split('-').map(Number); return new Date(anno, mese - 1, giorno); }
+
+  apriNuovoCalendario(): void {
     this.nuovoAppuntamentoAperto.set(false);
+    this.calendarioCondivisoForm.reset({ nome: '', colore:'#d97706' });
+    this.nuovoCalendarioAperto.set(true);
+  }
+
+  chiudiNuovoCalendario(): void {
+    this.nuovoCalendarioAperto.set(false);
+  }
+
+  salvaCalendarioCondiviso(): void {
+    if (this.calendarioCondivisoForm.invalid) {
+      this.calendarioCondivisoForm.markAllAsTouched();
+      return;
+    }
+    const nome = this.calendarioCondivisoForm.controls.nome.value.trim();
+    const personeSelezionate = this.personeCondivisione().filter(persona => persona.selezionata);
+    const condivisoCon = personeSelezionate.map(persona => persona.nome);
+    this.loading.set(true);
+    this.http.post<CalendarioApi>('/api/v1/calendario/calendari', { nome, colore:this.calendarioCondivisoForm.controls.colore.value, condivisoCon: personeSelezionate.map(p=>p.id) }).subscribe({
+      next: calendario => { this.calendariAgenda.update(lista => [...lista, this.daCalendarioApi(calendario, condivisoCon)]); this.nuovoCalendarioAperto.set(false); this.loading.set(false); },
+      error: response => { this.error.set(response?.error?.message ?? 'Calendario non creato.'); this.loading.set(false); }
+    });
   }
 
   saveBranding(): void {
@@ -647,6 +895,8 @@ export class App {
   }
 
   private loadWorkspaceSettings(): void {
+    this.caricaAgenda();
+    this.caricaNotifiche();
     this.http.get<ProfiloStudio>('/api/v1/studio/profile').subscribe(profile => {
       this.studioProfile.set(profile);
       this.brandingForm.patchValue({
@@ -712,6 +962,50 @@ export class App {
     const dragged = this.widgetTrascinato ? this.activeWidgets().find(widget => widget.key === this.widgetTrascinato) : null;
     const width = dragged?.w ?? 3;
     return this.positionFromCoordinates(event.clientX, event.clientY, element, width, rowHeight);
+  }
+
+  private caricaNotifiche(): void {
+    this.http.get<NotificaApi[]>('/api/v1/notifiche').subscribe(lista => this.notificheInviti.set(lista.map(n => ({
+      icona:'📅', categoria:'Appuntamento', titolo:n.titolo, descrizione:n.descrizione,
+      orario:new Intl.DateTimeFormat('it-IT',{hour:'2-digit',minute:'2-digit'}).format(new Date(n.creataIl)),
+      widget:'calendario', oggettoTitolo:n.titolo
+    }))));
+  }
+
+  private caricaAgenda(): void {
+    this.http.get<PersonaStudioApi[]>('/api/v1/calendario/persone').subscribe(persone => {
+      this.personeStudio.set(persone.map(p=>({...p,selezionata:true})));
+      this.personeCondivisione.set(persone.map(p=>({...p,selezionata:false})));
+      this.personeInvitate.set(persone.map(p=>({...p,selezionata:false})));
+    });
+    this.http.get<CalendarioApi[]>('/api/v1/calendario/calendari').subscribe(calendari => {
+      this.calendariAgenda.set(calendari.map(c => this.daCalendarioApi(c, [])));
+      const predefinito = calendari.find(c => c.colore === 'studio') ?? calendari[0];
+      if (predefinito) this.appuntamentoForm.controls.calendario.setValue(predefinito.id);
+      const dal = `${new Date().getFullYear() - 1}-01-01`;
+      const al = `${new Date().getFullYear() + 2}-01-01`;
+      this.http.get<EventoApi[]>('/api/v1/calendario/eventi', { params: { dal, al } }).subscribe(eventi => {
+        this.eventiAgenda.set(eventi.map(evento => this.daEventoApi(evento)));
+        this.aggiornaWidgetCalendario();
+      });
+    });
+  }
+
+  private daCalendarioApi(c: CalendarioApi, condivisoCon: string[]): CalendarioAgenda {
+    return { chiave: c.id, nome: c.nome, classeColore: c.colore, selezionato: true, condivisoCon, condivisoConTuttoLoStudio: c.condivisoTuttoStudio };
+  }
+  private daEventoApi(e: EventoApi): EventoAgenda {
+    const inizio = new Date(e.inizio);
+    const organizzatore = this.personeStudio().find(persona => persona.id === e.creatoreId);
+    const fine=new Date(e.fine);
+    return { id: e.id, data: this.dataIsoLocale(inizio), ora: inizio.getHours(), minuti: inizio.getMinutes(), fine:`${String(fine.getHours()).padStart(2,'0')}:${String(fine.getMinutes()).padStart(2,'0')}`, calendario: e.calendarioId, colore:e.colore, titolo: e.titolo, personaId: e.creatoreId, persona: organizzatore?.nome || this.userName() || 'Avvocato dello Studio', note:e.note, partecipanti:e.partecipanti, statoDisponibilita:e.statoDisponibilita, promemoriaMinuti:e.promemoriaMinuti, categoria:e.categoria, ricorrenza:e.ricorrenza };
+  }
+  private aggiornaWidgetCalendario(): void {
+    const oggi = this.dataIsoLocale(new Date());
+    const prossimi = this.eventiAgenda().filter(e => e.data >= oggi).sort((a,b) => a.data.localeCompare(b.data) || a.ora-b.ora).slice(0, 5);
+    const righe = prossimi.map(e => ({ titolo: `${String(e.ora).padStart(2,'0')}:${String(e.minuti ?? 0).padStart(2,'0')} — ${e.titolo}`, descrizione: e.dettaglio || this.calendariAgenda().find(c=>c.chiave===e.calendario)?.nome || 'Calendario', stato: e.data === oggi ? 'Oggi' : new Intl.DateTimeFormat('it-IT',{day:'2-digit',month:'short'}).format(this.dataDaIso(e.data)) }));
+    const oggiTotale = this.eventiAgenda().filter(e => e.data === oggi).length;
+    this.activeWidgets.update(widgets => widgets.map(w => w.key === 'calendario' ? { ...w, metric: `${oggiTotale} eventi oggi`, preview: prossimi.length ? 'Appuntamenti in ordine cronologico' : 'Nessun prossimo appuntamento', details: righe.map(r=>r.titolo), righeAnteprima: righe } : w));
   }
 
   private positionFromCoordinates(

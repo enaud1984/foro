@@ -1,0 +1,1 @@
+package it.foro.calendario.repository; import it.foro.calendario.domain.InvitoEvento; import org.springframework.data.jpa.repository.JpaRepository; import java.util.UUID; public interface InvitoEventoRepository extends JpaRepository<InvitoEvento,UUID>{}

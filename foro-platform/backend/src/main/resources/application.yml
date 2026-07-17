@@ -15,6 +15,11 @@ spring:
           time_zone: UTC
   flyway:
     enabled: true
+  mail:
+    host: ${FORO_SMTP_HOST:localhost}
+    port: ${FORO_SMTP_PORT:1025}
+    username: ${FORO_SMTP_USERNAME:}
+    password: ${FORO_SMTP_PASSWORD:}
   servlet:
     multipart:
       max-file-size: 25MB

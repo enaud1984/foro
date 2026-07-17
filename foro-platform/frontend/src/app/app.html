@@ -131,9 +131,9 @@
             <span class="eyebrow">CENTRO NOTIFICHE</span>
             <h3>Azioni recenti</h3>
           </div>
-          <strong>{{ notificheScrivania.length }}</strong>
+          <strong>{{ tutteNotifiche().length }}</strong>
         </div>
-        <button class="notification-card" type="button" *ngFor="let notifica of notificheScrivania" (click)="apriNotifica(notifica)">
+        <button class="notification-card" type="button" *ngFor="let notifica of tutteNotifiche()" (click)="apriNotifica(notifica)">
           <span class="notification-icon">{{ notifica.icona }}</span>
           <span class="notification-body">
             <small>{{ notifica.categoria }} · {{ notifica.orario }}</small>
@@ -255,38 +255,29 @@
       <div class="outlook-calendar" *ngIf="widget.key === 'calendario'; else widgetStandard">
         <aside class="calendar-sidebar">
           <div class="mini-month">
-            <header><button type="button">‹</button><strong>Luglio 2026</strong><button type="button">›</button></header>
+            <header><button type="button" aria-label="Mese precedente" (click)="navigaMiniCalendario(-1)">‹</button><strong>{{ intestazioneMiniCalendario() }}</strong><button type="button" aria-label="Mese successivo" (click)="navigaMiniCalendario(1)">›</button></header>
             <div class="mini-week"><span>L</span><span>M</span><span>M</span><span>G</span><span>V</span><span>S</span><span>D</span></div>
-            <div class="mini-days">
-              <span>29</span><span>30</span><b>1</b><b>2</b><b>3</b><b>4</b><b>5</b>
-              <i>6</i><i>7</i><i>8</i><i>9</i><em>10</em><i>11</i><i>12</i>
-              <span>13</span><span>14</span><span>15</span><span>16</span><span>17</span><span>18</span><span>19</span>
-              <span>20</span><span>21</span><span>22</span><span>23</span><span>24</span><span>25</span><span>26</span>
-            </div>
+            <div class="mini-days"><button type="button" *ngFor="let giorno of celleMese()" [class.today]="giorno.oggi" [class.selected]="giorno.iso === dataIsoLocale(dataCalendario())" [class.other-month]="!giorno.meseCorrente" (click)="selezionaGiornoMiniCalendario(giorno.iso)">{{ giorno.numero }}</button></div>
           </div>
           <button class="calendar-add" type="button" (click)="apriNuovoAppuntamento()">＋ Nuovo appuntamento</button>
           <section class="calendar-list">
             <h4>Calendari</h4>
-            <label><input type="checkbox" checked><span class="dot studio"></span>Studio Legale Verdi</label>
-            <label><input type="checkbox" checked><span class="dot private"></span>Calendario privato</label>
-            <label><input type="checkbox" checked><span class="dot hearings"></span>Udienze</label>
-            <label><input type="checkbox"><span class="dot deadlines"></span>Scadenze deposito</label>
-          </section>
-          <section class="calendar-list">
-            <h4>Persone Studio</h4>
-            <label><input type="checkbox" checked>Avv. Laura Verdi</label>
-            <label><input type="checkbox" checked>Avv. Marco Neri</label>
-            <label><input type="checkbox">Dott.ssa Giulia Conti</label>
+            <label *ngFor="let calendario of calendariAgenda()">
+              <input type="checkbox" [checked]="calendario.selezionato" (change)="cambiaVisibilitaCalendario(calendario.chiave, $any($event.target).checked)">
+              <span class="dot" [ngClass]="calendario.classeColore" [style.background]="calendario.classeColore.startsWith('#') ? calendario.classeColore : null"></span>
+              <span>{{ calendario.nome }}<small *ngIf="calendario.condivisoConTuttoLoStudio">Tutto lo Studio</small></span>
+            </label>
+            <button class="calendar-share-add" type="button" (click)="apriNuovoCalendario()">＋ Aggiungi calendario</button>
           </section>
         </aside>
 
         <section class="calendar-main">
           <div class="calendar-commandbar">
             <button class="primary" type="button" (click)="apriNuovoAppuntamento()">Nuovo appuntamento</button>
-            <button type="button">Oggi</button>
-            <button type="button">‹</button>
-            <button type="button">›</button>
-            <strong>06–12 Luglio 2026</strong>
+            <button type="button" (click)="vaiOggi()">Oggi</button>
+            <button type="button" aria-label="Periodo precedente" (click)="navigaCalendario(-1)">‹</button>
+            <button type="button" aria-label="Periodo successivo" (click)="navigaCalendario(1)">›</button>
+            <strong>{{ intestazioneCalendario() }}</strong>
             <div class="view-switch">
               <button type="button" [class.active]="vistaCalendario() === 'giorno'" (click)="cambiaVistaCalendario('giorno')">Giorno</button>
               <button type="button" [class.active]="vistaCalendario() === 'settimana'" (click)="cambiaVistaCalendario('settimana')">Settimana</button>
@@ -299,44 +290,92 @@
             <small>{{ riga.descrizione }} · {{ riga.stato }}</small>
           </div>
 
-          <div class="week-calendar">
-            <div class="time-head"></div>
-            <div class="day-head"><b>06</b><span>Lun</span></div>
-            <div class="day-head"><b>07</b><span>Mar</span></div>
-            <div class="day-head"><b>08</b><span>Mer</span></div>
-            <div class="day-head"><b>09</b><span>Gio</span></div>
-            <div class="day-head today"><b>10</b><span>Ven</span><button type="button" (click)="apriNuovoAppuntamento()">＋</button></div>
-            <div class="day-head weekend"><b>11</b><span>Sab</span></div>
-            <div class="day-head weekend"><b>12</b><span>Dom</span></div>
-
-            <div class="time-col">08</div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot today-line"><span>Ora attuale</span></div><div class="slot"></div><div class="slot"></div>
-            <div class="time-col">09</div><div class="slot"></div><div class="event studio">Riunione Studio</div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
-            <div class="time-col">10</div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="event hearing">Udienza civile<br><small>Tribunale Milano</small></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
-            <div class="time-col">11</div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="event private">Appuntamento privato</div><div class="slot"></div><div class="slot"></div>
-            <div class="time-col">12</div><div class="slot"></div><div class="slot"></div><div class="event deadline">Deposito memoria</div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
-            <div class="time-col">13</div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
-            <div class="time-col">14</div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="event studio">Revisione contratto</div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
-            <div class="time-col">15</div><div class="slot"></div><div class="event studio">Cliente Alfa S.r.l.</div><div class="slot"></div><div class="slot"></div><div class="event studio">Call controparte<br><small>Avv. Neri invitato</small></div><div class="slot"></div><div class="slot"></div>
-            <div class="time-col">16</div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
+          <div class="month-calendar" *ngIf="vistaCalendario() === 'mese'; else vistaOre">
+            <div class="month-weekday" *ngFor="let nome of ['Lun','Mar','Mer','Gio','Ven','Sab','Dom']">{{ nome }}</div>
+            <button class="month-day" type="button" *ngFor="let giorno of celleMese()" [class.today]="giorno.oggi" [class.other-month]="!giorno.meseCorrente" (dblclick)="apriNuovoAppuntamentoDaCella(giorno.iso, 9)">
+              <b>{{ giorno.numero }}</b>
+              <span class="month-event" *ngFor="let evento of eventiDelGiorno(giorno.iso)" [style.background]="coloreEvento(evento)" (click)="apriDettaglioEvento(evento,$event)">{{ formattaOra(evento.ora,evento.minuti) }} {{ evento.titolo }}</span>
+            </button>
           </div>
+
+          <ng-template #vistaOre>
+          <div class="week-calendar" [style.--numero-giorni]="giorniVisualizzati().length">
+            <div class="time-head"></div>
+            <div class="day-head" *ngFor="let giorno of giorniVisualizzati()" [class.today]="giorno.oggi">
+              <b>{{ giorno.numero }}</b><span>{{ giorno.nome }}</span>
+              <button *ngIf="giorno.oggi" type="button" (click)="apriNuovoAppuntamento()">＋</button>
+            </div>
+
+            <ng-container *ngFor="let slot of slotCalendario">
+              <div class="time-col">{{ slot.minuti === 0 ? ((slot.ora < 10 ? '0' + slot.ora : slot.ora) + ':00') : '' }}</div>
+              <div class="slot" *ngFor="let giorno of giorniVisualizzati()" [class.selected]="slotAttivo(giorno.iso,slot.ora,slot.minuti)" (click)="selezionaSlot(giorno.iso,slot.ora,slot.minuti)" (dblclick)="apriNuovoAppuntamentoDaCella(giorno.iso, slot.ora, slot.minuti)" title="Clic per selezionare, doppio clic per creare un appuntamento">
+                <div class="current-time" *ngIf="giorno.oggi && slot.ora === oraAttuale().getHours() && slot.minuti === (oraAttuale().getMinutes() < 30 ? 0 : 30)" [style.top.%]="(oraAttuale().getMinutes() % 30) / 30 * 100"><span>Ora attuale</span></div>
+                <button class="event" type="button" *ngFor="let evento of eventiNellaCella(giorno.iso, slot.ora, slot.minuti)" [style.--event-color]="coloreEvento(evento)" (click)="apriDettaglioEvento(evento,$event)" (dblclick)="$event.stopPropagation()">
+                  {{ evento.titolo }}<br *ngIf="evento.dettaglio"><small *ngIf="evento.dettaglio">{{ evento.dettaglio }}</small>
+                </button>
+              </div>
+            </ng-container>
+          </div>
+          </ng-template>
         </section>
 
-        <form class="appointment-panel" *ngIf="nuovoAppuntamentoAperto()" [formGroup]="appuntamentoForm" (ngSubmit)="salvaAppuntamentoDemo()">
-          <header><strong>Nuovo appuntamento</strong><button type="button" (click)="chiudiNuovoAppuntamento()">×</button></header>
+        <form class="appointment-panel" *ngIf="nuovoAppuntamentoAperto()" [formGroup]="appuntamentoForm" (ngSubmit)="salvaAppuntamento()">
+          <header><strong>Nuovo appuntamento</strong><button class="panel-close" type="button" aria-label="Chiudi nuovo appuntamento" title="Chiudi" (click)="chiudiNuovoAppuntamento()">×</button></header>
+          <p class="appointment-error" *ngIf="erroreAppuntamento()">{{ erroreAppuntamento() }}</p>
           <label>Titolo<input formControlName="titolo"></label>
-          <div class="two-cols">
-            <label>Calendario<select formControlName="calendario"><option>Studio</option><option>Privato</option><option>Udienze</option></select></label>
-            <label>Visibilità<select formControlName="visibilita"><option>Studio</option><option>Privato</option></select></label>
+          <label>Calendario<select formControlName="calendario"><option *ngFor="let calendario of calendariAgenda()" [value]="calendario.chiave">{{ calendario.nome }}</option></select></label>
+          <div class="appointment-options-grid">
+            <label>Stato<select formControlName="statoDisponibilita"><option value="LIBERO">Libero</option><option value="PROVVISORIO">Provvisorio</option><option value="OCCUPATO">Occupato</option><option value="FUORI_SEDE">Fuori sede</option></select></label>
+            <label>Promemoria<select formControlName="promemoriaMinuti"><option [ngValue]="0">Nessuno</option><option [ngValue]="5">5 minuti prima</option><option [ngValue]="15">15 minuti prima</option><option [ngValue]="30">30 minuti prima</option><option [ngValue]="60">1 ora prima</option><option [ngValue]="1440">1 giorno prima</option></select></label>
+            <label>Categoria<select formControlName="categoria"><option value="GENERALE">Generale</option><option value="UDIENZA">Udienza</option><option value="CLIENTE">Cliente</option><option value="SCADENZA">Scadenza</option><option value="RIUNIONE">Riunione</option></select></label>
           </div>
-          <label>Invita avvocati/collaboratori<input formControlName="partecipanti"></label>
+          <label>Invita avvocati dello Studio
+            <select multiple class="invite-select" aria-label="Invita avvocati dello Studio" (change)="aggiornaInvitati($event)">
+              <option *ngFor="let persona of personeInvitate()" [value]="persona.id" [selected]="persona.selezionata">{{ persona.nome }}</option>
+            </select>
+            <small class="field-hint">Seleziona uno o più collaboratori con Ctrl + clic.</small>
+          </label>
           <div class="three-cols">
             <label>Data<input type="date" formControlName="data"></label>
             <label>Inizio<input type="time" formControlName="inizio"></label>
             <label>Fine<input type="time" formControlName="fine"></label>
           </div>
-          <label>Luogo<input formControlName="luogo"></label>
+          <label class="compact-check"><input type="checkbox" formControlName="tuttoGiorno"> Giornata intera</label>
+          <div class="two-cols">
+            <label>Serie<select formControlName="ricorrenza"><option value="NESSUNA">Non si ripete</option><option value="GIORNALIERA">Ogni giorno</option><option value="SETTIMANALE">Ogni settimana</option><option value="MENSILE">Ogni mese</option></select></label>
+            <label *ngIf="appuntamentoForm.controls.ricorrenza.value !== 'NESSUNA'">Fine serie<input type="date" formControlName="fineRicorrenza"></label>
+          </div>
           <label>Note<textarea formControlName="note"></textarea></label>
-          <button class="primary" type="submit">Salva appuntamento demo</button>
+          <button class="primary" type="submit" [disabled]="loading()">{{ loading() ? 'Salvataggio…' : 'Salva appuntamento' }}</button>
+        </form>
+
+        <section class="appointment-panel event-detail-panel" *ngIf="eventoSelezionato() as evento">
+          <header><strong>Dettagli appuntamento</strong><button class="panel-close" type="button" aria-label="Chiudi dettagli appuntamento" (click)="chiudiDettaglioEvento()">×</button></header>
+          <div class="event-detail-color" [style.background]="coloreEvento(evento)"></div>
+          <h3>{{ evento.titolo }}</h3>
+          <dl>
+            <div><dt>Data e ora</dt><dd>{{ evento.data | date:'dd/MM/yyyy' }} · {{ formattaOra(evento.ora,evento.minuti) }}–{{ evento.fine }}</dd></div>
+            <div><dt>Organizzato da</dt><dd>{{ evento.persona }}</dd></div>
+            <div><dt>Calendario</dt><dd>{{ nomeCalendario(evento.calendario) }}</dd></div>
+            <div><dt>Invitati</dt><dd>{{ evento.partecipanti || 'Nessun invitato' }}</dd></div>
+            <div><dt>Stato</dt><dd>{{ etichettaStato(evento.statoDisponibilita) }}</dd></div>
+            <div><dt>Categoria</dt><dd>{{ evento.categoria || 'Generale' }}</dd></div>
+            <div><dt>Promemoria</dt><dd>{{ evento.promemoriaMinuti ? evento.promemoriaMinuti + ' minuti prima' : 'Nessuno' }}</dd></div>
+            <div *ngIf="evento.ricorrenza && evento.ricorrenza !== 'NESSUNA'"><dt>Serie</dt><dd>{{ evento.ricorrenza }}</dd></div>
+          </dl>
+          <section class="event-notes"><strong>Note</strong><p>{{ evento.note || 'Nessuna nota' }}</p></section>
+        </section>
+
+        <form class="appointment-panel shared-calendar-panel" *ngIf="nuovoCalendarioAperto()" [formGroup]="calendarioCondivisoForm" (ngSubmit)="salvaCalendarioCondiviso()">
+          <header><strong>Nuovo calendario</strong><button class="panel-close" type="button" aria-label="Chiudi nuovo calendario" title="Chiudi" (click)="chiudiNuovoCalendario()">×</button></header>
+          <label>Nome calendario<input formControlName="nome" placeholder="Es. Team contenzioso"></label>
+          <label>Colore calendario<input type="color" formControlName="colore"></label>
+          <fieldset>
+            <legend>Condividi con</legend>
+            <label *ngFor="let persona of personeCondivisione()"><input type="checkbox" [checked]="persona.selezionata" (change)="cambiaCondivisionePersona(persona.nome, $any($event.target).checked)">{{ persona.nome }}</label>
+          </fieldset>
+          <p class="calendar-sharing-note">Il calendario “Studio Legale Verdi” è già disponibile a tutti gli avvocati dello Studio.</p>
+          <button class="primary" type="submit">Aggiungi calendario</button>
         </form>
       </div>
 

@@ -1,0 +1,1 @@
+package it.foro.calendario.repository; import it.foro.calendario.domain.NotificaUtente; import org.springframework.data.jpa.repository.JpaRepository; import java.util.*; public interface NotificaUtenteRepository extends JpaRepository<NotificaUtente,UUID>{List<NotificaUtente> findTop50ByStudioIdAndUserIdOrderByCreataIlDesc(UUID studioId,UUID userId);}
