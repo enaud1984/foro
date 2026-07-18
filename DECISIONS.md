@@ -125,6 +125,19 @@ Le decisioni accettate prevalgono sugli altri documenti. Una decisione modificat
 - **Decisione:** commenti GitHub, PR, issue, review, documentazione, commenti nel codice e naming del codice applicativo FORO devono essere in italiano.
 - **Conseguenza:** nuove variabili, funzioni, classi, servizi, DTO e componenti devono usare nomi italiani, salvo termini tecnici imposti da framework/librerie o compatibilità già esistenti.
 
+### DEC-020 — Gestione Collaboratori nella Dashboard
+
+- **Stato:** PROPOSED
+- **Data:** 2026-07-18
+- **Contesto:** è stata richiesta una superficie Dashboard per consentire al titolare dello Studio di creare avvocati, segretari o altri titolari/amministratori associati allo Studio, assegnando dati anagrafici, email, ruolo e password iniziale. La richiesta impatta scope MVP, modello permessi e workflow di onboarding perché le decisioni vigenti definiscono il MVP a cinque widget e collocano collaboratori e figure professionali nell’area amministrativa dello Studio.
+- **Opzioni:**
+  1. mantenere i Collaboratori come capacità amministrativa accessibile dalle impostazioni/area Studio, senza introdurre un sesto widget;
+  2. introdurre un widget Collaboratori visibile solo a `STUDIO_ADMIN`/titolare, aggiornando lo scope MVP;
+  3. esporre nella Dashboard solo una scorciatoia/preview amministrativa verso la gestione Studio, senza trattarla come widget MVP autonomo.
+- **Decisione:** da approvare prima dell’implementazione. In ogni opzione, il backend resta autorevole: il tenant deriva dal security context, solo `STUDIO_ADMIN`/titolare può creare o assegnare ruoli, nessun utente può elevare il proprio ruolo e ogni utente può modificare solo la propria password dalle impostazioni personali.
+- **Conseguenze:** se viene approvato un widget Collaboratori, occorre aggiornare `DEC-002`, `BR-WDG-002`, le specifiche Dashboard/Frontend/Backend/Database e aggiungere test allow/deny, cross-tenant e audit per creazione collaboratore, assegnazione ruolo e cambio password.
+- **Documenti interessati:** `DECISIONS.md`, `docs/specifications/03_WIDGETS.md`, `docs/specifications/05_BACKEND.md`, `docs/specifications/06_FRONTEND.md`, `docs/specifications/07_BUSINESS_RULES.md`, `docs/specifications/09_PROJECT_RULES.md`.
+
 ## Open Decisions
 
 ### OPEN-001 — Limiti documenti

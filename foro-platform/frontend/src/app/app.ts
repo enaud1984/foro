@@ -7,6 +7,7 @@ type Schermata = 'login' | 'registrazione' | 'scrivania';
 type ModalitaTema = 'LIGHT' | 'DARK';
 type DensitaScrivania = 'COMFORTABLE' | 'COMPACT';
 type ChiaveWidget = 'calendario' | 'documenti' | 'email' | 'clienti' | 'pratiche';
+type RuoloCollaboratore = 'AVVOCATO' | 'SEGRETERIA' | 'STUDIO_ADMIN';
 type PassoRegistrazione = 'dati' | 'piani' | 'pagamento';
 type PianoDemo = 'essential' | 'professional';
 type VistaCalendario = 'giorno' | 'settimana' | 'mese';
@@ -94,6 +95,7 @@ interface CalendarioApi { id: string; nome: string; colore: string; condivisoTut
 interface PersonaStudioApi { id: string; nome: string; }
 interface NotificaApi { id:string; tipo:string; titolo:string; descrizione:string; eventoId:string; letta:boolean; creataIl:string; }
 interface EventoApi { id: string; calendarioId: string; creatoreId: string; calendarioNome: string; colore: string; titolo: string; inizio: string; fine: string; note?: string; partecipanti?: string; statoDisponibilita: string; promemoriaMinuti?: number; categoria?: string; tuttoGiorno: boolean; serieId?: string; ricorrenza: string; fineRicorrenza?: string; }
+interface CollaboratoreStudio { id: string; nome: string; cognome: string; email: string; ruolo: RuoloCollaboratore; stato: 'ATTIVO' | 'DISABILITATO' | 'PENDING'; }
 
 interface EventoAgenda {
   id?: string;
@@ -131,6 +133,8 @@ export class App {
   readonly studioProfile = signal<ProfiloStudio | null>(null);
   readonly dashboardPreference = signal<PreferenzeScrivania | null>(null);
   readonly settingsMessage = signal('');
+  readonly collaboratorMessage = signal('');
+  readonly passwordMessage = signal('');
   readonly settingsOpen = signal(false);
   readonly notificationsOpen = signal(false);
   readonly expandedWidget = signal<WidgetScrivania | null>(null);
@@ -152,6 +156,7 @@ export class App {
     { chiave: 'scadenze', nome: 'Scadenze deposito', classeColore: 'deadlines', selezionato: false, condivisoCon: [] }
   ]);
   readonly personeStudio = signal<{id:string;nome:string;selezionata:boolean}[]>([]);
+  readonly collaboratoriStudio = signal<CollaboratoreStudio[]>([]);
   readonly personeCondivisione = signal<{id:string;nome:string;selezionata:boolean}[]>([]);
   readonly personeInvitate = signal<{id:string;nome:string;selezionata:boolean}[]>([]);
   readonly eventiAgenda = signal<EventoAgenda[]>([
@@ -254,6 +259,8 @@ export class App {
   readonly dashboardForm;
   readonly appuntamentoForm;
   readonly calendarioCondivisoForm;
+  readonly collaboratoreForm;
+  readonly cambioPasswordForm;
   private widgetTrascinato: ChiaveWidget | null = null;
   private layoutPrimaDelTrascinamento: WidgetScrivania[] | null = null;
   private trascinamentoConfermato = false;
@@ -393,6 +400,18 @@ export class App {
       nome: ['', Validators.required],
       colore: ['#d97706', Validators.required]
     });
+    this.collaboratoreForm = this.fb.nonNullable.group({
+      nome: ['', Validators.required],
+      cognome: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
+      ruolo: ['AVVOCATO' as RuoloCollaboratore, Validators.required],
+      passwordTemporanea: ['', [Validators.required, Validators.minLength(12)]]
+    });
+    this.cambioPasswordForm = this.fb.nonNullable.group({
+      passwordAttuale: ['', Validators.required],
+      nuovaPassword: ['', [Validators.required, Validators.minLength(12)]],
+      confermaPassword: ['', [Validators.required, Validators.minLength(12)]]
+    });
   }
 
   useDemoLogin(): void {
@@ -404,6 +423,8 @@ export class App {
     this.notificationsOpen.set(false);
     this.error.set('');
     this.settingsMessage.set('');
+    this.collaboratorMessage.set('');
+    this.passwordMessage.set('');
   }
 
   toggleNotifications(): void {
@@ -835,6 +856,62 @@ export class App {
     });
   }
 
+
+  creaCollaboratore(): void {
+    if (!this.studioProfile()?.canEditBranding) {
+      this.error.set('Solo il titolare può aggiungere collaboratori allo Studio.');
+      return;
+    }
+    if (this.collaboratoreForm.invalid) {
+      this.collaboratoreForm.markAllAsTouched();
+      return;
+    }
+    this.loading.set(true);
+    this.error.set('');
+    this.collaboratorMessage.set('');
+    this.http.post<CollaboratoreStudio>('/api/v1/studio/members', this.collaboratoreForm.getRawValue()).subscribe({
+      next: collaboratore => {
+        this.collaboratoriStudio.update(collaboratori => [collaboratore, ...collaboratori]);
+        this.collaboratoreForm.reset({ nome: '', cognome: '', email: '', ruolo: 'AVVOCATO', passwordTemporanea: '' });
+        this.collaboratorMessage.set('Collaboratore creato. Potrà accedere con email e password iniziale.');
+        this.loading.set(false);
+      },
+      error: response => {
+        this.error.set(response?.error?.message ?? 'Collaboratore non creato. Verifica permessi e dati inseriti.');
+        this.loading.set(false);
+      }
+    });
+  }
+
+  cambiaPasswordPersonale(): void {
+    if (this.cambioPasswordForm.invalid) {
+      this.cambioPasswordForm.markAllAsTouched();
+      return;
+    }
+    const valore = this.cambioPasswordForm.getRawValue();
+    if (valore.nuovaPassword !== valore.confermaPassword) {
+      this.error.set('La nuova password e la conferma non coincidono.');
+      return;
+    }
+    this.loading.set(true);
+    this.error.set('');
+    this.passwordMessage.set('');
+    this.http.put<void>('/api/v1/me/password', {
+      passwordAttuale: valore.passwordAttuale,
+      nuovaPassword: valore.nuovaPassword
+    }).subscribe({
+      next: () => {
+        this.cambioPasswordForm.reset({ passwordAttuale: '', nuovaPassword: '', confermaPassword: '' });
+        this.passwordMessage.set('Password personale aggiornata.');
+        this.loading.set(false);
+      },
+      error: response => {
+        this.error.set(response?.error?.message ?? 'Password non aggiornata. Controlla la password attuale.');
+        this.loading.set(false);
+      }
+    });
+  }
+
   saveBranding(): void {
     if (this.brandingForm.invalid) {
       this.brandingForm.markAllAsTouched();
@@ -914,6 +991,10 @@ export class App {
         themePreset: profile.themePreset
       });
       this.applyTheme(profile, this.dashboardPreference());
+    });
+    this.http.get<CollaboratoreStudio[]>('/api/v1/studio/members').subscribe({
+      next: collaboratori => this.collaboratoriStudio.set(collaboratori),
+      error: () => this.collaboratoriStudio.set([])
     });
     this.http.get<PreferenzeScrivania>('/api/v1/workspace/preferences').subscribe(preference => {
       this.dashboardPreference.set(preference);

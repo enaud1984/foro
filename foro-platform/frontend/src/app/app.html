@@ -235,6 +235,44 @@
         <button class="primary" type="submit" [disabled]="loading() || !studioProfile()?.canEditBranding">Salva dati Studio</button>
       </form>
 
+      <form *ngIf="studioProfile()?.canEditBranding" [formGroup]="collaboratoreForm" (ngSubmit)="creaCollaboratore()" class="drawer-form collaborator-form">
+        <h3>Collaboratori dello Studio</h3>
+        <p class="drawer-note">Solo il titolare può creare avvocati, segretari o altri amministratori dello Studio.</p>
+        <div class="two-cols">
+          <label>Nome<input formControlName="nome" autocomplete="given-name" placeholder="Laura"></label>
+          <label>Cognome<input formControlName="cognome" autocomplete="family-name" placeholder="Bianchi"></label>
+        </div>
+        <label>Email<input type="email" formControlName="email" autocomplete="email" placeholder="collaboratore@studio.it"></label>
+        <div class="two-cols">
+          <label>Ruolo
+            <select formControlName="ruolo">
+              <option value="AVVOCATO">Avvocato</option>
+              <option value="SEGRETERIA">Segreteria</option>
+              <option value="STUDIO_ADMIN">Altro titolare / Admin</option>
+            </select>
+          </label>
+          <label>Password iniziale<input type="password" formControlName="passwordTemporanea" autocomplete="new-password" placeholder="Almeno 12 caratteri"></label>
+        </div>
+        <button class="primary" type="submit" [disabled]="loading()">Aggiungi collaboratore</button>
+        <section class="members-preview" aria-label="Collaboratori già associati" *ngIf="collaboratoriStudio().length">
+          <article *ngFor="let collaboratore of collaboratoriStudio()">
+            <strong>{{ collaboratore.nome }} {{ collaboratore.cognome }}</strong>
+            <small>{{ collaboratore.email }} · {{ collaboratore.ruolo }} · {{ collaboratore.stato }}</small>
+          </article>
+        </section>
+        <p class="success" *ngIf="collaboratorMessage()">{{ collaboratorMessage() }}</p>
+      </form>
+
+      <form [formGroup]="cambioPasswordForm" (ngSubmit)="cambiaPasswordPersonale()" class="drawer-form personal-form">
+        <h3>Password personale</h3>
+        <p class="drawer-note">Ogni utente può cambiare la propria password dalle impostazioni.</p>
+        <label>Password attuale<input type="password" formControlName="passwordAttuale" autocomplete="current-password"></label>
+        <label>Nuova password<input type="password" formControlName="nuovaPassword" autocomplete="new-password" placeholder="Almeno 12 caratteri"></label>
+        <label>Conferma nuova password<input type="password" formControlName="confermaPassword" autocomplete="new-password"></label>
+        <button class="secondary" type="submit" [disabled]="loading()">Cambia password</button>
+        <p class="success" *ngIf="passwordMessage()">{{ passwordMessage() }}</p>
+      </form>
+
       <form [formGroup]="dashboardForm" (ngSubmit)="saveDashboardPreferences()" class="drawer-form personal-form">
         <h3>Aspetto della mia dashboard</h3>
         <label>Modalità<select formControlName="themeMode"><option value="LIGHT">Chiara</option><option value="DARK">Scura</option></select></label>
