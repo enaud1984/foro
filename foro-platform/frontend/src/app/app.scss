@@ -1360,3 +1360,26 @@
 .notifications-panel {
   pointer-events: auto;
 }
+
+.members-preview {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.members-preview article {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, .26);
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.members-preview strong {
+  color: #111827;
+}
+
+.members-preview small {
+  color: #64748b;
+}
