@@ -69,6 +69,11 @@ Non implementare senza decisione:
 - Mantenere in inglese soltanto parole chiave del linguaggio, API standard, convenzioni obbligatorie dei framework e nomi imposti da dipendenze esterne.
 - Quando si modifica codice applicativo preesistente con nomi inglesi, rinominarlo in italiano se l’intervento resta circoscritto e coperto da test; evitare conversioni massive non correlate.
 
+## Gestione Git
+
+- Lavorare, committare e pubblicare sempre direttamente sul branch `master`.
+- Non creare branch aggiuntivi, salvo richiesta esplicita del proprietario del repository.
+
 ## Regole non negoziabili
 
 - Tenant derivato dal security context, mai fidato dal client.
