@@ -1748,3 +1748,218 @@
     flex-direction: column;
   }
 }
+
+/* Tipografia V1: gerarchia più sobria e leggibile su Windows. */
+:host {
+  font-family: Aptos, "Segoe UI Variable Text", "Segoe UI", Arial, sans-serif;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.workspace h1,
+.widget-modal h2,
+.drawer-head h2,
+.form-card h2,
+.card-title h2,
+.plans h3,
+.dash-head h1 {
+  font-family: "Aptos Display", "Segoe UI Variable Display", Aptos, "Segoe UI", sans-serif;
+  font-weight: 600;
+  letter-spacing: -.025em;
+}
+
+.workspace strong,
+.workspace b,
+.widget-modal strong,
+.widget-modal b {
+  font-weight: 600;
+}
+
+.workspace button,
+.widget-modal button,
+.settings-drawer button {
+  font-weight: 600;
+}
+
+.workspace label,
+.widget-modal label,
+.settings-drawer label {
+  font-weight: 500;
+}
+
+.eyebrow,
+.pill,
+.status,
+.demo-badge,
+.plan-label {
+  font-weight: 650;
+}
+
+.brand.compact strong,
+.landing-brand-copy strong {
+  font-family: "Aptos Display", "Segoe UI Variable Display", Aptos, "Segoe UI", sans-serif;
+  font-weight: 600;
+}
+
+.collaboratori-modal {
+  width: min(1080px, calc(100vw - 40px));
+  max-height: calc(100vh - 48px);
+  padding: 34px;
+}
+
+.collaboratori-modal > h2 {
+  margin-bottom: 6px;
+  font-size: clamp(30px, 4vw, 42px);
+}
+
+.collaboratori-modal > p {
+  margin-top: 0;
+  font-size: 15px;
+}
+
+.collaboratori-widget {
+  grid-template-columns: minmax(330px, .82fr) minmax(400px, 1.18fr);
+  align-items: start;
+  gap: 22px;
+  margin-top: 26px;
+}
+
+.collaboratori-widget .collaborator-form {
+  gap: 15px;
+  padding: 24px;
+  border-color: #dbe4ee;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 16px 38px rgba(15, 23, 42, .06);
+}
+
+.collaborator-form h3,
+.collaborator-directory h3 {
+  margin: 5px 0 0;
+  color: #0f2740;
+  font-size: 21px;
+  font-weight: 600;
+}
+
+.collaborator-form .drawer-note {
+  margin: -4px 0 2px;
+  font-size: 13px;
+}
+
+.collaborator-security-note {
+  margin: 2px 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f0f7f6;
+  color: #315d59 !important;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.collaborator-directory {
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid #dbe4ee;
+  border-radius: 20px;
+  background: #f8fafc;
+}
+
+.collaborator-directory > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: auto;
+  margin-bottom: 18px;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.collaborator-count {
+  min-width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #e5efed;
+  color: #0f766e;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.collaborator-directory .members-preview {
+  gap: 9px;
+  margin: 0;
+}
+
+.collaborator-directory .members-preview article {
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border-color: #e2e8f0;
+  background: #fff;
+}
+
+.collaborator-avatar {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: #e8f1f0;
+  color: #0f625b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.collaborator-directory .members-preview strong {
+  color: #172331;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.collaborator-directory .members-preview small {
+  margin-top: 3px;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 400;
+  text-overflow: ellipsis;
+}
+
+.collaborator-role {
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: #e8f6f2;
+  color: #0f625b;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+
+.collaborator-state {
+  grid-column: 2 / -1;
+  color: #64748b;
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.collaborator-empty {
+  margin: 0;
+  padding: 26px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 14px;
+  text-align: center;
+}
+
+@media (max-width: 820px) {
+  .collaboratori-modal {
+    padding: 24px;
+  }
+
+  .collaboratori-widget {
+    grid-template-columns: 1fr;
+  }
+}

@@ -97,4 +97,26 @@ describe('App', () => {
     expect(compiled.querySelector('.calendar-management-list nav')?.textContent).toContain('Modifica');
     expect(compiled.querySelector('.calendar-management-list nav')?.textContent).toContain('Elimina');
   });
+
+  it('mostra una sola vista Collaboratori e traduce i ruoli tecnici in italiano', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.screen.set('scrivania');
+    const widgetCollaboratori = app.widgetDisponibili().find(widget => widget.key === 'collaboratori')
+      ?? { key: 'collaboratori' as const, icon: '👥', title: 'Collaboratori', description: 'Ruoli e accessi' };
+    app.expandedWidget.set({
+      ...widgetCollaboratori, x: 1, y: 1, w: 4, h: 2, metric: '1 persona', preview: '', details: [], righeAnteprima: []
+    });
+    app.collaboratoriStudio.set([{
+      id: 'utente-test', nome: 'Antonio', cognome: 'Bianchi', email: 'antonio@studio.it',
+      ruolo: 'LAWYER' as any, stato: 'ATTIVO'
+    }]);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelectorAll('.collaboratori-widget').length).toBe(1);
+    expect(compiled.querySelector('.gestione-widget')).toBeNull();
+    expect(compiled.querySelector('.collaborator-role')?.textContent).toContain('AVVOCATO');
+    expect(compiled.textContent).not.toContain('LAWYER');
+  });
 });

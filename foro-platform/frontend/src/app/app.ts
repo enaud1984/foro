@@ -960,6 +960,20 @@ export class App {
     });
   }
 
+  etichettaRuoloCollaboratore(ruolo: string): string {
+    return ({
+      LAWYER: 'AVVOCATO',
+      AVVOCATO: 'AVVOCATO',
+      SEGRETERIA: 'SEGRETERIA',
+      STUDIO_ADMIN: 'AMMINISTRATORE',
+      OWNER: 'TITOLARE'
+    } as Record<string, string>)[ruolo] ?? ruolo.replaceAll('_', ' ');
+  }
+
+  inizialiCollaboratore(collaboratore: CollaboratoreStudio): string {
+    return `${collaboratore.nome.charAt(0)}${collaboratore.cognome.charAt(0)}`.toUpperCase();
+  }
+
   cambiaPasswordPersonale(): void {
     if (this.cambioPasswordForm.invalid) {
       this.cambioPasswordForm.markAllAsTouched();
@@ -1128,7 +1142,7 @@ export class App {
     return widget;
   }
 
-  private righeCollaboratori(): RigaWidget[] { return this.collaboratoriStudio().slice(0,4).map(c=>({titolo:`${c.nome} ${c.cognome}`,descrizione:c.email,stato:c.ruolo.replace('_',' ')})); }
+  private righeCollaboratori(): RigaWidget[] { return this.collaboratoriStudio().slice(0,4).map(c=>({titolo:`${c.nome} ${c.cognome}`,descrizione:c.email,stato:this.etichettaRuoloCollaboratore(c.ruolo)})); }
   private aggiornaWidgetCollaboratori(): void { this.activeWidgets.update(widgets=>widgets.map(widget=>widget.key==='collaboratori'?{...widget,metric:`${this.collaboratoriStudio().length} persone`,preview:'Ruoli e accessi amministrati dal titolare',details:this.collaboratoriStudio().map(c=>`${c.nome} ${c.cognome}`),righeAnteprima:this.righeCollaboratori()}:widget)); }
 
   private positionFromPointer(event: DragEvent): { x: number; y: number } | null {

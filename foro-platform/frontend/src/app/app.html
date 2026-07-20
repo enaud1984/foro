@@ -265,7 +265,7 @@
         <section class="members-preview" aria-label="Collaboratori già associati" *ngIf="collaboratoriStudio().length">
           <article *ngFor="let collaboratore of collaboratoriStudio()">
             <strong>{{ collaboratore.nome }} {{ collaboratore.cognome }}</strong>
-            <small>{{ collaboratore.email }} · {{ collaboratore.ruolo }} · {{ collaboratore.stato }}</small>
+            <small>{{ collaboratore.email }} · {{ etichettaRuoloCollaboratore(collaboratore.ruolo) }} · {{ collaboratore.stato }}</small>
           </article>
         </section>
         <p class="success" *ngIf="collaboratorMessage()">{{ collaboratorMessage() }}</p>
@@ -300,13 +300,13 @@
     </aside>
 
     <div class="widget-modal-backdrop" *ngIf="expandedWidget()" (click)="closeExpandedWidget()"></div>
-    <section class="widget-modal" *ngIf="expandedWidget() as widget" [class.calendar-modal]="widget.key === 'calendario'">
+    <section class="widget-modal" *ngIf="expandedWidget() as widget" [class.calendar-modal]="widget.key === 'calendario'" [class.collaboratori-modal]="widget.key === 'collaboratori'">
       <button class="modal-close" type="button" (click)="closeExpandedWidget()">×</button>
       <span class="eyebrow">VISTA INGRANDITA</span>
       <h2>{{ widget.icon }} {{ widget.title }}</h2>
       <p>{{ widget.description }}</p>
 
-      <div class="outlook-calendar" *ngIf="widget.key === 'calendario'; else widgetStandard">
+      <div class="outlook-calendar" *ngIf="widget.key === 'calendario'">
         <aside class="calendar-sidebar">
           <div class="mini-month">
             <header><button type="button" aria-label="Mese precedente" (click)="navigaMiniCalendario(-1)">‹</button><strong>{{ intestazioneMiniCalendario() }}</strong><button type="button" aria-label="Mese successivo" (click)="navigaMiniCalendario(1)">›</button></header>
@@ -463,18 +463,33 @@
         </section>
       </div>
 
-      <section class="collaboratori-widget" *ngIf="widget.key === 'collaboratori'; else widgetStandard">
+      <section class="collaboratori-widget" *ngIf="widget.key === 'collaboratori'">
         <form [formGroup]="collaboratoreForm" (ngSubmit)="creaCollaboratore()" class="drawer-form collaborator-form">
+          <span class="eyebrow">NUOVO ACCESSO</span>
           <h3>Aggiungi un collaboratore</h3>
+          <p class="drawer-note">Crea un accesso personale e assegna il ruolo operativo corretto.</p>
           <div class="two-cols"><label>Nome<input formControlName="nome"></label><label>Cognome<input formControlName="cognome"></label></div>
           <label>Email<input type="email" formControlName="email" placeholder="collaboratore@studio.it"></label>
           <label>Ruolo e permessi<select formControlName="ruolo"><option value="AVVOCATO">Avvocato — accesso operativo</option><option value="SEGRETERIA">Segreteria — supporto operativo</option><option value="STUDIO_ADMIN">Altro titolare / Admin</option></select></label>
-          <p class="drawer-note">La password temporanea sarà inviata via email e dovrà essere modificata al primo accesso. Avvocati e segreteria non possono cambiare le impostazioni dello Studio.</p>
+          <p class="collaborator-security-note">La password temporanea sarà inviata via email e dovrà essere modificata al primo accesso.</p>
           <button class="primary" type="submit" [disabled]="loading()">Aggiungi e invia accesso</button>
           <p class="success" *ngIf="collaboratorMessage()">{{ collaboratorMessage() }}</p>
         </form>
-        <section class="members-preview" *ngIf="collaboratoriStudio().length"><article *ngFor="let collaboratore of collaboratoriStudio()"><strong>{{ collaboratore.nome }} {{ collaboratore.cognome }}</strong><small>{{ collaboratore.email }} · {{ collaboratore.ruolo }} · {{ collaboratore.stato }}</small></article></section>
+        <section class="collaborator-directory">
+          <header><div><span class="eyebrow">PERSONE DELLO STUDIO</span><h3>Collaboratori</h3></div><span class="collaborator-count">{{ collaboratoriStudio().length }}</span></header>
+          <div class="members-preview" *ngIf="collaboratoriStudio().length; else nessunCollaboratore">
+            <article *ngFor="let collaboratore of collaboratoriStudio()">
+              <span class="collaborator-avatar" aria-hidden="true">{{ inizialiCollaboratore(collaboratore) }}</span>
+              <div><strong>{{ collaboratore.nome }} {{ collaboratore.cognome }}</strong><small>{{ collaboratore.email }}</small></div>
+              <span class="collaborator-role">{{ etichettaRuoloCollaboratore(collaboratore.ruolo) }}</span>
+              <span class="collaborator-state">{{ collaboratore.stato }}</span>
+            </article>
+          </div>
+          <ng-template #nessunCollaboratore><p class="collaborator-empty">Nessun collaboratore associato allo Studio.</p></ng-template>
+        </section>
       </section>
+
+      <ng-container *ngIf="widget.key !== 'calendario' && widget.key !== 'collaboratori'" [ngTemplateOutlet]="widgetStandard"></ng-container>
 
       <ng-template #widgetStandard>
         <div class="gestione-widget">

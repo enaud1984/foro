@@ -149,7 +149,7 @@ public class CollaboratoriController {
         partiNome[0],
         partiNome.length > 1 ? partiNome[1] : "",
         utente.getEmail(),
-        associazione.getRole(),
+        etichettaRuolo(associazione.getRole()),
         "ACTIVE".equals(associazione.getStatus()) ? "ATTIVO" : associazione.getStatus());
   }
 
@@ -158,5 +158,9 @@ public class CollaboratoriController {
         "INSERT INTO audit_event(id,studio_id,actor_id,action,entity_type,entity_id,outcome,correlation_id,occurred_at,metadata) VALUES (?,?,?,?,?,?,?,?,?,?::jsonb)",
         UUID.randomUUID(), contestoStudio.studioId(), contestoStudio.userId(), azione, "USER_ACCOUNT", entita,
         "SUCCESS", UUID.randomUUID(), Timestamp.from(Instant.now()), "{}");
+  }
+
+  private String etichettaRuolo(String ruolo) {
+    return "LAWYER".equals(ruolo) ? "AVVOCATO" : ruolo;
   }
 }
