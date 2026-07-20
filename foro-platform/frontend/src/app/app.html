@@ -29,7 +29,6 @@
         <button class="secondary" type="button" (click)="useDemoLogin()">Usa credenziali demo</button>
       </div>
       <p class="error" role="alert" *ngIf="error()">{{ error() }}</p>
-      <button class="link" type="button">Password dimenticata?</button>
       <div class="divider"><span>oppure</span></div>
       <p class="switch">Il tuo Studio non è ancora su FORO?</p>
       <button class="secondary" type="button" (click)="show('registrazione')">Registra lo Studio</button>
@@ -150,7 +149,6 @@
           <span class="eyebrow">PERSONALIZZA</span>
           <h3>La tua scrivania</h3>
           <p>Scegli gli strumenti che vuoi avere sempre a portata di mano.</p>
-          <div class="sidebar-hint"><span aria-hidden="true">+</span> Trascina per aggiungere</div>
         </div>
         <article class="widget-source" *ngFor="let item of widgetDisponibili()" draggable="true" (dragstart)="startWidgetDrag(item.key)">
           <span>{{ item.icon }}</span>
@@ -492,47 +490,11 @@
       <ng-container *ngIf="widget.key !== 'calendario' && widget.key !== 'collaboratori'" [ngTemplateOutlet]="widgetStandard"></ng-container>
 
       <ng-template #widgetStandard>
-        <div class="gestione-widget">
-          <aside>
-            <button class="primary" type="button">+ Nuovo</button>
-            <button type="button">Importa</button>
-            <button type="button">Filtri</button>
-            <button type="button">Esporta</button>
-            <button type="button">Permessi</button>
-          </aside>
-          <section>
-            <div class="gestione-toolbar">
-              <div>
-                <span class="eyebrow">GESTIONE {{ widget.title }}</span>
-                <h3>{{ widget.title }} dello Studio</h3>
-              </div>
-              <label>Cerca<input placeholder="Cerca in {{ widget.title }}"></label>
-            </div>
-            <div class="gestione-table">
-              <article *ngFor="let riga of widget.righeAnteprima" [class.selected]="rigaWidgetSelezionata()?.titolo === riga.titolo">
-                <div>
-                  <strong>{{ riga.titolo }}</strong>
-                  <small>{{ riga.descrizione }}</small>
-                </div>
-                <span>{{ riga.stato }}</span>
-                <nav>
-                  <button type="button">Apri</button>
-                  <button type="button">Modifica</button>
-                  <button type="button" *ngIf="widget.key === 'pratiche'">Attività</button>
-                  <button type="button" *ngIf="widget.key === 'documenti'">Versioni</button>
-                  <button type="button" *ngIf="widget.key === 'email'">Associa</button>
-                </nav>
-              </article>
-            </div>
-            <div class="gestione-dettaglio">
-              <h4>{{ rigaWidgetSelezionata()?.titolo || 'Pannello operativo' }}</h4>
-              <p *ngIf="rigaWidgetSelezionata()">Elemento selezionato: {{ rigaWidgetSelezionata()?.descrizione }} · Stato {{ rigaWidgetSelezionata()?.stato }}.</p>
-              <p *ngIf="widget.key === 'pratiche'">Da qui l’utente potrà creare una nuova pratica, aggiornare stato, scadenze, documenti collegati, note, attività e responsabili.</p>
-              <p *ngIf="widget.key === 'documenti'">Da qui l’utente potrà caricare file, versionare atti, collegare documenti a pratiche, scaricare anteprime e gestire firme/validazioni.</p>
-              <p *ngIf="widget.key === 'email'">Da qui l’utente potrà leggere messaggi, associare email a pratiche/clienti, archiviare, rispondere e gestire allegati.</p>
-              <p *ngIf="widget.key === 'clienti'">Da qui l’utente potrà creare anagrafiche, modificare referenti, collegare pratiche, contatti, sedi e documenti cliente.</p>
-            </div>
-          </section>
+        <div class="expanded-list" aria-label="Riepilogo {{ widget.title }}">
+          <article *ngFor="let riga of widget.righeAnteprima">
+            <strong>{{ riga.titolo }}</strong>
+            <small>{{ riga.descrizione }} · {{ riga.stato }}</small>
+          </article>
         </div>
       </ng-template>
     </section>

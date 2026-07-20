@@ -23,6 +23,26 @@ describe('App', () => {
     expect(compiled.querySelector('h1')?.textContent).toContain('Tutto il tuo studio.');
   });
 
+  it('non mostra comandi senza un comportamento implementato', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    fixture.detectChanges();
+
+    let compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).not.toContain('Password dimenticata?');
+
+    app.screen.set('scrivania');
+    const widgetDocumenti = app.activeWidgets().find(widget => widget.key === 'documenti');
+    expect(widgetDocumenti).toBeTruthy();
+    app.expandedWidget.set(widgetDocumenti!);
+    fixture.detectChanges();
+
+    compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).not.toContain('Trascina per aggiungere');
+    expect(compiled.querySelector('.gestione-widget')).toBeNull();
+    expect(compiled.querySelectorAll('.widget-modal button').length).toBe(1);
+  });
+
   it('prevede sempre il cambio password personale nelle impostazioni', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
