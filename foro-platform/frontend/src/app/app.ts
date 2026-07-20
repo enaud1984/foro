@@ -88,10 +88,12 @@ interface CalendarioAgenda {
   classeColore: string;
   selezionato: boolean;
   condivisoCon: string[];
+  condivisoConIds?: string[];
   condivisoConTuttoLoStudio?: boolean;
+  gestibile?: boolean;
 }
 
-interface CalendarioApi { id: string; nome: string; colore: string; condivisoTuttoStudio: boolean; condivisoCon: string[]; }
+interface CalendarioApi { id: string; nome: string; colore: string; condivisoTuttoStudio: boolean; condivisoCon: string[]; gestibile: boolean; }
 interface PersonaStudioApi { id: string; nome: string; }
 interface NotificaApi { id:string; tipo:string; titolo:string; descrizione:string; eventoId:string; letta:boolean; creataIl:string; }
 interface EventoApi { id: string; calendarioId: string; creatoreId: string; calendarioNome: string; colore: string; titolo: string; inizio: string; fine: string; note?: string; partecipanti?: string; statoDisponibilita: string; promemoriaMinuti?: number; categoria?: string; tuttoGiorno: boolean; serieId?: string; ricorrenza: string; fineRicorrenza?: string; }
@@ -150,6 +152,9 @@ export class App {
   readonly oraAttuale = signal(new Date());
   readonly nuovoAppuntamentoAperto = signal(false);
   readonly nuovoCalendarioAperto = signal(false);
+  readonly gestioneCalendariAperta = signal(false);
+  readonly calendarioInModifica = signal<string | null>(null);
+  readonly calendarioDaEliminare = signal<string | null>(null);
   readonly erroreAppuntamento = signal('');
   readonly eventoSelezionato = signal<EventoAgenda | null>(null);
   readonly slotSelezionato = signal<string | null>(null);
@@ -680,6 +685,7 @@ export class App {
     this.expandedWidget.set(null);
     this.rigaWidgetSelezionata.set(null);
     this.nuovoAppuntamentoAperto.set(false);
+    this.chiudiGestioneCalendari();
   }
 
   cambiaVistaCalendario(vista: VistaCalendario): void {
@@ -717,7 +723,7 @@ export class App {
   }
 
   apriNuovoAppuntamento(): void {
-    this.nuovoCalendarioAperto.set(false);
+    this.chiudiGestioneCalendari();
     this.erroreAppuntamento.set('');
     this.nuovoAppuntamentoAperto.set(true);
   }
@@ -836,14 +842,69 @@ export class App {
   }
   private dataDaIso(iso: string): Date { const [anno, mese, giorno] = iso.split('-').map(Number); return new Date(anno, mese - 1, giorno); }
 
-  apriNuovoCalendario(): void {
+  apriGestioneCalendari(): void {
     this.nuovoAppuntamentoAperto.set(false);
+    this.eventoSelezionato.set(null);
+    this.error.set('');
+    this.gestioneCalendariAperta.set(true);
+    this.annullaModificaCalendario();
+  }
+
+  chiudiGestioneCalendari(): void {
+    this.gestioneCalendariAperta.set(false);
+    this.annullaModificaCalendario();
+  }
+
+  apriNuovoCalendario(): void {
+    this.calendarioInModifica.set(null);
+    this.calendarioDaEliminare.set(null);
+    this.personeCondivisione.update(persone => persone.map(persona => ({ ...persona, selezionata: false })));
     this.calendarioCondivisoForm.reset({ nome: '', colore:'#d97706' });
     this.nuovoCalendarioAperto.set(true);
   }
 
-  chiudiNuovoCalendario(): void {
+  annullaModificaCalendario(): void {
     this.nuovoCalendarioAperto.set(false);
+    this.calendarioInModifica.set(null);
+    this.calendarioDaEliminare.set(null);
+  }
+
+  modificaCalendario(calendario: CalendarioAgenda): void {
+    if (!calendario.gestibile) return;
+    this.calendarioInModifica.set(String(calendario.chiave));
+    this.calendarioDaEliminare.set(null);
+    this.calendarioCondivisoForm.setValue({ nome: calendario.nome, colore: calendario.classeColore });
+    const condivisi = new Set(calendario.condivisoConIds ?? []);
+    this.personeCondivisione.update(persone => persone.map(persona => ({ ...persona, selezionata: condivisi.has(persona.id) })));
+    this.nuovoCalendarioAperto.set(true);
+  }
+
+  richiediEliminazioneCalendario(chiave: ChiaveCalendario): void {
+    this.nuovoCalendarioAperto.set(false);
+    this.calendarioInModifica.set(null);
+    this.calendarioDaEliminare.set(String(chiave));
+  }
+
+  annullaEliminazioneCalendario(): void {
+    this.calendarioDaEliminare.set(null);
+  }
+
+  eliminaCalendario(chiave: ChiaveCalendario): void {
+    this.loading.set(true);
+    this.error.set('');
+    this.http.delete<void>(`/api/v1/calendario/calendari/${chiave}`).subscribe({
+      next: () => {
+        this.calendariAgenda.update(lista => lista.filter(calendario => calendario.chiave !== chiave));
+        this.eventiAgenda.update(lista => lista.filter(evento => evento.calendario !== chiave));
+        if (this.appuntamentoForm.controls.calendario.value === chiave) {
+          this.appuntamentoForm.controls.calendario.setValue(String(this.calendariAgenda()[0]?.chiave ?? ''));
+        }
+        this.calendarioDaEliminare.set(null);
+        this.aggiornaWidgetCalendario();
+        this.loading.set(false);
+      },
+      error: response => { this.error.set(response?.error?.message ?? 'Calendario non eliminato.'); this.loading.set(false); }
+    });
   }
 
   salvaCalendarioCondiviso(): void {
@@ -855,9 +916,19 @@ export class App {
     const personeSelezionate = this.personeCondivisione().filter(persona => persona.selezionata);
     const condivisoCon = personeSelezionate.map(persona => persona.nome);
     this.loading.set(true);
-    this.http.post<CalendarioApi>('/api/v1/calendario/calendari', { nome, colore:this.calendarioCondivisoForm.controls.colore.value, condivisoCon: personeSelezionate.map(p=>p.id) }).subscribe({
-      next: calendario => { this.calendariAgenda.update(lista => [...lista, this.daCalendarioApi(calendario, condivisoCon)]); this.nuovoCalendarioAperto.set(false); this.loading.set(false); },
-      error: response => { this.error.set(response?.error?.message ?? 'Calendario non creato.'); this.loading.set(false); }
+    const idCalendario = this.calendarioInModifica();
+    const richiesta = { nome, colore:this.calendarioCondivisoForm.controls.colore.value, condivisoCon: personeSelezionate.map(p=>p.id) };
+    const salvataggio = idCalendario
+      ? this.http.put<CalendarioApi>(`/api/v1/calendario/calendari/${idCalendario}`, richiesta)
+      : this.http.post<CalendarioApi>('/api/v1/calendario/calendari', richiesta);
+    salvataggio.subscribe({
+      next: calendario => {
+        const aggiornato = this.daCalendarioApi(calendario, condivisoCon);
+        this.calendariAgenda.update(lista => idCalendario ? lista.map(elemento => elemento.chiave === idCalendario ? aggiornato : elemento) : [...lista, aggiornato]);
+        this.annullaModificaCalendario();
+        this.loading.set(false);
+      },
+      error: response => { this.error.set(response?.error?.message ?? 'Calendario non salvato.'); this.loading.set(false); }
     });
   }
 
@@ -1083,7 +1154,7 @@ export class App {
       this.personeInvitate.set(persone.map(p=>({...p,selezionata:false})));
     });
     this.http.get<CalendarioApi[]>('/api/v1/calendario/calendari').subscribe(calendari => {
-      this.calendariAgenda.set(calendari.map(c => this.daCalendarioApi(c, [])));
+      this.calendariAgenda.set(calendari.map(c => this.daCalendarioApi(c, c.condivisoCon.map(id => this.personeStudio().find(persona => persona.id === id)?.nome).filter((nome): nome is string => !!nome))));
       const predefinito = calendari.find(c => c.colore === 'studio') ?? calendari[0];
       if (predefinito) this.appuntamentoForm.controls.calendario.setValue(predefinito.id);
       const dal = `${new Date().getFullYear() - 1}-01-01`;
@@ -1096,7 +1167,7 @@ export class App {
   }
 
   private daCalendarioApi(c: CalendarioApi, condivisoCon: string[]): CalendarioAgenda {
-    return { chiave: c.id, nome: c.nome, classeColore: c.colore, selezionato: true, condivisoCon, condivisoConTuttoLoStudio: c.condivisoTuttoStudio };
+    return { chiave: c.id, nome: c.nome, classeColore: c.colore, selezionato: true, condivisoCon, condivisoConIds: c.condivisoCon, condivisoConTuttoLoStudio: c.condivisoTuttoStudio, gestibile: c.gestibile };
   }
   private daEventoApi(e: EventoApi): EventoAgenda {
     const inizio = new Date(e.inizio);

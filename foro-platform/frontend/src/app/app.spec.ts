@@ -75,4 +75,26 @@ describe('App', () => {
     expect(compiled.querySelector('.top-actions .logout-btn')).toBeNull();
     expect(compiled.querySelector('.settings-account .settings-logout')?.textContent).toContain('Esci dall’account');
   });
+
+  it('apre la gestione calendari dedicata con inserimento modifica ed eliminazione', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.screen.set('scrivania');
+    const widgetCalendario = app.activeWidgets().find(widget => widget.key === 'calendario');
+    expect(widgetCalendario).toBeTruthy();
+    app.expandedWidget.set(widgetCalendario!);
+    app.calendariAgenda.set([{
+      chiave: 'calendario-test', nome: 'Calendario test', classeColore: '#0b67b2', selezionato: true,
+      condivisoCon: [], condivisoConIds: [], gestibile: true
+    }]);
+    app.gestioneCalendariAperta.set(true);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.calendar-share-add')?.textContent).toContain('Gestione calendari');
+    expect(compiled.querySelector('.calendar-management-panel')).toBeTruthy();
+    expect(compiled.querySelector('.calendar-create')?.textContent).toContain('Nuovo calendario');
+    expect(compiled.querySelector('.calendar-management-list nav')?.textContent).toContain('Modifica');
+    expect(compiled.querySelector('.calendar-management-list nav')?.textContent).toContain('Elimina');
+  });
 });

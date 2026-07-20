@@ -321,7 +321,7 @@
               <span class="dot" [ngClass]="calendario.classeColore" [style.background]="calendario.classeColore.startsWith('#') ? calendario.classeColore : null"></span>
               <span>{{ calendario.nome }}<small *ngIf="calendario.condivisoConTuttoLoStudio">Tutto lo Studio</small></span>
             </label>
-            <button class="calendar-share-add" type="button" (click)="apriNuovoCalendario()">＋ Aggiungi calendario</button>
+            <button class="calendar-share-add" type="button" (click)="apriGestioneCalendari()">⚙ Gestione calendari</button>
           </section>
         </aside>
 
@@ -420,17 +420,47 @@
           <section class="event-notes"><strong>Note</strong><p>{{ evento.note || 'Nessuna nota' }}</p></section>
         </section>
 
-        <form class="appointment-panel shared-calendar-panel" *ngIf="nuovoCalendarioAperto()" [formGroup]="calendarioCondivisoForm" (ngSubmit)="salvaCalendarioCondiviso()">
-          <header><strong>Nuovo calendario</strong><button class="panel-close" type="button" aria-label="Chiudi nuovo calendario" title="Chiudi" (click)="chiudiNuovoCalendario()">×</button></header>
-          <label>Nome calendario<input formControlName="nome" placeholder="Es. Team contenzioso"></label>
-          <label>Colore calendario<input type="color" formControlName="colore"></label>
-          <fieldset>
-            <legend>Condividi con</legend>
-            <label *ngFor="let persona of personeCondivisione()"><input type="checkbox" [checked]="persona.selezionata" (change)="cambiaCondivisionePersona(persona.nome, $any($event.target).checked)">{{ persona.nome }}</label>
-          </fieldset>
-          <p class="calendar-sharing-note">Il calendario “Studio Legale Verdi” è già disponibile a tutti gli avvocati dello Studio.</p>
-          <button class="primary" type="submit">Aggiungi calendario</button>
-        </form>
+        <section class="appointment-panel calendar-management-panel" *ngIf="gestioneCalendariAperta()">
+          <header><strong>Gestione calendari</strong><button class="panel-close" type="button" aria-label="Chiudi gestione calendari" title="Chiudi" (click)="chiudiGestioneCalendari()">×</button></header>
+          <div class="calendar-management-intro">
+            <div><span class="eyebrow">CALENDARI DELLO STUDIO</span><p>Crea calendari, aggiorna nome e condivisioni oppure elimina quelli non più necessari.</p></div>
+            <button class="primary calendar-create" type="button" (click)="apriNuovoCalendario()">＋ Nuovo calendario</button>
+          </div>
+
+          <div class="calendar-management-list" *ngIf="calendariAgenda().length; else nessunCalendario">
+            <article *ngFor="let calendario of calendariAgenda()">
+              <span class="calendar-management-color" [style.background]="calendario.classeColore"></span>
+              <div>
+                <strong>{{ calendario.nome }}</strong>
+                <small *ngIf="calendario.condivisoConTuttoLoStudio; else condivisioneSingola">Condiviso con tutto lo Studio</small>
+                <ng-template #condivisioneSingola><small>{{ calendario.condivisoCon.length ? 'Condiviso con ' + calendario.condivisoCon.join(', ') : 'Calendario personale' }}</small></ng-template>
+                <em *ngIf="!calendario.gestibile">Condiviso con te</em>
+              </div>
+              <nav *ngIf="calendario.gestibile">
+                <button type="button" (click)="modificaCalendario(calendario)">Modifica</button>
+                <button class="calendar-delete" type="button" (click)="richiediEliminazioneCalendario(calendario.chiave)">Elimina</button>
+              </nav>
+              <div class="calendar-delete-confirm" *ngIf="calendarioDaEliminare() === calendario.chiave">
+                <p>Eliminare “{{ calendario.nome }}”? Gli appuntamenti associati non saranno più visibili.</p>
+                <button type="button" (click)="annullaEliminazioneCalendario()">Annulla</button>
+                <button class="confirm-delete" type="button" [disabled]="loading()" (click)="eliminaCalendario(calendario.chiave)">Conferma eliminazione</button>
+              </div>
+            </article>
+          </div>
+          <ng-template #nessunCalendario><p class="calendar-empty">Non ci sono ancora calendari.</p></ng-template>
+
+          <form class="calendar-editor shared-calendar-panel" *ngIf="nuovoCalendarioAperto()" [formGroup]="calendarioCondivisoForm" (ngSubmit)="salvaCalendarioCondiviso()">
+            <div class="calendar-editor-head"><strong>{{ calendarioInModifica() ? 'Modifica calendario' : 'Nuovo calendario' }}</strong><button type="button" (click)="annullaModificaCalendario()">Annulla</button></div>
+            <label>Nome calendario<input formControlName="nome" placeholder="Es. Team contenzioso"></label>
+            <label>Colore calendario<input type="color" formControlName="colore"></label>
+            <fieldset>
+              <legend>Condividi con</legend>
+              <label *ngFor="let persona of personeCondivisione()"><input type="checkbox" [checked]="persona.selezionata" (change)="cambiaCondivisionePersona(persona.nome, $any($event.target).checked)">{{ persona.nome }}</label>
+            </fieldset>
+            <button class="primary" type="submit" [disabled]="loading()">{{ loading() ? 'Salvataggio…' : (calendarioInModifica() ? 'Salva modifiche' : 'Crea calendario') }}</button>
+          </form>
+          <p class="error" role="alert" *ngIf="error()">{{ error() }}</p>
+        </section>
       </div>
 
       <section class="collaboratori-widget" *ngIf="widget.key === 'collaboratori'; else widgetStandard">
