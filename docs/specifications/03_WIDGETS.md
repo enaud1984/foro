@@ -249,6 +249,14 @@ Il futuro Fascicolo PCT è separato e collegabile.
 
 ## 10. Telemetria minima
 
+### Widget Collaboratori amministrativo
+
+- visibile soltanto a `STUDIO_ADMIN`/titolare;
+- crea avvocati, segreteria e altri amministratori con ruolo esplicito;
+- genera e invia una password temporanea da modificare al primo accesso;
+- non concede ad avvocati o segreteria la modifica delle impostazioni dello Studio;
+- registra nell’audit creazione, assegnazione ruolo e cambio password.
+
 Per ogni widget:
 
 - load started/completed/failed;

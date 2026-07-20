@@ -2,7 +2,7 @@ FROM maven:3.9.11-eclipse-temurin-21 AS build
 WORKDIR /src
 COPY pom.xml ./
 COPY backend ./backend
-RUN mvn -DskipTests package
+RUN mvn package
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app

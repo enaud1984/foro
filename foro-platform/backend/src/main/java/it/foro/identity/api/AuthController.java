@@ -23,7 +23,7 @@ public class AuthController {
     @Size(max=250000) String logoUrl,@Size(max=240) String addressLine,@Size(max=120) String city,
     @Size(max=20) String postalCode,@Size(max=80) String country,@Size(max=40) String phone,@Size(max=200) String website){}
   public record LoginRequest(@Email @NotBlank String email,@NotBlank String password){}
-  public record AuthResponse(String accessToken, UUID studioId, String displayName){}
+  public record AuthResponse(String accessToken, UUID studioId, String displayName,boolean deveCambiarePassword){}
 
   @PostMapping("/register/studio") @Transactional
   public AuthResponse register(@Valid @RequestBody RegisterStudioRequest r){
@@ -34,7 +34,7 @@ public class AuthController {
       r.logoUrl(),"#092746","#c9993a","#128c8c","foro-classic");
     studio=studios.save(studio);
     memberships.save(new StudioMembership(studio.getId(),user.getId(),"STUDIO_ADMIN","ACTIVE"));
-    return new AuthResponse(jwt.issue(user.getId(),studio.getId(),user.getEmail()),studio.getId(),user.getDisplayName());
+    return new AuthResponse(jwt.issue(user.getId(),studio.getId(),user.getEmail()),studio.getId(),user.getDisplayName(),false);
   }
   @PostMapping("/login")
   public AuthResponse login(@Valid @RequestBody LoginRequest r){
@@ -42,6 +42,6 @@ public class AuthController {
     if(!encoder.matches(r.password(),user.getPasswordHash())) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"INVALID_CREDENTIALS");
     var membership=memberships.findByUserId(user.getId()).stream().filter(m->"ACTIVE".equals(m.getStatus())).findFirst()
       .orElseThrow(()->new ResponseStatusException(HttpStatus.FORBIDDEN,"NO_ACTIVE_STUDIO"));
-    return new AuthResponse(jwt.issue(user.getId(),membership.getStudioId(),user.getEmail()),membership.getStudioId(),user.getDisplayName());
+    return new AuthResponse(jwt.issue(user.getId(),membership.getStudioId(),user.getEmail()),membership.getStudioId(),user.getDisplayName(),user.isDeveCambiarePassword());
   }
 }

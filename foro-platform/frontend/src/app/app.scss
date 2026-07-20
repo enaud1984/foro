@@ -266,6 +266,142 @@
   letter-spacing: -.05em;
 }
 
+.sidebar-intro {
+  margin: 0 0 20px;
+  padding: 4px 2px 20px;
+  border-bottom: 1px solid rgba(148, 163, 184, .20);
+}
+
+.sidebar-intro .eyebrow {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.sidebar-intro p {
+  margin-bottom: 14px;
+  max-width: 230px;
+}
+
+.sidebar-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.sidebar-hint > span {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #fff;
+  background: var(--foro-primary, #092746);
+  font-size: 17px;
+  line-height: 1;
+}
+
+.dash-head {
+  align-items: center;
+  margin-bottom: 26px;
+  padding: 24px 26px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(148, 163, 184, .18);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 82% -40%, color-mix(in srgb, var(--foro-accent) 22%, transparent), transparent 42%),
+    linear-gradient(118deg, #fff 0%, #f7fafc 100%);
+  box-shadow: 0 18px 44px rgba(15, 23, 42, .07);
+}
+
+.today-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.today-status i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22a06b;
+  box-shadow: 0 0 0 4px rgba(34, 160, 107, .12);
+}
+
+.dash-head .welcome-copy h1 {
+  margin: 9px 0 7px;
+  font-size: clamp(28px, 3vw, 40px);
+  color: #0f2740;
+}
+
+.dash-head .welcome-copy p {
+  max-width: 620px;
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.today-summary {
+  min-width: 132px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  align-items: center;
+  padding: 12px 18px;
+  border-left: 1px solid rgba(148, 163, 184, .28);
+  color: #0f2740;
+}
+
+.today-summary > span {
+  grid-column: 1 / -1;
+  margin-bottom: 3px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.today-summary strong {
+  grid-row: 2;
+  font-size: 31px;
+  line-height: 1;
+}
+
+.today-summary small {
+  grid-row: 2;
+  max-width: 72px;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.25;
+  text-transform: capitalize;
+}
+
+@media (max-width: 760px) {
+  .dash-head {
+    padding: 20px;
+  }
+
+  .today-summary {
+    width: 100%;
+    border-left: 0;
+    border-top: 1px solid rgba(148, 163, 184, .28);
+    padding: 14px 0 0;
+  }
+}
+
 .operational-grid {
   position: relative;
   display: grid;
@@ -426,7 +562,7 @@
   display: grid;
   grid-template-columns: 74px 1fr;
   grid-template-rows: auto auto;
-  column-gap: 14px;
+  column-gap: 24px;
   align-items: center;
   width: 100%;
   min-height: 96px;
@@ -469,6 +605,11 @@
   width: 88px;
   height: 88px;
 }
+
+.settings-logo-picker { grid-template-columns: 96px 1fr; }
+.collaboratori-widget { display:grid; grid-template-columns:minmax(300px,1fr) minmax(280px,1fr); gap:24px; margin-top:20px; }
+.collaboratori-widget .drawer-form { margin-top:0; padding:20px; border:1px solid #dbe7f3; border-radius:16px; }
+@media (max-width:760px){.collaboratori-widget{grid-template-columns:1fr}}
 
 .dashboard-footer {
   display: flex;
@@ -1382,4 +1523,55 @@
 
 .members-preview small {
   color: #64748b;
+}
+
+.settings-account {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 22px;
+  margin-top: 28px;
+  padding: 20px;
+  border: 1px solid rgba(148, 163, 184, .24);
+  border-radius: 18px;
+  background: #f8fafc;
+}
+
+.settings-account h3 {
+  margin: 6px 0 4px;
+  color: #0f2740;
+  font-size: 16px;
+}
+
+.settings-account p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.settings-logout {
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid #d7dee7;
+  border-radius: 12px;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+  font: 800 13px/1 "Inter", "Segoe UI", Arial, sans-serif;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.settings-logout:hover {
+  border-color: #f0a6a6;
+  background: #fff7f7;
+  color: #a61b1b;
+}
+
+@media (max-width: 560px) {
+  .settings-account {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }

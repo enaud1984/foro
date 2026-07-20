@@ -123,7 +123,6 @@
       <div class="top-actions">
         <button class="icon-action" type="button" aria-label="Notifiche" (click)="toggleNotifications()">🔔<span>5</span></button>
         <button class="icon-action" type="button" aria-label="Impostazioni" (click)="toggleSettings()">⚙️</button>
-        <button class="logout-btn" type="button" (click)="logout()">Esci</button>
       </div>
       <section class="notifications-panel" *ngIf="notificationsOpen()" aria-label="Notifiche recenti">
         <div class="notifications-head">
@@ -147,9 +146,13 @@
 
     <div class="dashboard-shell">
       <aside class="widget-sidebar">
-        <h3>Widget disponibili</h3>
-        <p>Trascina un widget nella dashboard. La griglia evita le sovrapposizioni e riordina automaticamente gli elementi.</p>
-        <article class="widget-source" *ngFor="let item of widgetLibrary" draggable="true" (dragstart)="startWidgetDrag(item.key)">
+        <div class="sidebar-intro">
+          <span class="eyebrow">PERSONALIZZA</span>
+          <h3>La tua scrivania</h3>
+          <p>Scegli gli strumenti che vuoi avere sempre a portata di mano.</p>
+          <div class="sidebar-hint"><span aria-hidden="true">+</span> Trascina per aggiungere</div>
+        </div>
+        <article class="widget-source" *ngFor="let item of widgetDisponibili()" draggable="true" (dragstart)="startWidgetDrag(item.key)">
           <span>{{ item.icon }}</span>
           <div><strong>{{ item.title }}</strong><small>{{ item.description }}</small></div>
         </article>
@@ -157,10 +160,15 @@
 
       <section class="dashboard-content">
         <div class="dash-head">
-          <div>
-            <span class="eyebrow">SCRIVANIA DIGITALE</span>
-            <h1>Dashboard operativa</h1>
-            <p>Benvenuto, {{ userName() }}. Le card mostrano l’anteprima; usa il tasto espandi per aprire la vista completa.</p>
+          <div class="welcome-copy">
+            <span class="today-status"><i aria-hidden="true"></i> Oggi in studio</span>
+            <h1>Buongiorno, {{ userName() }}</h1>
+            <p>Il tuo studio, le priorità e i prossimi impegni in un unico spazio.</p>
+          </div>
+          <div class="today-summary" aria-label="Data odierna">
+            <span>{{ giornoSettimanaOggi }}</span>
+            <strong>{{ giornoMeseOggi }}</strong>
+            <small>{{ meseAnnoOggi }}</small>
           </div>
         </div>
 
@@ -243,16 +251,16 @@
           <label>Cognome<input formControlName="cognome" autocomplete="family-name" placeholder="Bianchi"></label>
         </div>
         <label>Email<input type="email" formControlName="email" autocomplete="email" placeholder="collaboratore@studio.it"></label>
-        <div class="two-cols">
-          <label>Ruolo
+        <div>
+          <label>Ruolo e permessi
             <select formControlName="ruolo">
-              <option value="AVVOCATO">Avvocato</option>
-              <option value="SEGRETERIA">Segreteria</option>
+              <option value="AVVOCATO">Avvocato — pratiche, clienti, documenti e calendario</option>
+              <option value="SEGRETERIA">Segreteria — supporto operativo senza impostazioni Studio</option>
               <option value="STUDIO_ADMIN">Altro titolare / Admin</option>
             </select>
           </label>
-          <label>Password iniziale<input type="password" formControlName="passwordTemporanea" autocomplete="new-password" placeholder="Almeno 12 caratteri"></label>
         </div>
+        <p class="drawer-note">FORO genera e invia via email una password temporanea, da cambiare al primo accesso.</p>
         <button class="primary" type="submit" [disabled]="loading()">Aggiungi collaboratore</button>
         <section class="members-preview" aria-label="Collaboratori già associati" *ngIf="collaboratoriStudio().length">
           <article *ngFor="let collaboratore of collaboratoriStudio()">
@@ -279,6 +287,14 @@
         <label>Colore titoli sezioni e widget<input type="color" formControlName="personalAccentColor"></label>
         <button class="secondary" type="submit" [disabled]="loading()">Salva aspetto personale</button>
       </form>
+      <section class="settings-account" aria-label="Gestione account">
+        <div>
+          <span class="eyebrow">ACCOUNT</span>
+          <h3>Sessione personale</h3>
+          <p>Termina in sicurezza la sessione su questo dispositivo.</p>
+        </div>
+        <button class="settings-logout" type="button" (click)="logout()">Esci dall’account</button>
+      </section>
       <p class="success" *ngIf="settingsMessage()">{{ settingsMessage() }}</p>
       <p class="error" role="alert" *ngIf="error()">{{ error() }}</p>
     </aside>
@@ -416,6 +432,19 @@
           <button class="primary" type="submit">Aggiungi calendario</button>
         </form>
       </div>
+
+      <section class="collaboratori-widget" *ngIf="widget.key === 'collaboratori'; else widgetStandard">
+        <form [formGroup]="collaboratoreForm" (ngSubmit)="creaCollaboratore()" class="drawer-form collaborator-form">
+          <h3>Aggiungi un collaboratore</h3>
+          <div class="two-cols"><label>Nome<input formControlName="nome"></label><label>Cognome<input formControlName="cognome"></label></div>
+          <label>Email<input type="email" formControlName="email" placeholder="collaboratore@studio.it"></label>
+          <label>Ruolo e permessi<select formControlName="ruolo"><option value="AVVOCATO">Avvocato — accesso operativo</option><option value="SEGRETERIA">Segreteria — supporto operativo</option><option value="STUDIO_ADMIN">Altro titolare / Admin</option></select></label>
+          <p class="drawer-note">La password temporanea sarà inviata via email e dovrà essere modificata al primo accesso. Avvocati e segreteria non possono cambiare le impostazioni dello Studio.</p>
+          <button class="primary" type="submit" [disabled]="loading()">Aggiungi e invia accesso</button>
+          <p class="success" *ngIf="collaboratorMessage()">{{ collaboratorMessage() }}</p>
+        </form>
+        <section class="members-preview" *ngIf="collaboratoriStudio().length"><article *ngFor="let collaboratore of collaboratoriStudio()"><strong>{{ collaboratore.nome }} {{ collaboratore.cognome }}</strong><small>{{ collaboratore.email }} · {{ collaboratore.ruolo }} · {{ collaboratore.stato }}</small></article></section>
+      </section>
 
       <ng-template #widgetStandard>
         <div class="gestione-widget">

@@ -1,8 +1,11 @@
 FROM node:22-alpine AS build
 WORKDIR /app
+RUN apk add --no-cache chromium
+ENV CHROME_BIN=/usr/bin/chromium-browser
 COPY package*.json ./
 RUN npm ci
 COPY . .
+RUN npm test -- --watch=false --browsers=ChromeHeadlessNoSandbox
 RUN npm run build -- --configuration production
 
 FROM nginx:1.27-alpine

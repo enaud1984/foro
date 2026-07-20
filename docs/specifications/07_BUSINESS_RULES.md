@@ -41,7 +41,7 @@
 | ID | Regola |
 |---|---|
 | BR-WDG-001 | La Dashboard è la home autenticata. |
-| BR-WDG-002 | Il MVP espone solo cinque widget. |
+| BR-WDG-002 | Il MVP espone cinque widget operativi e il widget amministrativo Collaboratori riservato a `STUDIO_ADMIN`/titolare. |
 | BR-WDG-003 | Il widget Email può avere più istanze; gli altri una sola. |
 | BR-WDG-004 | Layout e configurazione sono per utente. |
 | BR-WDG-005 | Un widget senza permesso viene rimosso al refresh e dalla cache. |
@@ -162,3 +162,6 @@ Esempi:
 | BR-WDG-011 | Ogni widget mostra una preview in Dashboard e una vista espansa al click. |
 | BR-WDG-012 | Ogni widget può essere chiuso/rimosso dalla Scrivania come una finestra desktop; la chiusura non cancella i dati sottostanti. |
 | BR-WDG-013 | Ogni utente può modificare il tema della propria dashboard, ma non il branding dello Studio salvo ruolo autorizzato. |
+| BR-WDG-014 | Il widget Collaboratori è visibile e gestibile solo da `STUDIO_ADMIN`/titolare. |
+| BR-STD-014 | La creazione di un collaboratore genera una password temporanea inviata via email e da modificare al primo accesso. |
+| BR-STD-015 | Avvocati e segreteria non possono modificare dati, branding o impostazioni condivise dello Studio. |

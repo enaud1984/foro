@@ -17,10 +17,10 @@ Le decisioni accettate prevalgono sugli altri documenti. Una decisione modificat
 - **Decisione:** FORO è una Scrivania Digitale; la Dashboard è l’ingresso e il baricentro.
 - **Conseguenza:** nessuna navigazione primaria basata su moduli indipendenti.
 
-### DEC-002 — MVP a cinque widget
+### DEC-002 — MVP a cinque widget operativi più Collaboratori amministrativo
 
 - **Stato:** ACCEPTED
-- **Decisione:** Calendario, Documenti, Email, Clienti, Pratiche/Fascicolo.
+- **Decisione:** Calendario, Documenti, Email, Clienti, Pratiche/Fascicolo sono i cinque widget operativi; Collaboratori è il widget amministrativo approvato da `DEC-020` e riservato al titolare/admin.
 - **Conseguenza:** ogni altra capacità è trasversale o futura.
 
 ### DEC-003 — Progressive disclosure
@@ -127,15 +127,15 @@ Le decisioni accettate prevalgono sugli altri documenti. Una decisione modificat
 
 ### DEC-020 — Gestione Collaboratori nella Dashboard
 
-- **Stato:** PROPOSED
+- **Stato:** ACCEPTED
 - **Data:** 2026-07-18
 - **Contesto:** è stata richiesta una superficie Dashboard per consentire al titolare dello Studio di creare avvocati, segretari o altri titolari/amministratori associati allo Studio, assegnando dati anagrafici, email, ruolo e password iniziale. La richiesta impatta scope MVP, modello permessi e workflow di onboarding perché le decisioni vigenti definiscono il MVP a cinque widget e collocano collaboratori e figure professionali nell’area amministrativa dello Studio.
 - **Opzioni:**
   1. mantenere i Collaboratori come capacità amministrativa accessibile dalle impostazioni/area Studio, senza introdurre un sesto widget;
   2. introdurre un widget Collaboratori visibile solo a `STUDIO_ADMIN`/titolare, aggiornando lo scope MVP;
   3. esporre nella Dashboard solo una scorciatoia/preview amministrativa verso la gestione Studio, senza trattarla come widget MVP autonomo.
-- **Decisione:** da approvare prima dell’implementazione. In ogni opzione, il backend resta autorevole: il tenant deriva dal security context, solo `STUDIO_ADMIN`/titolare può creare o assegnare ruoli, nessun utente può elevare il proprio ruolo e ogni utente può modificare solo la propria password dalle impostazioni personali.
-- **Conseguenze:** se viene approvato un widget Collaboratori, occorre aggiornare `DEC-002`, `BR-WDG-002`, le specifiche Dashboard/Frontend/Backend/Database e aggiungere test allow/deny, cross-tenant e audit per creazione collaboratore, assegnazione ruolo e cambio password.
+- **Decisione:** è approvato un widget Collaboratori visibile solo a `STUDIO_ADMIN`/titolare. Il titolare crea avvocati, segreteria o altri amministratori assegnando un ruolo esplicito. FORO genera una password temporanea, la invia via email e ne richiede la modifica al primo accesso. Avvocati e segreteria non possono modificare dati, branding o impostazioni condivise dello Studio. Il backend resta autorevole e il tenant deriva dal security context.
+- **Conseguenze:** Collaboratori diventa il sesto widget autorizzato, ma rimane una capacità amministrativa trasversale e non un modulo autonomo. Creazione, ruolo e cambio password sono auditati; password e token non entrano nei log.
 - **Documenti interessati:** `DECISIONS.md`, `docs/specifications/03_WIDGETS.md`, `docs/specifications/05_BACKEND.md`, `docs/specifications/06_FRONTEND.md`, `docs/specifications/07_BUSINESS_RULES.md`, `docs/specifications/09_PROJECT_RULES.md`.
 
 ## Open Decisions

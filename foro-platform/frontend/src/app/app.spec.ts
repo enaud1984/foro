@@ -29,4 +29,50 @@ describe('App', () => {
     expect(app.cambioPasswordForm).toBeTruthy();
     expect(app.cambioPasswordForm.controls.nuovaPassword).toBeTruthy();
   });
+
+  it('mostra il widget Collaboratori soltanto al titolare o amministratore', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const profiloBase = {
+      name: 'Studio Test', addressLine: null, city: null, postalCode: null, country: 'Italia',
+      phone: null, website: null, logoUrl: null, primaryColor: '#092746', accentColor: '#c9993a',
+      secondaryColor: '#128c8c', themePreset: 'foro-classic'
+    };
+    app.studioProfile.set({ ...profiloBase, canEditBranding: false });
+    expect(app.widgetDisponibili().some(widget => widget.key === 'collaboratori')).toBeFalse();
+    app.studioProfile.set({ ...profiloBase, canEditBranding: true });
+    expect(app.widgetDisponibili().some(widget => widget.key === 'collaboratori')).toBeTrue();
+  });
+
+  it('non richiede al titolare di scegliere la password temporanea', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    expect('passwordTemporanea' in app.collaboratoreForm.controls).toBeFalse();
+  });
+
+  it('presenta una testata professionale nella scrivania senza istruzioni tecniche', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.screen.set('scrivania');
+    app.userName.set('Avv. Laura Verdi');
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.dash-head h1')?.textContent).toContain('Buongiorno, Avv. Laura Verdi');
+    expect(compiled.querySelector('.dash-head')?.textContent).not.toContain('Dashboard operativa');
+    expect(compiled.querySelector('.widget-sidebar')?.textContent).not.toContain('La griglia evita le sovrapposizioni');
+    expect(compiled.querySelector('.today-summary')?.textContent?.trim()).toBeTruthy();
+  });
+
+  it('mostra il comando di uscita soltanto nelle impostazioni', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.screen.set('scrivania');
+    app.settingsOpen.set(true);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.top-actions .logout-btn')).toBeNull();
+    expect(compiled.querySelector('.settings-account .settings-logout')?.textContent).toContain('Esci dall’account');
+  });
 });

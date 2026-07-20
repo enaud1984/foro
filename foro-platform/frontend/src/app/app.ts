@@ -6,7 +6,7 @@ import { HttpClient } from '@angular/common/http';
 type Schermata = 'login' | 'registrazione' | 'scrivania';
 type ModalitaTema = 'LIGHT' | 'DARK';
 type DensitaScrivania = 'COMFORTABLE' | 'COMPACT';
-type ChiaveWidget = 'calendario' | 'documenti' | 'email' | 'clienti' | 'pratiche';
+type ChiaveWidget = 'calendario' | 'documenti' | 'email' | 'clienti' | 'pratiche' | 'collaboratori';
 type RuoloCollaboratore = 'AVVOCATO' | 'SEGRETERIA' | 'STUDIO_ADMIN';
 type PassoRegistrazione = 'dati' | 'piani' | 'pagamento';
 type PianoDemo = 'essential' | 'professional';
@@ -124,6 +124,10 @@ interface EventoAgenda {
   styleUrl: './app.scss'
 })
 export class App {
+  private readonly oggi = new Date();
+  readonly giornoSettimanaOggi = new Intl.DateTimeFormat('it-IT', { weekday: 'long' }).format(this.oggi);
+  readonly giornoMeseOggi = new Intl.DateTimeFormat('it-IT', { day: '2-digit' }).format(this.oggi);
+  readonly meseAnnoOggi = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeric' }).format(this.oggi);
   readonly screen = signal<Schermata>('login');
   readonly loading = signal(false);
   readonly error = signal('');
@@ -229,8 +233,10 @@ export class App {
     { key: 'documenti', icon: '📁', title: 'Documenti', description: 'Atti, versioni, firme e fascicoli' },
     { key: 'email', icon: '✉️', title: 'Email', description: 'Posta ordinaria e associazioni pratica' },
     { key: 'clienti', icon: '👥', title: 'Clienti', description: 'Anagrafiche e referenti' },
-    { key: 'pratiche', icon: '⚖️', title: 'Pratiche', description: 'Fascicolo interno e stato attività' }
+    { key: 'pratiche', icon: '⚖️', title: 'Pratiche', description: 'Fascicolo interno e stato attività' },
+    { key: 'collaboratori', icon: '👥', title: 'Collaboratori', description: 'Avvocati, segreteria, ruoli e accessi' }
   ];
+  readonly widgetDisponibili = computed(() => this.widgetLibrary.filter(widget => widget.key !== 'collaboratori' || !!this.studioProfile()?.canEditBranding));
 
   readonly activeWidgets = signal<WidgetScrivania[]>(this.creaWidgetIniziali());
 
@@ -405,7 +411,6 @@ export class App {
       cognome: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       ruolo: ['AVVOCATO' as RuoloCollaboratore, Validators.required],
-      passwordTemporanea: ['', [Validators.required, Validators.minLength(12)]]
     });
     this.cambioPasswordForm = this.fb.nonNullable.group({
       passwordAttuale: ['', Validators.required],
@@ -869,11 +874,12 @@ export class App {
     this.loading.set(true);
     this.error.set('');
     this.collaboratorMessage.set('');
-    this.http.post<CollaboratoreStudio>('/api/v1/studio/members', this.collaboratoreForm.getRawValue()).subscribe({
+    this.http.post<CollaboratoreStudio>('/api/v1/studio/collaboratori', this.collaboratoreForm.getRawValue()).subscribe({
       next: collaboratore => {
         this.collaboratoriStudio.update(collaboratori => [collaboratore, ...collaboratori]);
-        this.collaboratoreForm.reset({ nome: '', cognome: '', email: '', ruolo: 'AVVOCATO', passwordTemporanea: '' });
-        this.collaboratorMessage.set('Collaboratore creato. Potrà accedere con email e password iniziale.');
+        this.collaboratoreForm.reset({ nome: '', cognome: '', email: '', ruolo: 'AVVOCATO' });
+        this.collaboratorMessage.set('Collaboratore creato. La password temporanea è stata inviata via email.');
+        this.aggiornaWidgetCollaboratori();
         this.loading.set(false);
       },
       error: response => {
@@ -896,7 +902,7 @@ export class App {
     this.loading.set(true);
     this.error.set('');
     this.passwordMessage.set('');
-    this.http.put<void>('/api/v1/me/password', {
+    this.http.put<void>('/api/v1/profilo/password', {
       passwordAttuale: valore.passwordAttuale,
       nuovaPassword: valore.nuovaPassword
     }).subscribe({
@@ -956,12 +962,16 @@ export class App {
   private submit(url: string, body: object): void {
     this.loading.set(true);
     this.error.set('');
-    this.http.post<{ accessToken: string; displayName: string }>(url, body).subscribe({
+    this.http.post<{ accessToken: string; displayName: string; deveCambiarePassword: boolean }>(url, body).subscribe({
       next: response => {
         sessionStorage.setItem('foro_access_token', response.accessToken);
         this.userName.set(response.displayName);
         this.screen.set('scrivania');
         this.loadWorkspaceSettings();
+        if (response.deveCambiarePassword) {
+          this.settingsOpen.set(true);
+          this.passwordMessage.set('Per sicurezza devi sostituire la password temporanea prima di continuare.');
+        }
         this.loading.set(false);
       },
       error: response => {
@@ -991,9 +1001,17 @@ export class App {
         themePreset: profile.themePreset
       });
       this.applyTheme(profile, this.dashboardPreference());
+      if (profile.canEditBranding) {
+        if (!this.activeWidgets().some(widget=>widget.key==='collaboratori')) {
+          const widget=this.creaWidgetDaDefinizione('collaboratori',7,5); if(widget)this.activeWidgets.update(lista=>this.reorderWidgets([...lista,widget],'collaboratori'));
+        }
+      } else {
+        this.activeWidgets.update(lista=>lista.filter(widget=>widget.key!=='collaboratori'));
+        if(this.expandedWidget()?.key==='collaboratori')this.closeExpandedWidget();
+      }
     });
-    this.http.get<CollaboratoreStudio[]>('/api/v1/studio/members').subscribe({
-      next: collaboratori => this.collaboratoriStudio.set(collaboratori),
+    this.http.get<CollaboratoreStudio[]>('/api/v1/studio/collaboratori').subscribe({
+      next: collaboratori => { this.collaboratoriStudio.set(collaboratori); this.aggiornaWidgetCollaboratori(); },
       error: () => this.collaboratoriStudio.set([])
     });
     this.http.get<PreferenzeScrivania>('/api/v1/workspace/preferences').subscribe(preference => {
@@ -1022,7 +1040,7 @@ export class App {
   private creaWidgetDaDefinizione(key: ChiaveWidget, x: number, y: number): WidgetScrivania | null {
     const definition = this.widgetLibrary.find(widget => widget.key === key);
     if (!definition) return null;
-    return {
+    const widget = {
       ...definition,
       x,
       y,
@@ -1035,7 +1053,12 @@ export class App {
         { titolo: definition.title, descrizione: 'Nuovo elemento operativo', stato: 'Nuovo' }
       ]
     };
+    if(key==='collaboratori')return {...widget,metric:`${this.collaboratoriStudio().length} persone`,preview:'Gestisci ruoli e accessi dello Studio',details:this.collaboratoriStudio().map(c=>`${c.nome} ${c.cognome}`),righeAnteprima:this.righeCollaboratori()};
+    return widget;
   }
+
+  private righeCollaboratori(): RigaWidget[] { return this.collaboratoriStudio().slice(0,4).map(c=>({titolo:`${c.nome} ${c.cognome}`,descrizione:c.email,stato:c.ruolo.replace('_',' ')})); }
+  private aggiornaWidgetCollaboratori(): void { this.activeWidgets.update(widgets=>widgets.map(widget=>widget.key==='collaboratori'?{...widget,metric:`${this.collaboratoriStudio().length} persone`,preview:'Ruoli e accessi amministrati dal titolare',details:this.collaboratoriStudio().map(c=>`${c.nome} ${c.cognome}`),righeAnteprima:this.righeCollaboratori()}:widget)); }
 
   private positionFromPointer(event: DragEvent): { x: number; y: number } | null {
     const element = event.currentTarget as HTMLElement;

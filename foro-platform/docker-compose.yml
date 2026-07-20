@@ -27,6 +27,8 @@ services:
       FORO_JWT_SECRET: local-development-secret-change-before-production-123456
       FORO_SMTP_HOST: mailpit
       FORO_SMTP_PORT: 1025
+      # Compatibilità del volume locale con migrazioni create su altri branch.
+      SPRING_FLYWAY_IGNORE_MIGRATION_PATTERNS: "*:missing"
     depends_on:
       postgres:
         condition: service_healthy

@@ -63,6 +63,12 @@ Non implementare senza decisione:
 - Monolite modulare nel MVP.
 - Shared-schema multi-tenant con `studio_id` e RLS.
 
+## Lingua del progetto
+
+- Usare l’italiano per tutto il codice applicativo di FORO: nomi di classi, funzioni, variabili, tipi, endpoint REST, campi applicativi, commenti, messaggi, test e documentazione.
+- Mantenere in inglese soltanto parole chiave del linguaggio, API standard, convenzioni obbligatorie dei framework e nomi imposti da dipendenze esterne.
+- Quando si modifica codice applicativo preesistente con nomi inglesi, rinominarlo in italiano se l’intervento resta circoscritto e coperto da test; evitare conversioni massive non correlate.
+
 ## Regole non negoziabili
 
 - Tenant derivato dal security context, mai fidato dal client.
@@ -97,7 +103,9 @@ Durante:
 
 Dopo:
 
-- eseguire test rilevanti;
+- eseguire sempre test automatici frontend e backend;
+- aggiungere ed eseguire test di non regressione per ogni comportamento modificato;
+- non considerare conclusa una modifica se build o test rilevanti non sono verdi;
 - verificare allow/deny;
 - aggiornare documentazione;
 - riportare file modificati, test e limiti.
