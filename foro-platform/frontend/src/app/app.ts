@@ -70,6 +70,9 @@ interface RigaWidget {
   descrizione: string;
   stato: string;
   evidenza?: string;
+  eventoId?: string;
+  colore?: string;
+  urgente?: boolean;
 }
 
 interface NotificaScrivania {
@@ -117,6 +120,7 @@ interface EventoAgenda {
   promemoriaMinuti?: number;
   categoria?: string;
   ricorrenza?: string;
+  tuttoGiorno?: boolean;
 }
 
 @Component({
@@ -168,15 +172,7 @@ export class App {
   readonly collaboratoriStudio = signal<CollaboratoreStudio[]>([]);
   readonly personeCondivisione = signal<{id:string;nome:string;selezionata:boolean}[]>([]);
   readonly personeInvitate = signal<{id:string;nome:string;selezionata:boolean}[]>([]);
-  readonly eventiAgenda = signal<EventoAgenda[]>([
-    { data: '2026-07-07', ora: 9, calendario: 'studio', titolo: 'Riunione Studio', persona: 'Avv. Laura Verdi' },
-    { data: '2026-07-09', ora: 10, calendario: 'udienze', titolo: 'Udienza civile', dettaglio: 'Tribunale Milano', persona: 'Avv. Laura Verdi' },
-    { data: '2026-07-10', ora: 11, calendario: 'privato', titolo: 'Appuntamento privato', persona: 'Avv. Laura Verdi' },
-    { data: '2026-07-08', ora: 12, calendario: 'scadenze', titolo: 'Deposito memoria', persona: 'Avv. Laura Verdi' },
-    { data: '2026-07-09', ora: 14, calendario: 'studio', titolo: 'Revisione contratto', persona: 'Avv. Marco Neri' },
-    { data: '2026-07-07', ora: 15, calendario: 'studio', titolo: 'Cliente Alfa S.r.l.', persona: 'Avv. Laura Verdi' },
-    { data: '2026-07-10', ora: 15, calendario: 'studio', titolo: 'Call controparte', dettaglio: 'Avv. Neri invitato', persona: 'Avv. Marco Neri' }
-  ]);
+  readonly eventiAgenda = signal<EventoAgenda[]>([]);
   readonly oreCalendario = Array.from({ length: 16 }, (_, indice) => indice + 7);
   readonly slotCalendario = Array.from({ length: 32 }, (_, indice) => ({ ora: 7 + Math.floor(indice / 2), minuti: indice % 2 ? 30 : 0 }));
   readonly giorniVisualizzati = computed(() => {
@@ -284,14 +280,10 @@ export class App {
         y: 1,
         w: 6,
         h: 3,
-        metric: '12 eventi oggi',
-        preview: 'Appuntamenti in ordine cronologico',
-        details: ['08:45 — Revisione fascicolo Beta', '10:30 — Udienza civile, Tribunale di Milano', '12:15 — Scadenza deposito memoria', '15:00 — Appuntamento cliente in studio', '17:30 — Call con controparte'],
-        righeAnteprima: [
-          { titolo: '08:45 — Revisione fascicolo Beta', descrizione: 'Studio · Avv. Verdi', stato: 'Studio' },
-          { titolo: '10:30 — Udienza civile', descrizione: 'Tribunale di Milano · RG 1842/2025', stato: 'Udienza' },
-          { titolo: '15:00 — Appuntamento cliente', descrizione: 'Sala riunioni 1 · Cliente Alfa', stato: 'Cliente' }
-        ]
+        metric: 'Nessun impegno oggi',
+        preview: 'Nessun prossimo evento',
+        details: [],
+        righeAnteprima: []
       },
       {
         ...this.widgetLibrary[1],
@@ -669,6 +661,14 @@ export class App {
     event.stopPropagation();
     this.rigaWidgetSelezionata.set(riga);
     this.openWidget(widget);
+    if (widget.key === 'calendario' && riga.eventoId) {
+      const evento = this.eventiAgenda().find(elemento => elemento.id === riga.eventoId);
+      if (evento) {
+        this.dataCalendario.set(this.dataDaIso(evento.data));
+        this.nuovoAppuntamentoAperto.set(false);
+        this.eventoSelezionato.set(evento);
+      }
+    }
   }
 
   closeWidget(key: ChiaveWidget, event: Event): void {
@@ -775,12 +775,14 @@ export class App {
     this.calendariAgenda.update(calendari => calendari.map(calendario =>
       calendario.chiave === chiave ? { ...calendario, selezionato } : calendario
     ));
+    this.aggiornaWidgetCalendario();
   }
 
   cambiaVisibilitaPersona(nome: string, selezionata: boolean): void {
     this.personeStudio.update(persone => persone.map(persona =>
       persona.nome === nome ? { ...persona, selezionata } : persona
     ));
+    this.aggiornaWidgetCalendario();
   }
 
   cambiaCondivisionePersona(nome: string, selezionata: boolean): void {
@@ -1168,7 +1170,11 @@ export class App {
       this.personeInvitate.set(persone.map(p=>({...p,selezionata:false})));
     });
     this.http.get<CalendarioApi[]>('/api/v1/calendario/calendari').subscribe(calendari => {
-      this.calendariAgenda.set(calendari.map(c => this.daCalendarioApi(c, c.condivisoCon.map(id => this.personeStudio().find(persona => persona.id === id)?.nome).filter((nome): nome is string => !!nome))));
+      const visibilitaCorrente = new Map(this.calendariAgenda().map(calendario => [String(calendario.chiave), calendario.selezionato]));
+      this.calendariAgenda.set(calendari.map(calendario => ({
+        ...this.daCalendarioApi(calendario, calendario.condivisoCon.map(id => this.personeStudio().find(persona => persona.id === id)?.nome).filter((nome): nome is string => !!nome)),
+        selezionato: visibilitaCorrente.get(calendario.id) ?? true
+      })));
       const predefinito = calendari.find(c => c.colore === 'studio') ?? calendari[0];
       if (predefinito) this.appuntamentoForm.controls.calendario.setValue(predefinito.id);
       const dal = `${new Date().getFullYear() - 1}-01-01`;
@@ -1187,14 +1193,55 @@ export class App {
     const inizio = new Date(e.inizio);
     const organizzatore = this.personeStudio().find(persona => persona.id === e.creatoreId);
     const fine=new Date(e.fine);
-    return { id: e.id, data: this.dataIsoLocale(inizio), ora: inizio.getHours(), minuti: inizio.getMinutes(), fine:`${String(fine.getHours()).padStart(2,'0')}:${String(fine.getMinutes()).padStart(2,'0')}`, calendario: e.calendarioId, colore:e.colore, titolo: e.titolo, personaId: e.creatoreId, persona: organizzatore?.nome || this.userName() || 'Avvocato dello Studio', note:e.note, partecipanti:e.partecipanti, statoDisponibilita:e.statoDisponibilita, promemoriaMinuti:e.promemoriaMinuti, categoria:e.categoria, ricorrenza:e.ricorrenza };
+    return { id: e.id, data: this.dataIsoLocale(inizio), ora: inizio.getHours(), minuti: inizio.getMinutes(), fine:`${String(fine.getHours()).padStart(2,'0')}:${String(fine.getMinutes()).padStart(2,'0')}`, calendario: e.calendarioId, colore:e.colore, titolo: e.titolo, personaId: e.creatoreId, persona: organizzatore?.nome || this.userName() || 'Avvocato dello Studio', note:e.note, partecipanti:e.partecipanti, statoDisponibilita:e.statoDisponibilita, promemoriaMinuti:e.promemoriaMinuti, categoria:e.categoria, ricorrenza:e.ricorrenza, tuttoGiorno:e.tuttoGiorno };
   }
-  private aggiornaWidgetCalendario(): void {
-    const oggi = this.dataIsoLocale(new Date());
-    const prossimi = this.eventiAgenda().filter(e => e.data >= oggi).sort((a,b) => a.data.localeCompare(b.data) || a.ora-b.ora).slice(0, 5);
-    const righe = prossimi.map(e => ({ titolo: `${String(e.ora).padStart(2,'0')}:${String(e.minuti ?? 0).padStart(2,'0')} — ${e.titolo}`, descrizione: e.dettaglio || this.calendariAgenda().find(c=>c.chiave===e.calendario)?.nome || 'Calendario', stato: e.data === oggi ? 'Oggi' : new Intl.DateTimeFormat('it-IT',{day:'2-digit',month:'short'}).format(this.dataDaIso(e.data)) }));
-    const oggiTotale = this.eventiAgenda().filter(e => e.data === oggi).length;
-    this.activeWidgets.update(widgets => widgets.map(w => w.key === 'calendario' ? { ...w, metric: `${oggiTotale} eventi oggi`, preview: prossimi.length ? 'Appuntamenti in ordine cronologico' : 'Nessun prossimo appuntamento', details: righe.map(r=>r.titolo), righeAnteprima: righe } : w));
+  aggiornaWidgetCalendario(): void {
+    const adesso = this.oraAttuale();
+    const oggi = this.dataIsoLocale(adesso);
+    const domani = this.dataIsoLocale(this.aggiungiGiorni(adesso, 1));
+    const visibili = this.eventiAgenda().filter(evento => this.eventoVisibile(evento));
+    const eventiOggi = visibili.filter(evento => evento.data === oggi);
+    const rilevanti = visibili.filter(evento => {
+      if (evento.data > oggi) return true;
+      if (evento.data < oggi) return false;
+      if (evento.tuttoGiorno) return true;
+      const [oraFine, minutiFine] = (evento.fine ?? this.formattaOra(evento.ora, evento.minuti)).split(':').map(Number);
+      return oraFine * 60 + minutiFine >= adesso.getHours() * 60 + adesso.getMinutes();
+    }).sort((a, b) => a.data.localeCompare(b.data) || a.ora - b.ora || (a.minuti ?? 0) - (b.minuti ?? 0));
+    const prossimi = rilevanti.slice(0, 5);
+    const righe: RigaWidget[] = prossimi.map(evento => {
+      const calendario = this.calendariAgenda().find(elemento => elemento.chiave === evento.calendario);
+      const categoria = this.etichettaCategoriaEvento(evento);
+      const urgente = evento.data === oggi && categoria === 'Scadenza';
+      return {
+        titolo: `${urgente ? '⚠ ' : ''}${evento.tuttoGiorno ? 'Tutto il giorno' : this.formattaOra(evento.ora, evento.minuti)} — ${evento.titolo}`,
+        descrizione: `${categoria} · ${calendario?.nome ?? 'Calendario'}`,
+        stato: evento.data === oggi ? 'Oggi' : evento.data === domani ? 'Domani' : new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: 'short' }).format(this.dataDaIso(evento.data)),
+        eventoId: evento.id,
+        colore: evento.colore ? this.coloreEvento(evento) : calendario?.classeColore ?? this.coloreEvento(evento),
+        urgente
+      };
+    });
+    const quantita = eventiOggi.length;
+    const metric = quantita === 0 ? 'Nessun impegno oggi' : `${quantita} ${quantita === 1 ? 'impegno' : 'impegni'} oggi`;
+    const prossimo = rilevanti[0];
+    const preview = prossimo
+      ? prossimo.tuttoGiorno && prossimo.data === oggi
+        ? 'Prossimo: evento per tutta la giornata'
+        : `Prossimo ${prossimo.data === oggi ? 'alle' : 'il ' + new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: 'short' }).format(this.dataDaIso(prossimo.data)) + ' alle'} ${this.formattaOra(prossimo.ora, prossimo.minuti)}`
+      : 'Nessun prossimo evento';
+    this.activeWidgets.update(widgets => widgets.map(widget => widget.key === 'calendario'
+      ? { ...widget, metric, preview, details: righe.map(riga => riga.titolo), righeAnteprima: righe }
+      : widget));
+  }
+
+  private etichettaCategoriaEvento(evento: EventoAgenda): string {
+    const categoria = (evento.categoria ?? '').toUpperCase();
+    if (categoria.includes('SCADENZ') || String(evento.calendario).toLowerCase().includes('scadenz')) return 'Scadenza';
+    if (categoria.includes('UDIENZ') || String(evento.calendario).toLowerCase().includes('udienz')) return 'Udienza';
+    if (categoria.includes('CLIENT')) return 'Cliente';
+    if (categoria.includes('RIUNION')) return 'Riunione';
+    return 'Evento';
   }
 
   private positionFromCoordinates(

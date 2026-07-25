@@ -1401,6 +1401,15 @@
   border-color: color-mix(in srgb, var(--foro-accent) 38%, #cbd5e1);
 }
 
+.widget-preview-list .evento-agenda {
+  border-left: 4px solid var(--colore-evento, #0b67b2);
+}
+
+.widget-preview-list .evento-agenda.evento-urgente {
+  background: #fff7ed;
+  border-color: #dc2626;
+}
+
 .widget-preview-list strong,
 .widget-preview-list small {
   display: block;
