@@ -192,7 +192,9 @@
             <b>{{ widget.metric }}</b>
             <p>{{ widget.preview }}</p>
             <div class="widget-preview-list">
-              <button type="button" *ngFor="let riga of widget.righeAnteprima" (click)="apriRigaWidget(widget,riga,$event)">
+              <button type="button" *ngFor="let riga of widget.righeAnteprima"
+                [class.evento-agenda]="widget.key === 'calendario'" [class.evento-urgente]="riga.urgente"
+                [style.--colore-evento]="riga.colore" (click)="apriRigaWidget(widget,riga,$event)">
                 <span>
                   <strong>{{ riga.titolo }}</strong>
                   <small>{{ riga.descrizione }}</small>

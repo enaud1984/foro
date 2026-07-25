@@ -139,4 +139,102 @@ describe('App', () => {
     expect(compiled.querySelector('.collaborator-role')?.textContent).toContain('AVVOCATO');
     expect(compiled.textContent).not.toContain('LAWYER');
   });
+
+  describe('widget compatto Agenda', () => {
+    function preparaAgenda(app: App): void {
+      app.oraAttuale.set(new Date(2026, 6, 25, 10, 0));
+      app.calendariAgenda.set([
+        { chiave: 'studio', nome: 'Studio', classeColore: '#0b67b2', selezionato: true, condivisoCon: [] },
+        { chiave: 'scadenze', nome: 'Scadenze', classeColore: '#dc2626', selezionato: true, condivisoCon: [] },
+        { chiave: 'nascosto', nome: 'Privato', classeColore: '#7c3aed', selezionato: false, condivisoCon: [] }
+      ]);
+    }
+
+    it('deriva dai veri eventi visibili, ordina oggi prima del futuro ed esclude conclusi e calendari nascosti', () => {
+      const app = TestBed.createComponent(App).componentInstance;
+      preparaAgenda(app);
+      app.eventiAgenda.set([
+        { id: 'domani', data: '2026-07-26', ora: 9, calendario: 'studio', titolo: 'Evento futuro', persona: 'Laura', fine: '10:00', categoria: 'RIUNIONE' },
+        { id: 'passato', data: '2026-07-25', ora: 8, calendario: 'studio', titolo: 'Evento concluso', persona: 'Laura', fine: '09:00' },
+        { id: 'oggi-2', data: '2026-07-25', ora: 14, calendario: 'studio', titolo: 'Cliente Rossi', persona: 'Laura', fine: '15:00', categoria: 'CLIENTE' },
+        { id: 'nascosto', data: '2026-07-25', ora: 11, calendario: 'nascosto', titolo: 'Segreto', persona: 'Laura', fine: '12:00' },
+        { id: 'oggi-1', data: '2026-07-25', ora: 11, calendario: 'scadenze', titolo: 'Deposito', persona: 'Laura', fine: '11:30', categoria: 'SCADENZA' }
+      ]);
+
+      app.aggiornaWidgetCalendario();
+      const widget = app.activeWidgets().find(elemento => elemento.key === 'calendario')!;
+
+      expect(widget.metric).toBe('3 impegni oggi');
+      expect(widget.preview).toBe('Prossimo alle 11:00');
+      expect(widget.righeAnteprima.map(riga => riga.eventoId)).toEqual(['oggi-1', 'oggi-2', 'domani']);
+      expect(widget.righeAnteprima[0]).toEqual(jasmine.objectContaining({ colore: '#dc2626', urgente: true, stato: 'Oggi' }));
+      expect(widget.righeAnteprima[0].titolo).toContain('⚠');
+      expect(widget.righeAnteprima[0].descrizione).toContain('Scadenza');
+      expect(widget.righeAnteprima[2].stato).toBe('Domani');
+    });
+
+    it('limita a cinque righe cronologiche', () => {
+      const app = TestBed.createComponent(App).componentInstance;
+      preparaAgenda(app);
+      app.eventiAgenda.set(Array.from({ length: 7 }, (_, indice) => ({
+        id: `evento-${indice}`, data: '2026-07-26', ora: 8 + indice, calendario: 'studio',
+        titolo: `Evento ${indice}`, persona: 'Laura', fine: `${String(9 + indice).padStart(2, '0')}:00`
+      })));
+      app.aggiornaWidgetCalendario();
+      expect(app.activeWidgets().find(widget => widget.key === 'calendario')?.righeAnteprima.length).toBe(5);
+    });
+
+    it('gestisce metriche singolari, assenza di eventi, giornata intera e nessun prossimo evento', () => {
+      const app = TestBed.createComponent(App).componentInstance;
+      preparaAgenda(app);
+      app.aggiornaWidgetCalendario();
+      let widget = app.activeWidgets().find(elemento => elemento.key === 'calendario')!;
+      expect(widget.metric).toBe('Nessun impegno oggi');
+      expect(widget.preview).toBe('Nessun prossimo evento');
+
+      app.eventiAgenda.set([{ id: 'intera', data: '2026-07-25', ora: 0, calendario: 'studio', titolo: 'Convegno', persona: 'Laura', fine: '23:59', tuttoGiorno: true }]);
+      app.aggiornaWidgetCalendario();
+      widget = app.activeWidgets().find(elemento => elemento.key === 'calendario')!;
+      expect(widget.metric).toBe('1 impegno oggi');
+      expect(widget.preview).toBe('Prossimo: evento per tutta la giornata');
+      expect(widget.righeAnteprima[0].titolo).toContain('Tutto il giorno');
+
+      app.eventiAgenda.set([{ id: 'finito', data: '2026-07-25', ora: 8, calendario: 'studio', titolo: 'Finito', persona: 'Laura', fine: '09:00' }]);
+      app.aggiornaWidgetCalendario();
+      widget = app.activeWidgets().find(elemento => elemento.key === 'calendario')!;
+      expect(widget.metric).toBe('1 impegno oggi');
+      expect(widget.preview).toBe('Nessun prossimo evento');
+      expect(widget.righeAnteprima).toEqual([]);
+    });
+
+    it('apre Agenda, naviga alla data e mostra il dettaglio dell’evento cliccato', () => {
+      const app = TestBed.createComponent(App).componentInstance;
+      preparaAgenda(app);
+      app.eventiAgenda.set([{ id: 'selezionato', data: '2026-07-27', ora: 12, calendario: 'studio', titolo: 'Riunione', persona: 'Laura', fine: '13:00' }]);
+      app.aggiornaWidgetCalendario();
+      const widget = app.activeWidgets().find(elemento => elemento.key === 'calendario')!;
+
+      app.apriRigaWidget(widget, widget.righeAnteprima[0], new MouseEvent('click'));
+
+      expect(app.expandedWidget()?.key).toBe('calendario');
+      expect(app.dataIsoLocale(app.dataCalendario())).toBe('2026-07-27');
+      expect(app.eventoSelezionato()?.id).toBe('selezionato');
+    });
+
+    it('riflette creazione, modifica ed eliminazione senza una seconda collezione eventi', () => {
+      const app = TestBed.createComponent(App).componentInstance;
+      preparaAgenda(app);
+      app.eventiAgenda.set([{ id: 'evento', data: '2026-07-26', ora: 9, calendario: 'studio', titolo: 'Creato', persona: 'Laura', fine: '10:00' }]);
+      app.aggiornaWidgetCalendario();
+      expect(app.activeWidgets().find(widget => widget.key === 'calendario')?.details[0]).toContain('Creato');
+
+      app.eventiAgenda.update(eventi => eventi.map(evento => ({ ...evento, titolo: 'Modificato' })));
+      app.aggiornaWidgetCalendario();
+      expect(app.activeWidgets().find(widget => widget.key === 'calendario')?.details[0]).toContain('Modificato');
+
+      app.eventiAgenda.set([]);
+      app.aggiornaWidgetCalendario();
+      expect(app.activeWidgets().find(widget => widget.key === 'calendario')?.righeAnteprima).toEqual([]);
+    });
+  });
 });
