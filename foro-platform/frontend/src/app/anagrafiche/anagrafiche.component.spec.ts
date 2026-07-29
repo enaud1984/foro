@@ -33,6 +33,13 @@ describe('AnagraficheComponent', () => {
     const richiesta=http.expectOne(r=>r.url==='/api/v1/anagrafiche');
     expect(richiesta.request.params.get('dimensione')).toBe('5');richiesta.flush({content:[],totalElements:0,totalPages:0,number:0,size:5});
   });
+  it('mostra il pulsante per aprire la scheda completa',()=>{
+    const soggetto={id:'1',tipoCodice:'PERSONA_FISICA',nome:'Giulia',cognome:'Ferrari',denominazione:null,email:null,pec:null,telefono:null,cellulare:null,partitaIva:null,stato:'ATTIVO',version:0,creatoIl:'2026-07-29T08:00:00Z',aggiornatoIl:'2026-07-29T08:00:00Z'};
+    const fixture=TestBed.createComponent(AnagraficheComponent);fixture.detectChanges();rispondiIniziale([soggetto]);fixture.detectChanges();
+    (fixture.nativeElement.querySelector('.lista button') as HTMLButtonElement).click();fixture.detectChanges();
+    http.expectOne('/api/v1/anagrafiche/1/pratiche').flush([]);fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Apri scheda completa');
+  });
   it('gestisce le metriche vuota, singolare e plurale',()=>{
     const componente=TestBed.createComponent(AnagraficheComponent).componentInstance;
     componente.totale.set(0);expect(componente.metrica()).toBe('Nessuna anagrafica');

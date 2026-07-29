@@ -252,3 +252,6 @@ Nella foundation attuale gli endpoint implementati sono:
 La verticale usa `/api/v1/pratiche` per cataloghi, elenco paginato, dettaglio, CRUD, transizioni, soggetti, team, documenti, attività, eventi, comunicazioni, dati giudiziari, economia e timeline. Ogni operazione deriva Studio e utente dal `TenantContext`; le risorse cross-tenant o non visibili rispondono 404.
 
 Gli aggiornamenti richiedono `version`; i conflitti rispondono con `PRATICA_VERSIONE_CONFLITTO`. Il servizio applicativo mantiene le invarianti di stato, l’ultimo Cliente, la membership del responsabile, la visibilità delle pratiche riservate, l’audit e la timeline append-only. Agenda valida il riferimento alla Pratica tramite lo stesso servizio di visibilità.
+## Estensione v3.4 — Scheda Anagrafica e documenti
+
+Le API `/api/v1/anagrafiche/{id}/documenti` riusano archivio e registro documentale delle Pratiche. Le query applicano Studio, soft delete e visibilità delle Pratiche riservate. Sono disponibili elenco, dettaglio, upload, metadati, download, eliminazione, raggruppamento per Pratica, timeline e generazione della scheda stampabile.

@@ -212,6 +212,7 @@ public class PraticheService {
     inserisciSoggetto(praticaId, dati);
     timeline(praticaId, "PRATICA_SOGGETTO_COLLEGATO", "Soggetto collegato", "SOGGETTO", dati.soggettoId());
     audit("PRATICA_SOGGETTO_COLLEGATO", praticaId);
+    auditSoggetto("ANAGRAFICA_PRATICA_COLLEGATA", dati.soggettoId());
     return soggetti(praticaId).stream().filter(x -> dati.soggettoId().equals(x.get("soggettoId")) && dati.ruoloCodice().equals(x.get("ruoloCodice"))).findFirst().orElseThrow();
   }
 
@@ -234,6 +235,7 @@ public class PraticheService {
       throw errore(HttpStatus.CONFLICT, "PRATICA_SOGGETTO_DUPLICATO");
     }
     timeline(praticaId, "PRATICA_SOGGETTO_MODIFICATO", "Ruolo soggetto modificato", "SOGGETTO", dati.soggettoId());
+    auditSoggetto("ANAGRAFICA_PRATICA_COLLEGATA", dati.soggettoId());
     return soggetti(praticaId).stream().filter(x -> relazioneId.equals(x.get("id"))).findFirst().orElseThrow();
   }
 
@@ -248,6 +250,7 @@ public class PraticheService {
       tenant.userId(), tenant.userId(), tenant.studioId(), praticaId, relazioneId);
     timeline(praticaId, "PRATICA_SOGGETTO_SCOLLEGATO", "Soggetto scollegato", "SOGGETTO", (UUID) relazione.get("soggetto_id"));
     audit("PRATICA_SOGGETTO_SCOLLEGATO", praticaId);
+    auditSoggetto("ANAGRAFICA_PRATICA_SCOLLEGATA", (UUID) relazione.get("soggetto_id"));
   }
 
   @Transactional(readOnly = true)
@@ -597,8 +600,17 @@ public class PraticheService {
       Integer.class, soggettoId, tenant.studioId());
     if (presente == null || presente == 0) throw errore(HttpStatus.NOT_FOUND, "ANAGRAFICA_NON_TROVATA");
     return database.queryForList("""
-      SELECT p.id,p.codice,p.titolo,p.stato_codice AS "statoCodice",ps.ruolo_codice AS "ruoloCodice"
+      SELECT p.id,p.codice,p.titolo,p.stato_codice AS "statoCodice",p.materia_codice AS "materiaCodice",
+      ps.ruolo_codice AS "ruoloCodice",p.responsabile_id AS "responsabileId",u.display_name AS "responsabileNome",
+      p.data_apertura AS "dataApertura",(
+        SELECT MIN(data) FROM (
+          SELECT a.data_scadenza AS data FROM attivita_pratica a WHERE a.pratica_id=p.id AND a.eliminato_il IS NULL
+            AND a.stato_codice NOT IN ('COMPLETATA','ANNULLATA')
+          UNION ALL SELECT e.inizio::date FROM evento_calendario e WHERE e.pratica_id=p.id AND e.inizio>=NOW()
+        ) prossime
+      ) AS "prossimaScadenza"
       FROM pratica_soggetto ps JOIN pratica p ON p.id=ps.pratica_id
+      JOIN user_account u ON u.id=p.responsabile_id
       WHERE ps.studio_id=? AND ps.soggetto_id=? AND ps.eliminato_il IS NULL AND p.eliminato_il IS NULL
       AND (? OR p.riservata=FALSE OR p.responsabile_id=? OR EXISTS (
         SELECT 1 FROM pratica_utente pu WHERE pu.pratica_id=p.id AND pu.utente_id=? AND pu.eliminato_il IS NULL))
@@ -830,6 +842,12 @@ public class PraticheService {
       INSERT INTO audit_event(id,studio_id,actor_id,action,entity_type,entity_id,outcome,correlation_id,occurred_at,metadata)
       VALUES (?,?,?,?,?,?,?,?,?,?::jsonb)
       """, UUID.randomUUID(),tenant.studioId(),tenant.userId(),azione,"PRATICA",id,"SUCCESS",UUID.randomUUID(),Timestamp.from(Instant.now()),"{}");
+  }
+  private void auditSoggetto(String azione, UUID id) {
+    database.update("""
+      INSERT INTO audit_event(id,studio_id,actor_id,action,entity_type,entity_id,outcome,correlation_id,occurred_at,metadata)
+      VALUES (?,?,?,?,?,?,?,?,?,?::jsonb)
+      """, UUID.randomUUID(),tenant.studioId(),tenant.userId(),azione,"SOGGETTO",id,"SUCCESS",UUID.randomUUID(),Timestamp.from(Instant.now()),"{}");
   }
   private Map<String,Object> mappaRiga(ResultSet rs) throws SQLException {
     var metadata = rs.getMetaData();

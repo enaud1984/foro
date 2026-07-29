@@ -31,9 +31,11 @@
         <dt>Creata</dt><dd>{{s.creatoIl|date:'dd/MM/yyyy HH:mm'}}</dd><dt>Ultima modifica</dt><dd>{{s.aggiornatoIl|date:'dd/MM/yyyy HH:mm'}}</dd>
       </dl>
       <section class="pratiche-collegate"><h4>Pratiche collegate</h4><button type="button" *ngFor="let p of praticheCollegate()" (click)="praticaAperta.emit(p.id)"><strong>{{p.codice}} · {{p.titolo}}</strong><small>{{p.ruoloCodice.replaceAll('_',' ')}} · {{p.statoCodice.replaceAll('_',' ')}}</small></button><p *ngIf="!praticheCollegate().length">Nessuna Pratica visibile collegata.</p></section>
-      <nav><button type="button" (click)="modifica(s)">Modifica</button><button type="button" (click)="cambiaStato(s)">{{s.stato==='ATTIVO'?'Disattiva':'Riattiva'}}</button><button type="button" class="pericolo" (click)="elimina(s)">Elimina</button></nav>
+      <nav><button type="button" class="primario" (click)="apriSchedaCompleta(s)">Apri scheda completa</button><button type="button" (click)="modifica(s)">Modifica</button><button type="button" (click)="cambiaStato(s)">{{s.stato==='ATTIVO'?'Disattiva':'Riattiva'}}</button><button type="button" class="pericolo" (click)="elimina(s)">Elimina</button></nav>
     </article>
   </div>
+  <app-anagrafica-scheda-completa *ngIf="!compatto&&schedaCompleta()&&selezionato() as s" [soggetto]="s" [tipi]="tipi()"
+    (chiudi)="schedaCompleta.set(false)" (modifica)="modificaDaScheda($event)" (apriPratica)="praticaAperta.emit($event)"></app-anagrafica-scheda-completa>
   <nav class="pagine" *ngIf="!compatto&&pagineTotali()>1"><button type="button" (click)="vai(-1)" [disabled]="pagina()===0">Precedente</button><span>Pagina {{pagina()+1}} di {{pagineTotali()}}</span><button type="button" (click)="vai(1)" [disabled]="pagina()+1>=pagineTotali()">Successiva</button></nav>
 
   <div class="pannello-form" *ngIf="!compatto&&formAperto()">

@@ -1,0 +1,73 @@
+<section class="scheda-completa" role="dialog" aria-modal="true" [attr.aria-label]="'Scheda completa di '+nome()">
+  <header class="scheda-header">
+    <div><small>{{tipo()}} · {{soggetto.stato==='ATTIVO'?'Attiva':'Disattivata'}}</small><h2>{{nome()}}</h2></div>
+    <nav aria-label="Azioni scheda">
+      <button type="button" (click)="modifica.emit(soggetto)">Modifica</button>
+      <div class="menu">
+        <button type="button" aria-haspopup="menu" [attr.aria-expanded]="menuDocumenti()" (click)="menuDocumenti.set(!menuDocumenti())">Documenti ▾</button>
+        <div role="menu" *ngIf="menuDocumenti()">
+          <button role="menuitem" type="button" (click)="apriDocumenti('upload')">Carica documento anagrafico</button>
+          <button role="menuitem" type="button" (click)="apriDocumenti('anagrafica')">Documenti dell’Anagrafica</button>
+          <button role="menuitem" type="button" (click)="apriDocumenti('pratiche')">Documenti delle Pratiche</button>
+          <button role="menuitem" type="button" (click)="apriDocumenti('genera')">Genera documento</button>
+          <button role="menuitem" type="button" (click)="apriDocumenti('stampa')">Stampa scheda anagrafica</button>
+        </div>
+      </div>
+      <button type="button" (click)="stampaAperta.set(true)">Stampa scheda</button>
+      <button type="button" aria-label="Chiudi scheda completa" (click)="chiudi.emit()">×</button>
+    </nav>
+  </header>
+  <nav class="scheda-tabs" aria-label="Sezioni scheda">
+    <button *ngFor="let tab of [['riepilogo','Riepilogo'],['dati','Dati generali'],['recapiti','Recapiti e indirizzo'],['pratiche','Pratiche collegate'],['documenti','Documenti'],['timeline','Timeline']]"
+      type="button" [class.attivo]="sezione()===tab[0]" (click)="sezione.set($any(tab[0]))">{{tab[1]}}</button>
+  </nav>
+  <p class="stato-ui" *ngIf="caricamento()">Caricamento scheda…</p>
+  <p class="errore" role="alert" *ngIf="errore()">{{errore()}}</p>
+
+  <main *ngIf="!caricamento()">
+    <section *ngIf="sezione()==='riepilogo'" class="riepilogo">
+      <div class="metriche"><article><strong>{{pratiche().length}}</strong><span>Pratiche visibili</span></article><article><strong>{{documentiAnagrafici()}}</strong><span>Documenti anagrafici</span></article><article><strong>{{documentiPratica()}}</strong><span>Documenti delle Pratiche</span></article></div>
+      <dl><dt>Codice fiscale</dt><dd>{{codiceFiscaleMascherato()}}</dd><dt>Partita IVA</dt><dd>{{soggetto.partitaIva||'—'}}</dd>
+        <dt>Email</dt><dd>{{soggetto.email||'—'}}</dd><dt>PEC</dt><dd>{{soggetto.pec||'—'}}</dd><dt>Telefono</dt><dd>{{soggetto.telefono||soggetto.cellulare||'—'}}</dd>
+        <dt>Indirizzo</dt><dd>{{indirizzo()||'—'}}</dd><dt>Creazione</dt><dd>{{soggetto.creatoIl|date:'dd/MM/yyyy HH:mm'}}</dd><dt>Ultima modifica</dt><dd>{{soggetto.aggiornatoIl|date:'dd/MM/yyyy HH:mm'}}</dd></dl>
+    </section>
+    <section *ngIf="sezione()==='dati'"><h3>Dati generali</h3><dl>
+      <ng-container *ngIf="soggetto.tipoCodice==='PERSONA_FISICA';else organizzazione"><dt>Nome</dt><dd>{{soggetto.nome}}</dd><dt>Cognome</dt><dd>{{soggetto.cognome}}</dd><dt>Nascita</dt><dd>{{soggetto.dataNascita||'—'}} · {{soggetto.luogoNascita||'—'}}</dd></ng-container>
+      <ng-template #organizzazione><dt>Denominazione</dt><dd>{{soggetto.denominazione}}</dd><dt>Tipologia</dt><dd>{{tipo()}}</dd><dt>Forma giuridica</dt><dd>{{soggetto.formaGiuridica||'—'}}</dd></ng-template>
+      <dt>Codice fiscale</dt><dd>{{soggetto.codiceFiscale||'—'}}</dd><dt>Partita IVA</dt><dd>{{soggetto.partitaIva||'—'}}</dd></dl></section>
+    <section *ngIf="sezione()==='recapiti'"><h3>Recapiti e indirizzo</h3><dl><dt>Email</dt><dd>{{soggetto.email||'—'}}</dd><dt>PEC</dt><dd>{{soggetto.pec||'—'}}</dd><dt>Telefono</dt><dd>{{soggetto.telefono||'—'}}</dd><dt>Cellulare</dt><dd>{{soggetto.cellulare||'—'}}</dd><dt>Indirizzo</dt><dd>{{indirizzo()||'—'}}</dd></dl></section>
+    <section *ngIf="sezione()==='pratiche'" class="elenco-pratiche"><h3>Pratiche collegate</h3>
+      <button type="button" *ngFor="let p of pratiche()" (click)="apriPratica.emit(p.id)"><strong>{{p.codice}} · {{p.titolo}}</strong><span>{{p.ruoloCodice.replaceAll('_',' ')}} · {{p.statoCodice.replaceAll('_',' ')}} · {{p.materiaCodice.replaceAll('_',' ')}}</span><small>Responsabile: {{p.responsabileNome}} · Apertura {{p.dataApertura|date:'dd/MM/yyyy'}}<ng-container *ngIf="p.prossimaScadenza"> · Prossima scadenza {{p.prossimaScadenza|date:'dd/MM/yyyy'}}</ng-container></small></button>
+      <p *ngIf="!pratiche().length">Nessuna Pratica visibile collegata.</p></section>
+    <section *ngIf="sezione()==='documenti'" class="documenti">
+      <header><h3>Documenti</h3><button type="button" class="primario" (click)="uploadAperto.set(true)">Carica documento</button></header>
+      <div class="filtri"><label>Ambito<select [formControl]="filtroAmbito"><option value="TUTTI">Tutti</option><option value="ANAGRAFICA">Documenti dell’Anagrafica</option><option value="PRATICHE">Documenti delle Pratiche</option></select></label>
+        <label>Ricerca<input [formControl]="ricercaDocumenti"></label><label>Categoria<select [formControl]="filtroCategoria"><option value="">Tutte</option><option *ngFor="let c of categorie()" [value]="c.codice">{{c.descrizione}}</option></select></label>
+        <label>Origine<select [formControl]="filtroOrigine"><option value="">Tutte</option><option value="UPLOAD">Upload</option><option value="TEMPLATE">Template</option><option value="GENERATO">Generato</option></select></label></div>
+      <label class="seleziona-tutti"><input type="checkbox" (change)="selezionaTutti($any($event.target).checked)"> Seleziona tutti nel gruppo</label>
+      <p>{{selezionati().size}} documenti selezionati. Anteprima e stampa restano individuali.</p>
+      <div class="tabella" role="table" aria-label="Documenti del soggetto" *ngIf="filtroAmbito.value!=='PRATICHE'">
+        <div role="row" class="intestazione"><span></span><span>Titolo</span><span>Categoria</span><span>Contesto</span><span>Formato</span><span>Azioni</span></div>
+        <div role="row" *ngFor="let d of documenti()"><span><input type="checkbox" [checked]="selezionati().has(d.id)" (change)="seleziona(d,$any($event.target).checked)" [attr.aria-label]="'Seleziona '+d.titolo"></span>
+          <span><strong>{{d.titolo}}</strong><small>{{d.nomeFile}} · {{d.dimensione|number}} byte</small></span><span>{{d.categoriaCodice.replaceAll('_',' ')}}</span>
+          <span>{{d.praticaId?(d.praticaCodice+' · '+d.praticaTitolo):'Anagrafica'}}</span><span>{{d.mimeType}}</span>
+          <span class="azioni"><button type="button" (click)="apriAnteprima(d)">Anteprima</button><button type="button" (click)="scarica(d)">Scarica</button><button type="button" (click)="apriAnteprima(d)" [disabled]="!stampabile(d)">Stampa</button><button type="button" *ngIf="!d.praticaId" (click)="modificaMetadati(d)">Modifica</button><button type="button" *ngIf="!d.praticaId" (click)="eliminaDocumento(d)">Elimina</button><button type="button" *ngIf="d.praticaId" (click)="apriPratica.emit(d.praticaId)">Apri pratica</button></span></div>
+      </div><p *ngIf="!documenti().length">Nessun documento disponibile per i filtri selezionati.</p>
+      <section class="gruppo-pratica" *ngFor="let gruppo of gruppiDocumenti()" [hidden]="filtroAmbito.value!=='PRATICHE'"><header><div><strong>{{gruppo.codice}} · {{gruppo.titolo}}</strong><small>{{gruppo.stato.replaceAll('_',' ')}}</small></div><button type="button" (click)="apriPratica.emit(gruppo.id)">Apri pratica</button></header><div *ngFor="let d of gruppo.documenti" class="riga-gruppo"><label><input type="checkbox" [checked]="selezionati().has(d.id)" (change)="seleziona(d,$any($event.target).checked)"> {{d.titolo}} · {{d.categoriaCodice.replaceAll('_',' ')}}</label><nav><button type="button" (click)="apriAnteprima(d)">Anteprima</button><button type="button" (click)="scarica(d)">Scarica</button><button type="button" (click)="apriAnteprima(d)" [disabled]="!stampabile(d)">Stampa</button></nav></div></section>
+    </section>
+    <section *ngIf="sezione()==='timeline'" class="timeline"><h3>Timeline</h3><ol><li *ngFor="let e of timeline()"><strong>{{e.azione.replaceAll('_',' ')}}</strong><time>{{e.avvenutoIl|date:'dd/MM/yyyy HH:mm'}}</time></li></ol><p *ngIf="!timeline().length">Nessun evento disponibile.</p></section>
+  </main>
+
+  <div class="sovrapposto" *ngIf="uploadAperto()"><form [formGroup]="uploadForm" (ngSubmit)="carica()"><h3>Carica documento anagrafico</h3><label>File<input type="file" accept=".pdf,.png,.jpg,.jpeg,.docx,.txt" (change)="scegliFile($event)" required></label><label>Titolo<input formControlName="titolo"></label><label>Categoria<select formControlName="categoria"><option *ngFor="let c of categorie()" [value]="c.codice">{{c.descrizione}}</option></select></label><label>Data documento<input type="date" formControlName="dataDocumento"></label><label>Note non sensibili<textarea formControlName="note"></textarea></label><nav><button type="button" (click)="annullaUpload()">Annulla</button><button type="submit" class="primario" [disabled]="!file()||uploadForm.invalid||invio()">{{invio()?'Caricamento…':'Carica'}}</button></nav></form></div>
+  <div class="sovrapposto" *ngIf="stampaAperta()"><form [formGroup]="opzioniForm" (ngSubmit)="generaScheda()"><h3>Stampa scheda anagrafica</h3><label><input type="checkbox" formControlName="datiGenerali"> Dati generali</label><label><input type="checkbox" formControlName="recapiti"> Recapiti</label><label><input type="checkbox" formControlName="indirizzo"> Indirizzo</label><label><input type="checkbox" formControlName="pratiche"> Pratiche collegate</label><label><input type="checkbox" formControlName="elencoDocumenti"> Elenco documenti</label><label><input type="checkbox" formControlName="noteInterne"> Note interne</label><p>Dati economici e file allegati non vengono mai inclusi.</p><nav><button type="button" (click)="stampaAperta.set(false)">Annulla</button><button type="submit" class="primario">Anteprima</button></nav></form></div>
+  <div class="sovrapposto" *ngIf="generaAperto()"><form [formGroup]="templateForm" (ngSubmit)="generaTemplate()"><h3>Genera documento per {{nome()}}</h3><label>Documento<select formControlName="codice"><option value="SCHEDA_ANAGRAFICA">Scheda anagrafica</option><option value="INFORMATIVA_PRIVACY">Informativa privacy</option><option value="CONSENSO_TRATTAMENTO">Consenso trattamento dati</option><option value="IDENTIFICAZIONE_CLIENTE">Modulo identificazione cliente</option><option value="ADEGUATA_VERIFICA">Modulo adeguata verifica</option><option value="TITOLARE_EFFETTIVO">Dichiarazione titolare effettivo</option><option value="LETTERA_INCARICO">Lettera di incarico</option><option value="PREVENTIVO">Preventivo</option><option value="PROCURA_LITI">Procura alle liti</option></select></label><label *ngIf="['LETTERA_INCARICO','PREVENTIVO','PROCURA_LITI'].includes(templateForm.controls.codice.value)">Pratica<select formControlName="praticaId"><option value="">Seleziona</option><option *ngFor="let p of pratiche()" [value]="p.id">{{p.codice}} · {{p.titolo}} · {{p.ruoloCodice}}</option></select></label><p>Nel MVP è configurata solo la Scheda anagrafica; gli altri modelli non producono testi legali incompleti.</p><nav><button type="button" (click)="generaAperto.set(false)">Annulla</button><button type="submit" class="primario">Genera</button></nav></form></div>
+
+  <div class="anteprima-documento" *ngIf="anteprima() as d" role="dialog" aria-modal="true"><header><h3>{{d.titolo}}</h3><button type="button" (click)="chiudiAnteprima()">×</button></header><p *ngIf="anteprimaErrore()">{{anteprimaErrore()}}</p><img *ngIf="anteprimaUrl()&&d.mimeType.startsWith('image/')" [src]="anteprimaUrl()" [alt]="d.titolo"><iframe *ngIf="anteprimaPdfUrl()&&d.mimeType==='application/pdf'" [src]="anteprimaPdfUrl()" title="Anteprima PDF"></iframe><nav><button type="button" (click)="scarica(d)">Scarica</button><button type="button" (click)="stampaDocumento()" [disabled]="!stampabile(d)">Stampa</button><button type="button" (click)="chiudiAnteprima()">Chiudi</button></nav></div>
+  <article class="anteprima-stampa" *ngIf="schedaStampabile() as stampa"><header><div><img *ngIf="stampa.studio['logo_url']" [src]="$any(stampa.studio['logo_url'])" alt=""><h1>Scheda anagrafica</h1><p>{{stampa.studio['name']}}</p></div><nav><button type="button" (click)="stampaScheda()">Stampa</button><button type="button" (click)="chiudiSchedaStampabile()">Chiudi</button></nav></header><h2>{{nome()}}</h2><p>Generata il {{stampa.generataIl|date:'dd/MM/yyyy HH:mm'}} · Documento generato da FORO</p>
+    <section *ngIf="stampa.opzioni.datiGenerali"><h3>Dati generali</h3><p>Codice fiscale: {{valoreScheda('codiceFiscale')}} · Partita IVA: {{valoreScheda('partitaIva')}}</p></section>
+    <section *ngIf="stampa.opzioni.recapiti"><h3>Recapiti</h3><p>Email: {{valoreScheda('email')}} · PEC: {{valoreScheda('pec')}} · Telefono: {{valoreScheda('telefono')}}</p></section>
+    <section *ngIf="stampa.opzioni.indirizzo"><h3>Indirizzo</h3><p>{{valoreScheda('indirizzo')}} {{valoreScheda('civico')}} · {{valoreScheda('cap')}} {{valoreScheda('comune')}}</p></section>
+    <section *ngIf="stampa.opzioni.pratiche"><h3>Pratiche collegate</h3><p *ngFor="let p of stampa.pratiche">{{p['codice']}} · {{p['titolo']}} · {{p['ruolo']}}</p></section>
+    <section *ngIf="stampa.opzioni.elencoDocumenti"><h3>Elenco documenti</h3><p *ngFor="let d of stampa.documenti">{{d['titolo']}} · {{d['categoriaCodice']}}</p></section>
+    <section *ngIf="stampa.opzioni.noteInterne"><h3>Note interne</h3><p>{{valoreScheda('note')}}</p></section></article>
+</section>

@@ -277,3 +277,6 @@ Il nome visibile del widget `clienti` è “Anagrafiche”. Widget compatto e vi
 La feature `pratiche/` contiene modelli, servizio e componenti dedicati. Widget compatto e vista espansa consumano le stesse API; la selezione del fascicolo è conservata nell’apertura espansa. Il form guidato carica i cataloghi dal backend e consente Bozza senza Cliente oppure apertura con almeno un Cliente.
 
 La navigazione coordinata permette di aprire un Soggetto nelle Anagrafiche e un evento nell’Agenda, nonché di precompilare la Pratica nel form evento esistente. Tutte le schede espongono loading, empty ed error state e non usano dati dimostrativi hardcoded.
+## Estensione v3.4 — Scheda completa Anagrafica
+
+Anagrafiche espone una scheda completa dedicata con Riepilogo, Dati generali, Recapiti, Pratiche, Documenti e Timeline. Il menu Documenti consente upload, consultazione, anteprima sicura, download, stampa e generazione della scheda anagrafica. La navigazione conserva il Soggetto selezionato.

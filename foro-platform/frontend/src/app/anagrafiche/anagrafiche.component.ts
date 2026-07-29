@@ -3,12 +3,13 @@ import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChange
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { AnagraficheService } from './anagrafiche.service';
-import { CatalogoAnagrafica, RichiestaSoggetto, Soggetto, TipoSoggetto } from './anagrafiche.modelli';
+import { CatalogoAnagrafica, PraticaCollegataAnagrafica, RichiestaSoggetto, Soggetto, TipoSoggetto } from './anagrafiche.modelli';
+import { AnagraficaSchedaCompletaComponent } from './anagrafica-scheda-completa.component';
 
 @Component({
   selector: 'app-anagrafiche',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, AnagraficaSchedaCompletaComponent],
   templateUrl: './anagrafiche.component.html',
   styleUrl: './anagrafiche.component.scss'
 })
@@ -30,9 +31,10 @@ export class AnagraficheComponent implements OnInit, OnChanges {
   readonly pagineTotali = signal(0);
   readonly totale = signal(0);
   readonly formAperto = signal(false);
+  readonly schedaCompleta = signal(false);
   readonly candidatiDuplicati = signal<Array<{id:string;nomeVisualizzato:string}>>([]);
   readonly confermaDuplicato = signal(false);
-  readonly praticheCollegate = signal<Array<{id:string;codice:string;titolo:string;statoCodice:string;ruoloCodice:string}>>([]);
+  readonly praticheCollegate = signal<PraticaCollegataAnagrafica[]>([]);
   readonly ricerca = this.fb.nonNullable.control('');
   readonly filtroTipo = this.fb.nonNullable.control('');
   readonly filtroStato = this.fb.nonNullable.control('');
@@ -56,7 +58,7 @@ export class AnagraficheComponent implements OnInit, OnChanges {
     this.carica();
   }
   ngOnChanges(cambiamenti: SimpleChanges): void {
-    if (cambiamenti['soggettoInizialeId'] && this.soggettoInizialeId) this.apriDettaglio(this.soggettoInizialeId);
+    if (cambiamenti['soggettoInizialeId'] && this.soggettoInizialeId) this.apriDettaglio(this.soggettoInizialeId,true);
     if (cambiamenti['nuovoIniziale'] && this.nuovoIniziale && !this.compatto) this.nuova();
   }
   carica(): void {
@@ -75,7 +77,9 @@ export class AnagraficheComponent implements OnInit, OnChanges {
     if(!this.compatto)this.caricaPratiche(s.id);
     if(this.compatto)this.richiediEspansione.emit(s);
   }
-  apriDettaglio(id:string):void{this.servizio.dettaglio(id).subscribe({next:s=>{this.selezionato.set(s);this.caricaPratiche(id);},error:()=>this.errore.set('Anagrafica non trovata.')});}
+  apriDettaglio(id:string,completa=false):void{this.servizio.dettaglio(id).subscribe({next:s=>{this.selezionato.set(s);this.caricaPratiche(id);this.schedaCompleta.set(completa);},error:()=>this.errore.set('Anagrafica non trovata.')});}
+  apriSchedaCompleta(s:Soggetto):void{this.selezionato.set(s);this.schedaCompleta.set(true);}
+  modificaDaScheda(s:Soggetto):void{this.schedaCompleta.set(false);this.modifica(s);}
   nuova():void{
     if(this.compatto){this.richiediEspansione.emit(null);return;}
     this.form.reset({id:'',version:0,tipoCodice:'PERSONA_FISICA',nome:'',cognome:'',dataNascita:'',luogoNascita:'',provinciaNascita:'',statoNascita:'',denominazione:'',formaGiuridica:'',codiceFiscale:'',partitaIva:'',email:'',pec:'',telefono:'',cellulare:'',indirizzo:'',civico:'',cap:'',comune:'',provincia:'',statoIndirizzo:'Italia',note:'',stato:'ATTIVO'});

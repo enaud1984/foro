@@ -280,3 +280,6 @@ Per ogni widget:
 
 La telemetria non contiene contenuti legali, corpi email o nomi documenti.
 
+## Estensione v3.4 — Anagrafiche
+
+Il widget Anagrafiche apre una scheda completa dedicata al Soggetto. La scheda conserva il contesto e offre Riepilogo, dati, recapiti, Pratiche collegate, documenti condivisi con il dominio Pratiche, timeline e stampa browser.

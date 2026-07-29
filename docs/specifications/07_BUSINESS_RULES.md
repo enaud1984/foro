@@ -187,3 +187,14 @@ Esempi:
 | BR-ANA-004 | CF e P.IVA sono normalizzati e alimentano un controllo candidati duplicati tenant-scoped non bloccante. |
 | BR-ANA-005 | Studio deriva dal security context e una risorsa cross-tenant risponde 404. |
 | BR-ANA-006 | La cancellazione è logica e auditata; le query ordinarie escludono i soggetti eliminati. |
+### BR-ANA-020 — Collegamento obbligatorio del documento
+
+Ogni documento deve essere associato ad almeno una Pratica o a un Soggetto dello stesso Studio. Se sono presenti entrambi, il Soggetto deve essere collegato alla Pratica.
+
+### BR-ANA-021 — Visibilità documenti di Pratica
+
+La scheda Anagrafica mostra documenti delle sole Pratiche visibili all’utente. Le Pratiche riservate non autorizzate e le risorse cross-tenant risultano non trovate.
+
+### BR-ANA-022 — Stampa della scheda
+
+La stampa usa dati correnti, esclude note per impostazione predefinita e non include mai dati economici o file allegati. Solo `SCHEDA_ANAGRAFICA` è generata nel MVP; gli altri template sono predisposti ma non configurati.

@@ -170,3 +170,6 @@ La verticale Pratiche usa le tabelle `pratica`, `pratica_soggetto`, `pratica_ute
 
 Il progressivo `PRA-AAAA-NNNNN` deriva da `contatore_pratica`, aggiornato atomicamente per Studio e anno. Le relazioni tenant-owned usano FK composite `(studio_id, id)` ove possibile. `evento_calendario.pratica_id` è opzionale e conserva la relazione storica quando la Pratica è cancellata logicamente.
 
+## Estensione v3.4 — Documenti Anagrafiche
+
+`documento_pratica` è il registro documentale condiviso del MVP. `pratica_id` è nullable, `soggetto_id` è nullable, ma almeno uno dei due deve essere valorizzato. La migration V17 aggiunge versione ottimistica, data documento, note non sensibili, indice tenant-scoped per Soggetto e categorie anagrafiche.
