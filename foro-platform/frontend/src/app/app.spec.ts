@@ -16,6 +16,13 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
+  it('espone Anagrafiche come nome visibile mantenendo la chiave tecnica clienti', () => {
+    const app = TestBed.createComponent(App).componentInstance;
+    const widget = app.widgetLibrary.find(elemento => elemento.key === 'clienti');
+    expect(widget?.title).toBe('Anagrafiche');
+    expect(widget?.description).toContain('Persone, società, enti');
+  });
+
   it('mostra il titolo della Scrivania Digitale nella pagina di accesso', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();

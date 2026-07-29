@@ -141,6 +141,10 @@ I tempi definitivi sono una decisione legale/organizzativa aperta.
 
 ## 9. Migrazioni
 
+## Aggiornamento v3.2 — Soggetti
+
+La prima release Anagrafiche usa `soggetto`, tenant-owned con `studio_id`, `version`, audit e soft delete. `tipo_soggetto` e `ruolo_soggetto_pratica` sono cataloghi applicativi in sola lettura. La relazione con Pratica non è ancora implementata.
+
 - strumento di migration unico e versionato;
 - nessuna modifica manuale in produzione;
 - migration backward-compatible per deploy graduali;

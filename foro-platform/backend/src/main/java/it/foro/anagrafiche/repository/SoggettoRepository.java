@@ -13,9 +13,9 @@ public interface SoggettoRepository extends JpaRepository<Soggetto,UUID> {
   @Query("""
     select s from Soggetto s where s.studioId=:studio and s.eliminatoIl is null
     and (:tipo is null or s.tipoCodice=:tipo) and (:stato is null or s.stato=:stato)
-    and (:testo is null or lower(concat(coalesce(s.nome,''),' ',coalesce(s.cognome,''),' ',coalesce(s.denominazione,''),' ',
+    and (:testo = '' or lower(concat(coalesce(s.nome,''),' ',coalesce(s.cognome,''),' ',coalesce(s.denominazione,''),' ',
       coalesce(s.codiceFiscale,''),' ',coalesce(s.partitaIva,''),' ',coalesce(s.email,''),' ',coalesce(s.pec,''),' ',
-      coalesce(s.telefono,''),' ',coalesce(s.cellulare,''))) like concat('%',lower(:testo),'%'))
+      coalesce(s.telefono,''),' ',coalesce(s.cellulare,''))) like concat('%',:testo,'%'))
     """)
   Page<Soggetto> cerca(@Param("studio") UUID studio,@Param("testo") String testo,@Param("tipo") String tipo,@Param("stato") String stato,Pageable pageable);
 
@@ -23,10 +23,12 @@ public interface SoggettoRepository extends JpaRepository<Soggetto,UUID> {
     select s from Soggetto s where s.studioId=:studio and s.eliminatoIl is null and (:escluso is null or s.id<>:escluso) and (
       (:cf is not null and s.codiceFiscaleNormalizzato=:cf) or
       (:piva is not null and s.partitaIvaNormalizzata=:piva) or
-      (:nome is not null and lower(s.nome)=lower(:nome) and lower(s.cognome)=lower(:cognome) and s.dataNascita=:nascita) or
-      (:denominazione is not null and lower(s.denominazione)=lower(:denominazione))
+      (:nome is not null and lower(s.nome)=:nome and lower(s.cognome)=:cognome and s.dataNascita=:nascita) or
+      (:denominazione is not null and lower(s.denominazione)=:denominazione)
     )
     order by s.aggiornatoIl desc
     """)
-  List<Soggetto> duplicati(UUID studio,UUID escluso,String cf,String piva,String nome,String cognome,LocalDate nascita,String denominazione);
+  List<Soggetto> duplicati(@Param("studio") UUID studio,@Param("escluso") UUID escluso,@Param("cf") String cf,
+    @Param("piva") String piva,@Param("nome") String nome,@Param("cognome") String cognome,
+    @Param("nascita") LocalDate nascita,@Param("denominazione") String denominazione);
 }

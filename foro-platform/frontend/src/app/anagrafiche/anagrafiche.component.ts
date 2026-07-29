@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, signal } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { AnagraficheService } from './anagrafiche.service';
@@ -13,8 +13,11 @@ import { CatalogoAnagrafica, RichiestaSoggetto, Soggetto, TipoSoggetto } from '.
   styleUrl: './anagrafiche.component.scss'
 })
 export class AnagraficheComponent implements OnInit, OnChanges {
+  private readonly fb = inject(FormBuilder);
+  private readonly servizio = inject(AnagraficheService);
   @Input() compatto = false;
   @Input() soggettoInizialeId: string | null = null;
+  @Input() nuovoIniziale = false;
   @Output() soggettoSelezionato = new EventEmitter<Soggetto>();
   @Output() richiediEspansione = new EventEmitter<Soggetto | null>();
   readonly soggetti = signal<Soggetto[]>([]);
@@ -40,10 +43,10 @@ export class AnagraficheComponent implements OnInit, OnChanges {
     email: ['', Validators.email], pec: ['', Validators.email], telefono: [''], cellulare: [''],
     indirizzo: [''], civico: [''], cap: ['', Validators.pattern(/^$|^[A-Za-z0-9 -]{3,10}$/)],
     comune: [''], provincia: ['', Validators.pattern(/^$|^[A-Za-z]{2}$/)], statoIndirizzo: ['Italia'],
-    note: ['', Validators.maxLength(4000)], stato: ['ATTIVO' as const]
+    note: ['', Validators.maxLength(4000)], stato: this.fb.nonNullable.control<'ATTIVO'|'DISATTIVATO'>('ATTIVO')
   });
-  constructor(private readonly fb: FormBuilder, private readonly servizio: AnagraficheService) {}
   ngOnInit(): void {
+    if(this.compatto)this.filtroStato.setValue('ATTIVO',{emitEvent:false});
     this.servizio.tipi().subscribe({next:v=>this.tipi.set(v),error:()=>this.errore.set('Cataloghi non disponibili.')});
     this.ricerca.valueChanges.pipe(debounceTime(250),distinctUntilChanged()).subscribe(()=>{this.pagina.set(0);this.carica();});
     this.filtroTipo.valueChanges.subscribe(()=>{this.pagina.set(0);this.carica();});
@@ -52,6 +55,7 @@ export class AnagraficheComponent implements OnInit, OnChanges {
   }
   ngOnChanges(cambiamenti: SimpleChanges): void {
     if (cambiamenti['soggettoInizialeId'] && this.soggettoInizialeId) this.apriDettaglio(this.soggettoInizialeId);
+    if (cambiamenti['nuovoIniziale'] && this.nuovoIniziale && !this.compatto) this.nuova();
   }
   carica(): void {
     this.caricamento.set(true);this.errore.set('');
@@ -63,6 +67,7 @@ export class AnagraficheComponent implements OnInit, OnChanges {
   nome(s:Soggetto):string{return s.denominazione||`${s.nome??''} ${s.cognome??''}`.trim();}
   etichettaTipo(codice:string):string{return this.tipi().find(t=>t.codice===codice)?.descrizione??codice.replaceAll('_',' ');}
   recapito(s:Soggetto):string{return s.email||s.pec||s.telefono||(s.partitaIva?`P.IVA ••••••${s.partitaIva.slice(-4)}`:'Nessun recapito');}
+  metrica():string{return this.totale()===0?'Nessuna anagrafica':this.totale()===1?'1 anagrafica attiva':`${this.totale()} anagrafiche attive`;}
   apri(s:Soggetto):void {
     this.selezionato.set(s);this.soggettoSelezionato.emit(s);
     if(this.compatto)this.richiediEspansione.emit(s);
@@ -90,6 +95,6 @@ export class AnagraficheComponent implements OnInit, OnChanges {
   vai(delta:number):void{const p=this.pagina()+delta;if(p>=0&&p<this.pagineTotali()){this.pagina.set(p);this.carica();}}
   personaFisica():boolean{return this.form.controls.tipoCodice.value==='PERSONA_FISICA';}
   indirizzoCompleto(s:Soggetto):string{return [s.indirizzo,s.civico,s.cap,s.comune,s.provincia,s.statoIndirizzo].filter(Boolean).join(' ');}
-  private applicaValidazioniTipo():void{const persona=this.personaFisica();this.form.controls.nome.setValidators(persona?[Validators.required,Validators.maxLength(120)]:[Validators.maxLength(120)]);this.form.controls.cognome.setValidators(persona?[Validators.required,Validators.maxLength(120)]:[Validators.maxLength(120)]);this.form.controls.denominazione.setValidators(!persona?[Validators.required,Validators.maxLength(240)]:[Validators.maxLength(240)]);this.form.controls.nome.updateValueAndValidity();this.form.controls.cognome.updateValueAndValidity();this.form.controls.denominazione.updateValueAndValidity();}
+  applicaValidazioniTipo():void{const persona=this.personaFisica();this.form.controls.nome.setValidators(persona?[Validators.required,Validators.maxLength(120)]:[Validators.maxLength(120)]);this.form.controls.cognome.setValidators(persona?[Validators.required,Validators.maxLength(120)]:[Validators.maxLength(120)]);this.form.controls.denominazione.setValidators(!persona?[Validators.required,Validators.maxLength(240)]:[Validators.maxLength(240)]);this.form.controls.nome.updateValueAndValidity();this.form.controls.cognome.updateValueAndValidity();this.form.controls.denominazione.updateValueAndValidity();}
   private richiesta():RichiestaSoggetto{const v=this.form.getRawValue();return {...v,id:v.id||undefined,dataNascita:v.dataNascita||null,nome:v.nome||null,cognome:v.cognome||null,luogoNascita:v.luogoNascita||null,provinciaNascita:v.provinciaNascita||null,statoNascita:v.statoNascita||null,denominazione:v.denominazione||null,formaGiuridica:v.formaGiuridica||null,codiceFiscale:v.codiceFiscale||null,partitaIva:v.partitaIva||null,email:v.email||null,pec:v.pec||null,telefono:v.telefono||null,cellulare:v.cellulare||null,indirizzo:v.indirizzo||null,civico:v.civico||null,cap:v.cap||null,comune:v.comune||null,provincia:v.provincia||null,statoIndirizzo:v.statoIndirizzo||null,note:v.note||null};}
 }

@@ -165,3 +165,14 @@ Esempi:
 | BR-WDG-014 | Il widget Collaboratori è visibile e gestibile solo da `STUDIO_ADMIN`/titolare. |
 | BR-STD-014 | La creazione di un collaboratore genera una password temporanea inviata via email e da modificare al primo accesso. |
 | BR-STD-015 | Avvocati e segreteria non possono modificare dati, branding o impostazioni condivise dello Studio. |
+
+## 13. Aggiornamento v3.2 — Anagrafiche
+
+| ID | Regola |
+|---|---|
+| BR-ANA-001 | L’entità persistita è `Soggetto`; “Anagrafiche” è il nome della superficie utente. |
+| BR-ANA-002 | Cliente e gli altri ruoli non sono tipologie del Soggetto, ma appartengono alla futura relazione con la Pratica. |
+| BR-ANA-003 | Persona fisica richiede nome e cognome; gli altri tipi richiedono denominazione. |
+| BR-ANA-004 | CF e P.IVA sono normalizzati e alimentano un controllo candidati duplicati tenant-scoped non bloccante. |
+| BR-ANA-005 | Studio deriva dal security context e una risorsa cross-tenant risponde 404. |
+| BR-ANA-006 | La cancellazione è logica e auditata; le query ordinarie escludono i soggetti eliminati. |

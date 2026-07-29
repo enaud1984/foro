@@ -27,7 +27,7 @@ public class AnagraficheService {
   public Page<Soggetto> elenco(String ricerca,String tipo,String stato,Pageable pagina){
     if(tipo!=null&&!TIPI.contains(tipo))throw errore(HttpStatus.BAD_REQUEST,"ANAGRAFICA_TIPO_NON_VALIDO");
     if(stato!=null&&!STATI.contains(stato))throw errore(HttpStatus.BAD_REQUEST,"ANAGRAFICA_DATI_NON_COHERENTI");
-    return repository.cerca(tenant.studioId(),vuotoANull(ricerca),tipo,stato,pagina);
+    return repository.cerca(tenant.studioId(),Optional.ofNullable(vuotoANull(ricerca)).orElse("").toLowerCase(),tipo,stato,pagina);
   }
   @Transactional(readOnly=true) public Soggetto dettaglio(UUID id){return trova(id);}
   @Transactional public Soggetto crea(Soggetto.Dati dati){valida(dati);var s=new Soggetto(tenant.studioId(),tenant.userId());s.aggiorna(dati,tenant.userId());repository.save(s);audit("ANAGRAFICA_CREATA",s.getId());return s;}
@@ -38,7 +38,7 @@ public class AnagraficheService {
   @Transactional public void elimina(UUID id){var s=trova(id);s.elimina(tenant.userId());audit("ANAGRAFICA_ELIMINATA",s.getId());}
   @Transactional(readOnly=true) public List<Soggetto> duplicati(UUID escluso,Soggetto.Dati d){
     return repository.duplicati(tenant.studioId(),escluso,Soggetto.normalizzaCodiceFiscale(d.codiceFiscale()),Soggetto.normalizzaPartitaIva(d.partitaIva()),
-      vuotoANull(d.nome()),vuotoANull(d.cognome()),d.dataNascita(),Soggetto.normalizzaTesto(d.denominazione())).stream().limit(10).toList();
+      Soggetto.normalizzaTesto(d.nome()),Soggetto.normalizzaTesto(d.cognome()),d.dataNascita(),Soggetto.normalizzaTesto(d.denominazione())).stream().limit(10).toList();
   }
   private Soggetto trova(UUID id){return repository.findByIdAndStudioIdAndEliminatoIlIsNull(id,tenant.studioId()).orElseThrow(()->errore(HttpStatus.NOT_FOUND,"ANAGRAFICA_NON_TROVATA"));}
   void valida(Soggetto.Dati d){

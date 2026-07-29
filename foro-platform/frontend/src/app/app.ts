@@ -152,6 +152,7 @@ export class App {
   readonly expandedWidget = signal<WidgetScrivania | null>(null);
   readonly rigaWidgetSelezionata = signal<RigaWidget | null>(null);
   readonly anagraficaSelezionataId = signal<string | null>(null);
+  readonly nuovaAnagraficaRichiesta = signal(false);
   readonly dragPlaceholder = signal<PosizioneGriglia | null>(null);
   readonly trascinamentoWidget = signal<TrascinamentoWidget | null>(null);
   readonly vistaCalendario = signal<VistaCalendario>('settimana');
@@ -243,25 +244,6 @@ export class App {
   readonly widgetDisponibili = computed(() => this.widgetLibrary.filter(widget => widget.key !== 'collaboratori' || !!this.studioProfile()?.canEditBranding));
 
   readonly activeWidgets = signal<WidgetScrivania[]>(this.creaWidgetIniziali());
-
-  /*
-  readonly activeWidgetsVecchi = signal<WidgetScrivania[]>([
-    {
-      ...this.widgetLibrary[0],
-      x: 1,
-      y: 1,
-      w: 6,
-      h: 3,
-      metric: '12 eventi oggi',
-      preview: '08:45 Revisione fascicolo · 10:30 Udienza · 15:00 Cliente · 17:30 Call',
-      details: ['08:45 — Revisione fascicolo Beta', '10:30 — Udienza civile, Tribunale di Milano', '12:15 — Scadenza deposito memoria', '15:00 — Appuntamento cliente in studio', '17:30 — Call con controparte']
-    },
-    { ...this.widgetLibrary[1], x: 7, y: 1, w: 3, h: 2, metric: '248 file', preview: 'Ultimi atti e versioni disponibili.', details: ['Comparsa_costituzione_v3.pdf', 'Procura_firmata_Esposito.p7m', 'Verbale_udienza_10-07.docx'] },
-    { ...this.widgetLibrary[2], x: 10, y: 1, w: 3, h: 2, metric: '37 non lette', preview: 'Messaggi da lavorare e associare.', details: ['Tribunale di Milano — notifica provvedimento', 'cliente.rossi@pec.it — documenti integrativi', 'Cancelleria civile — ricevuta deposito'] },
-    { ...this.widgetLibrary[3], x: 7, y: 3, w: 3, h: 2, metric: '18 attivi', preview: 'Clienti e referenti principali.', details: ['Cliente Alfa S.r.l.', 'Mario Rossi', 'Beta Fiduciaria S.p.A.'] },
-    { ...this.widgetLibrary[4], x: 1, y: 4, w: 6, h: 2, metric: '31 aperte', preview: 'Fascicoli e stati operativi.', details: ['Rossi / Alfa S.r.l. — Urgente', 'Esposito Successione — Aperta', 'De Luca recupero crediti — In lavorazione'] }
-  ]);
-  */
 
   readonly loginForm;
   readonly registerForm;
@@ -682,12 +664,14 @@ export class App {
 
   apriAnagraficaDaWidget(soggetto: Soggetto | null): void {
     this.anagraficaSelezionataId.set(soggetto?.id ?? null);
+    this.nuovaAnagraficaRichiesta.set(soggetto===null);
     const widget=this.activeWidgets().find(elemento=>elemento.key==='clienti');
     if(widget)this.openWidget(widget);
   }
 
   closeExpandedWidget(): void {
     this.expandedWidget.set(null);
+    this.nuovaAnagraficaRichiesta.set(false);
     this.rigaWidgetSelezionata.set(null);
     this.nuovoAppuntamentoAperto.set(false);
     this.chiudiGestioneCalendari();

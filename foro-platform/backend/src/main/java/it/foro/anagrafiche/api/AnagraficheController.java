@@ -5,6 +5,7 @@ import it.foro.anagrafiche.domain.Soggetto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import org.springframework.data.domain.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 import java.time.*;
@@ -16,17 +17,17 @@ public class AnagraficheController {
   private final AnagraficheService servizio; private final JdbcTemplate database;
   public AnagraficheController(AnagraficheService servizio,JdbcTemplate database){this.servizio=servizio;this.database=database;}
 
-  @GetMapping public Page<Risposta> elenco(@RequestParam(required=false) String ricerca,@RequestParam(required=false) String tipo,
-    @RequestParam(required=false) String stato,@RequestParam(defaultValue="0") @Min(0) int pagina,@RequestParam(defaultValue="20") @Min(1) @Max(100) int dimensione,
-    @RequestParam(defaultValue="aggiornatoIl") String ordinamento,@RequestParam(defaultValue="desc") String direzione){
+  @GetMapping public Page<Risposta> elenco(@RequestParam(name="ricerca",required=false) String ricerca,@RequestParam(name="tipo",required=false) String tipo,
+    @RequestParam(name="stato",required=false) String stato,@RequestParam(name="pagina",defaultValue="0") @Min(0) int pagina,@RequestParam(name="dimensione",defaultValue="20") @Min(1) @Max(100) int dimensione,
+    @RequestParam(name="ordinamento",defaultValue="aggiornatoIl") String ordinamento,@RequestParam(name="direzione",defaultValue="desc") String direzione){
     var campi=Set.of("aggiornatoIl","creatoIl","nome","cognome","denominazione","stato","tipoCodice");
     var campo=campi.contains(ordinamento)?ordinamento:"aggiornatoIl";var verso="asc".equalsIgnoreCase(direzione)?Sort.Direction.ASC:Sort.Direction.DESC;
     return servizio.elenco(ricerca,tipo,stato,PageRequest.of(pagina,dimensione,Sort.by(verso,campo))).map(this::risposta);
   }
-  @GetMapping("/{id}") public Risposta dettaglio(@PathVariable UUID id){return risposta(servizio.dettaglio(id));}
-  @PostMapping public Risposta crea(@Valid @RequestBody Richiesta r){return risposta(servizio.crea(r.dati()));}
-  @PutMapping("/{id}") public Risposta modifica(@PathVariable UUID id,@Valid @RequestBody Richiesta r){return risposta(servizio.modifica(id,r.version(),r.dati()));}
-  @DeleteMapping("/{id}") public void elimina(@PathVariable UUID id){servizio.elimina(id);}
+  @GetMapping("/{id}") public Risposta dettaglio(@PathVariable("id") UUID id){return risposta(servizio.dettaglio(id));}
+  @PostMapping @ResponseStatus(HttpStatus.CREATED) public Risposta crea(@Valid @RequestBody Richiesta r){return risposta(servizio.crea(r.dati()));}
+  @PutMapping("/{id}") public Risposta modifica(@PathVariable("id") UUID id,@Valid @RequestBody Richiesta r){return risposta(servizio.modifica(id,r.version(),r.dati()));}
+  @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void elimina(@PathVariable("id") UUID id){servizio.elimina(id);}
   @PostMapping("/verifica-duplicati") public List<RispostaSintetica> duplicati(@Valid @RequestBody Richiesta r){
     return servizio.duplicati(r.id(),r.dati()).stream().map(this::sintetica).toList();
   }

@@ -7,7 +7,7 @@
     <div class="promise">
       <span class="eyebrow">PIATTAFORMA CLOUD PER STUDI LEGALI</span>
       <h1>Tutto il tuo studio.<br>In un solo posto.</h1>
-      <p>Calendario, documenti, email, clienti e pratiche organizzati intorno al tuo modo di lavorare.</p>
+      <p>Calendario, documenti, email, anagrafiche e pratiche organizzati intorno al tuo modo di lavorare.</p>
     </div>
     <div class="legal">© 2026 FORO · Privacy · Sicurezza</div>
   </section>
@@ -75,7 +75,7 @@
           <span class="plan-label">ESSENZIALE</span>
           <h3>€ 29<small>/utente/mese</small></h3>
           <p>La Scrivania completa con i 5 widget MVP.</p>
-          <ul><li>Calendario</li><li>Documenti</li><li>Email</li><li>Clienti</li><li>Pratiche / Fascicolo</li></ul>
+          <ul><li>Calendario</li><li>Documenti</li><li>Email</li><li>Anagrafiche</li><li>Pratiche / Fascicolo</li></ul>
           <button class="secondary" type="button" (click)="choosePlan('essential')">Scegli Essenziale</button>
         </article>
         <article class="featured">
@@ -259,7 +259,7 @@
         <div>
           <label>Ruolo e permessi
             <select formControlName="ruolo">
-              <option value="AVVOCATO">Avvocato — pratiche, clienti, documenti e calendario</option>
+              <option value="AVVOCATO">Avvocato — pratiche, anagrafiche, documenti e calendario</option>
               <option value="SEGRETERIA">Segreteria — supporto operativo senza impostazioni Studio</option>
               <option value="STUDIO_ADMIN">Altro titolare / Admin</option>
             </select>
@@ -494,7 +494,7 @@
         </section>
       </section>
 
-      <app-anagrafiche *ngIf="widget.key === 'clienti'" [soggettoInizialeId]="anagraficaSelezionataId()"></app-anagrafiche>
+      <app-anagrafiche *ngIf="widget.key === 'clienti'" [soggettoInizialeId]="anagraficaSelezionataId()" [nuovoIniziale]="nuovaAnagraficaRichiesta()"></app-anagrafiche>
       <ng-container *ngIf="widget.key !== 'calendario' && widget.key !== 'collaboratori' && widget.key !== 'clienti'" [ngTemplateOutlet]="widgetStandard"></ng-container>
 
       <ng-template #widgetStandard>

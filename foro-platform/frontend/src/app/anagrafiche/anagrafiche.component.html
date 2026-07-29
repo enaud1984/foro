@@ -1,4 +1,5 @@
 <section class="anagrafiche" [class.compatto]="compatto">
+  <strong class="metrica" *ngIf="compatto&&!caricamento()">{{metrica()}}</strong>
   <div class="comandi">
     <label><span class="sr-only">Cerca anagrafiche</span><input [formControl]="ricerca" placeholder="Cerca anagrafiche…"></label>
     <button type="button" class="primario" (click)="nuova()">Nuova anagrafica</button>

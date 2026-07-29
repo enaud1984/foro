@@ -249,6 +249,10 @@ Il futuro Fascicolo PCT è separato e collegabile.
 
 ## 10. Telemetria minima
 
+## Aggiornamento v3.2 — Anagrafiche
+
+Il widget precedentemente denominato “Clienti” assume il nome visibile **Anagrafiche**, mantenendo la chiave tecnica esistente per compatibilità con i layout salvati. Il widget offre ricerca, creazione e massimo cinque soggetti recenti; la vista espansa offre elenco, filtri, dettaglio, modifica, disattivazione e cancellazione logica. Cliente e gli altri ruoli appartengono alla futura relazione con la Pratica.
+
 ### Widget Collaboratori amministrativo
 
 - visibile soltanto a `STUDIO_ADMIN`/titolare;

@@ -267,3 +267,7 @@ La home autenticata deve essere sempre la Scrivania operativa, non la pagina imp
 - Ogni widget mostra una preview in Dashboard.
 - Click su un widget apre una vista espansa con più funzionalità e link alla gestione completa.
 - Ogni widget può essere chiuso/rimosso dalla Scrivania come una finestra desktop; i dati sottostanti non vengono cancellati.
+
+## 18. Aggiornamento v3.2 — Anagrafiche
+
+Il nome visibile del widget `clienti` è “Anagrafiche”. Widget compatto e vista espansa consumano le stesse API. La feature dedicata gestisce ricerca, filtri, paginazione, dettaglio, form dinamico, candidati duplicati, conflitti di versione e conferma di uscita da form modificato.

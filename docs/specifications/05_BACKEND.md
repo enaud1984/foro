@@ -203,6 +203,10 @@ Eventi minimi:
 
 ## 11. Osservabilità
 
+## Aggiornamento v3.2 — API Anagrafiche
+
+La verticale usa `/api/v1/anagrafiche` per elenco, dettaglio, creazione, modifica, soft delete e verifica duplicati. I cataloghi tipi e ruoli pratica sono esposti in sola lettura. Ogni query ordinaria filtra lo Studio del security context e `eliminato_il IS NULL`; accessi cross-tenant rispondono 404.
+
 Metriche:
 
 - latenza e error rate API;
