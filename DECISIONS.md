@@ -11,6 +11,14 @@ Le decisioni accettate prevalgono sugli altri documenti. Una decisione modificat
 
 ## Decisioni accettate
 
+### DEC-021 — Anagrafiche e ruoli contestuali alla Pratica
+
+- **Stato:** ACCEPTED
+- **Data:** 2026-07-29
+- **Decisione:** il widget precedentemente denominato “Clienti” assume il nome visibile “Anagrafiche”; l’entità persistita è `Soggetto`. Cliente, controparte, testimone e gli altri ruoli appartengono alla futura relazione tra Soggetto e Pratica, non al Soggetto. La prima release usa una singola tabella tenant-owned `soggetto` e predispone i cataloghi `tipo_soggetto` e `ruolo_soggetto_pratica`.
+- **Conseguenze:** la chiave tecnica esistente del widget resta compatibile con i layout salvati; Pratiche, Documenti, gruppi, recapiti multipli e indirizzi multipli non fanno parte di questa modifica.
+- **Documenti interessati:** `DECISIONS.md`, specifiche Widget, Database, Backend, Frontend e Business Rules.
+
 ### DEC-001 — Scrivania Digitale
 
 - **Stato:** ACCEPTED

@@ -2,6 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component, HostListener, computed, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { AnagraficheComponent } from './anagrafiche/anagrafiche.component';
+import { Soggetto } from './anagrafiche/anagrafiche.modelli';
 
 type Schermata = 'login' | 'registrazione' | 'scrivania';
 type ModalitaTema = 'LIGHT' | 'DARK';
@@ -125,7 +127,7 @@ interface EventoAgenda {
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, AnagraficheComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
@@ -149,6 +151,7 @@ export class App {
   readonly notificationsOpen = signal(false);
   readonly expandedWidget = signal<WidgetScrivania | null>(null);
   readonly rigaWidgetSelezionata = signal<RigaWidget | null>(null);
+  readonly anagraficaSelezionataId = signal<string | null>(null);
   readonly dragPlaceholder = signal<PosizioneGriglia | null>(null);
   readonly trascinamentoWidget = signal<TrascinamentoWidget | null>(null);
   readonly vistaCalendario = signal<VistaCalendario>('settimana');
@@ -233,7 +236,7 @@ export class App {
     { key: 'calendario', icon: '📅', title: 'Calendario', description: 'Agenda stile Outlook, udienze e scadenze' },
     { key: 'documenti', icon: '📁', title: 'Documenti', description: 'Atti, versioni, firme e fascicoli' },
     { key: 'email', icon: '✉️', title: 'Email', description: 'Posta ordinaria e associazioni pratica' },
-    { key: 'clienti', icon: '👥', title: 'Clienti', description: 'Anagrafiche e referenti' },
+    { key: 'clienti', icon: '👥', title: 'Anagrafiche', description: 'Persone, società, enti e altri soggetti' },
     { key: 'pratiche', icon: '⚖️', title: 'Pratiche', description: 'Fascicolo interno e stato attività' },
     { key: 'collaboratori', icon: '👥', title: 'Collaboratori', description: 'Avvocati, segreteria, ruoli e accessi' }
   ];
@@ -321,14 +324,10 @@ export class App {
         y: 3,
         w: 3,
         h: 2,
-        metric: '18 attivi',
-        preview: 'Clienti e referenti principali',
-        details: ['Cliente Alfa S.r.l.', 'Mario Rossi', 'Beta Fiduciaria S.p.A.'],
-        righeAnteprima: [
-          { titolo: 'Cliente Alfa S.r.l.', descrizione: 'Milano · referente: Laura Riva', stato: 'Attivo' },
-          { titolo: 'Mario Rossi', descrizione: 'Roma · persona fisica', stato: 'Attivo' },
-          { titolo: 'Beta Fiduciaria S.p.A.', descrizione: 'Torino · 4 pratiche aperte', stato: 'VIP' }
-        ]
+        metric: 'Anagrafiche',
+        preview: 'Ricerca e gestisci persone e organizzazioni',
+        details: [],
+        righeAnteprima: []
       },
       {
         ...this.widgetLibrary[4],
@@ -679,6 +678,12 @@ export class App {
   openWidget(widget: WidgetScrivania): void {
     this.expandedWidget.set(widget);
     if (widget.key === 'calendario') this.allineaPlannerOraAttuale();
+  }
+
+  apriAnagraficaDaWidget(soggetto: Soggetto | null): void {
+    this.anagraficaSelezionataId.set(soggetto?.id ?? null);
+    const widget=this.activeWidgets().find(elemento=>elemento.key==='clienti');
+    if(widget)this.openWidget(widget);
   }
 
   closeExpandedWidget(): void {

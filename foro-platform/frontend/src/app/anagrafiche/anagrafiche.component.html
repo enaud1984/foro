@@ -1,0 +1,50 @@
+<section class="anagrafiche" [class.compatto]="compatto">
+  <div class="comandi">
+    <label><span class="sr-only">Cerca anagrafiche</span><input [formControl]="ricerca" placeholder="Cerca anagrafiche…"></label>
+    <button type="button" class="primario" (click)="nuova()">Nuova anagrafica</button>
+  </div>
+  <ng-container *ngIf="!compatto">
+    <div class="filtri">
+      <select [formControl]="filtroTipo" aria-label="Filtra per tipo"><option value="">Tutte le tipologie</option><option *ngFor="let tipo of tipi()" [value]="tipo.codice">{{tipo.descrizione}}</option></select>
+      <select [formControl]="filtroStato" aria-label="Filtra per stato"><option value="">Tutti gli stati</option><option value="ATTIVO">Attive</option><option value="DISATTIVATO">Disattivate</option></select>
+    </div>
+  </ng-container>
+  <p class="stato-ui" *ngIf="caricamento()">Caricamento anagrafiche…</p>
+  <p class="stato-ui errore" role="alert" *ngIf="errore()">{{errore()}}</p>
+  <p class="stato-ui" *ngIf="!caricamento()&&!errore()&&!soggetti().length">Nessuna anagrafica trovata.</p>
+  <div class="corpo" *ngIf="!caricamento()&&soggetti().length">
+    <div class="lista">
+      <button type="button" *ngFor="let soggetto of soggetti()" (click)="apri(soggetto)" [class.selezionato]="selezionato()?.id===soggetto.id">
+        <span><strong>{{nome(soggetto)}}</strong><small>{{etichettaTipo(soggetto.tipoCodice)}} · {{recapito(soggetto)}}</small></span>
+        <em [class.disattivo]="soggetto.stato==='DISATTIVATO'">{{soggetto.stato==='ATTIVO'?'Attiva':'Disattivata'}}</em>
+      </button>
+    </div>
+    <article class="dettaglio" *ngIf="!compatto && selezionato() as s">
+      <header><div><small>{{etichettaTipo(s.tipoCodice)}}</small><h3>{{nome(s)}}</h3></div><button type="button" (click)="selezionato.set(null)" aria-label="Chiudi dettaglio">×</button></header>
+      <dl>
+        <ng-container *ngIf="s.tipoCodice==='PERSONA_FISICA'"><dt>Data e luogo di nascita</dt><dd>{{s.dataNascita||'—'}} · {{s.luogoNascita||'—'}}</dd></ng-container>
+        <ng-container *ngIf="s.formaGiuridica"><dt>Forma giuridica</dt><dd>{{s.formaGiuridica}}</dd></ng-container>
+        <dt>Codice fiscale</dt><dd>{{s.codiceFiscale||'—'}}</dd><dt>Partita IVA</dt><dd>{{s.partitaIva||'—'}}</dd>
+        <dt>Email / PEC</dt><dd>{{s.email||'—'}}<br>{{s.pec||''}}</dd><dt>Telefono</dt><dd>{{s.telefono||s.cellulare||'—'}}</dd>
+        <dt>Indirizzo</dt><dd>{{indirizzoCompleto(s)||'—'}}</dd><dt>Note</dt><dd>{{s.note||'—'}}</dd>
+        <dt>Creata</dt><dd>{{s.creatoIl|date:'dd/MM/yyyy HH:mm'}}</dd><dt>Ultima modifica</dt><dd>{{s.aggiornatoIl|date:'dd/MM/yyyy HH:mm'}}</dd>
+      </dl>
+      <nav><button type="button" (click)="modifica(s)">Modifica</button><button type="button" (click)="cambiaStato(s)">{{s.stato==='ATTIVO'?'Disattiva':'Riattiva'}}</button><button type="button" class="pericolo" (click)="elimina(s)">Elimina</button></nav>
+    </article>
+  </div>
+  <nav class="pagine" *ngIf="!compatto&&pagineTotali()>1"><button type="button" (click)="vai(-1)" [disabled]="pagina()===0">Precedente</button><span>Pagina {{pagina()+1}} di {{pagineTotali()}}</span><button type="button" (click)="vai(1)" [disabled]="pagina()+1>=pagineTotali()">Successiva</button></nav>
+
+  <div class="pannello-form" *ngIf="!compatto&&formAperto()">
+    <form [formGroup]="form" (ngSubmit)="salva()">
+      <header><h3>{{form.controls.id.value?'Modifica':'Nuova'}} anagrafica</h3><button type="button" (click)="chiudiForm()">×</button></header>
+      <label>Tipologia<select formControlName="tipoCodice" (change)="applicaValidazioniTipo()"><option *ngFor="let tipo of tipi()" [value]="tipo.codice">{{tipo.descrizione}}</option></select></label>
+      <div class="due" *ngIf="personaFisica(); else organizzazione"><label>Nome<input formControlName="nome"></label><label>Cognome<input formControlName="cognome"></label><label>Data di nascita<input type="date" formControlName="dataNascita"></label><label>Luogo di nascita<input formControlName="luogoNascita"></label><label>Provincia di nascita<input maxlength="2" formControlName="provinciaNascita"></label><label>Stato di nascita<input formControlName="statoNascita"></label></div>
+      <ng-template #organizzazione><div class="due"><label>Denominazione<input formControlName="denominazione"></label><label>Forma giuridica<input formControlName="formaGiuridica"></label></div></ng-template>
+      <div class="due"><label>Codice fiscale<input formControlName="codiceFiscale"></label><label>Partita IVA<input formControlName="partitaIva"></label><label>Email<input type="email" formControlName="email"></label><label>PEC<input type="email" formControlName="pec"></label><label>Telefono<input formControlName="telefono"></label><label>Cellulare<input formControlName="cellulare"></label><label>Indirizzo<input formControlName="indirizzo"></label><label>Civico<input formControlName="civico"></label><label>CAP<input formControlName="cap"></label><label>Comune<input formControlName="comune"></label><label>Provincia<input maxlength="2" formControlName="provincia"></label><label>Stato<input formControlName="statoIndirizzo"></label></div>
+      <label>Note<textarea formControlName="note" rows="3"></textarea></label>
+      <p class="errore" *ngIf="form.invalid&&form.touched">Controlla i campi obbligatori e i formati indicati.</p>
+      <button class="primario" type="submit">Salva anagrafica</button>
+    </form>
+  </div>
+  <div class="conferma" *ngIf="confermaDuplicato()"><div><h3>Possibile duplicato</h3><p>Esistono anagrafiche simili nello Studio:</p><ul><li *ngFor="let c of candidatiDuplicati()">{{c.nomeVisualizzato}}</li></ul><button type="button" (click)="confermaDuplicato.set(false)">Annulla</button><button type="button" class="primario" (click)="salva(true)">Salva comunque</button></div></div>
+</section>

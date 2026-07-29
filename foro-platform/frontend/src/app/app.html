@@ -189,6 +189,10 @@
                 <button type="button" class="close-window" title="Chiudi widget" (click)="closeWidget(widget.key,$event)">×</button>
               </div>
             </div>
+            <ng-container *ngIf="widget.key === 'clienti'; else anteprimaWidgetStandard">
+              <app-anagrafiche [compatto]="true" (richiediEspansione)="apriAnagraficaDaWidget($event)"></app-anagrafiche>
+            </ng-container>
+            <ng-template #anteprimaWidgetStandard>
             <b>{{ widget.metric }}</b>
             <p>{{ widget.preview }}</p>
             <div class="widget-preview-list">
@@ -202,6 +206,7 @@
                 <em>{{ riga.evidenza || riga.stato }}</em>
               </button>
             </div>
+            </ng-template>
             <small class="resize-corner">↘</small>
           </article>
         </div>
@@ -489,7 +494,8 @@
         </section>
       </section>
 
-      <ng-container *ngIf="widget.key !== 'calendario' && widget.key !== 'collaboratori'" [ngTemplateOutlet]="widgetStandard"></ng-container>
+      <app-anagrafiche *ngIf="widget.key === 'clienti'" [soggettoInizialeId]="anagraficaSelezionataId()"></app-anagrafiche>
+      <ng-container *ngIf="widget.key !== 'calendario' && widget.key !== 'collaboratori' && widget.key !== 'clienti'" [ngTemplateOutlet]="widgetStandard"></ng-container>
 
       <ng-template #widgetStandard>
         <div class="expanded-list" aria-label="Riepilogo {{ widget.title }}">

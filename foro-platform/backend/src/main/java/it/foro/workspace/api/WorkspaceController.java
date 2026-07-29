@@ -27,7 +27,7 @@ public class WorkspaceController {
     return List.of(new Widget("calendar","Calendario",false,"/calendar"),
       new Widget("documents","Documenti",false,"/documents"),
       new Widget("email","Email",true,"/email"),
-      new Widget("clients","Clienti",false,"/clients"),
+      new Widget("clients","Anagrafiche",false,"/anagrafiche"),
       new Widget("matters","Pratiche / Fascicolo",false,"/matters"));
   }
 
