@@ -249,6 +249,12 @@ Il futuro Fascicolo PCT è separato e collegabile.
 
 ## 10. Telemetria minima
 
+## Aggiornamento v3.3 — Pratiche operative
+
+Il widget Pratiche usa dati persistiti e mantiene la chiave tecnica esistente. Mostra il numero di pratiche aperte, quelle che richiedono attenzione e al massimo cinque fascicoli ordinati per scadenze, attività scadute, priorità e ultimo aggiornamento. La vista espansa offre Riepilogo, Soggetti, Team, Documenti, Attività, Agenda e scadenze, Comunicazioni, Dati giudiziari, Economia e Timeline.
+
+Agenda e Pratiche sono collegate in entrambe le direzioni: un evento può riferirsi a una Pratica visibile, dalla Pratica si riusa il form Agenda e dal dettaglio evento si apre il fascicolo. Anagrafiche espone le Pratiche collegate nel rispetto di riservatezza e tenant.
+
 ## Aggiornamento v3.2 — Anagrafiche
 
 Il widget precedentemente denominato “Clienti” assume il nome visibile **Anagrafiche**, mantenendo la chiave tecnica esistente per compatibilità con i layout salvati. Il widget offre ricerca, creazione e massimo cinque soggetti recenti; la vista espansa offre elenco, filtri, dettaglio, modifica, disattivazione e cancellazione logica. Cliente e gli altri ruoli appartengono alla futura relazione con la Pratica.

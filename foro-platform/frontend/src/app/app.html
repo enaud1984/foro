@@ -75,7 +75,7 @@
           <span class="plan-label">ESSENZIALE</span>
           <h3>€ 29<small>/utente/mese</small></h3>
           <p>La Scrivania completa con i 5 widget MVP.</p>
-          <ul><li>Calendario</li><li>Documenti</li><li>Email</li><li>Anagrafiche</li><li>Pratiche / Fascicolo</li></ul>
+          <ul><li>Calendario</li><li>Documenti</li><li>Email</li><li>Anagrafiche</li><li>Pratiche</li></ul>
           <button class="secondary" type="button" (click)="choosePlan('essential')">Scegli Essenziale</button>
         </article>
         <article class="featured">
@@ -193,6 +193,10 @@
               <app-anagrafiche [compatto]="true" (richiediEspansione)="apriAnagraficaDaWidget($event)"></app-anagrafiche>
             </ng-container>
             <ng-template #anteprimaWidgetStandard>
+            <ng-container *ngIf="widget.key === 'pratiche'; else anteprimaGenerica">
+              <app-pratiche [compatto]="true" (richiediEspansione)="apriPraticaDaWidget($event)"></app-pratiche>
+            </ng-container>
+            <ng-template #anteprimaGenerica>
             <b>{{ widget.metric }}</b>
             <p>{{ widget.preview }}</p>
             <div class="widget-preview-list">
@@ -206,6 +210,7 @@
                 <em>{{ riga.evidenza || riga.stato }}</em>
               </button>
             </div>
+            </ng-template>
             </ng-template>
             <small class="resize-corner">↘</small>
           </article>
@@ -305,7 +310,7 @@
     </aside>
 
     <div class="widget-modal-backdrop" *ngIf="expandedWidget()" (click)="closeExpandedWidget()"></div>
-    <section class="widget-modal" *ngIf="expandedWidget() as widget" [class.calendar-modal]="widget.key === 'calendario'" [class.collaboratori-modal]="widget.key === 'collaboratori'">
+    <section class="widget-modal" *ngIf="expandedWidget() as widget" [class.calendar-modal]="widget.key === 'calendario'" [class.collaboratori-modal]="widget.key === 'collaboratori'" [class.pratiche-modal]="widget.key === 'pratiche'">
       <button class="modal-close" type="button" (click)="closeExpandedWidget()">×</button>
       <span class="eyebrow">VISTA INGRANDITA</span>
       <h2>{{ widget.icon }} {{ widget.title }}</h2>
@@ -379,10 +384,19 @@
         </section>
 
         <form class="appointment-panel" *ngIf="nuovoAppuntamentoAperto()" [formGroup]="appuntamentoForm" (ngSubmit)="salvaAppuntamento()">
-          <header><strong>Nuovo appuntamento</strong><button class="panel-close" type="button" aria-label="Chiudi nuovo appuntamento" title="Chiudi" (click)="chiudiNuovoAppuntamento()">×</button></header>
+          <header><strong>{{eventoInModificaId()?'Modifica appuntamento':'Nuovo appuntamento'}}</strong><button class="panel-close" type="button" aria-label="Chiudi appuntamento" title="Chiudi" (click)="chiudiNuovoAppuntamento()">×</button></header>
           <p class="appointment-error" *ngIf="erroreAppuntamento()">{{ erroreAppuntamento() }}</p>
           <label>Titolo<input formControlName="titolo"></label>
           <label>Calendario<select formControlName="calendario"><option *ngFor="let calendario of calendariAgenda()" [value]="calendario.chiave">{{ calendario.nome }}</option></select></label>
+          <label>Pratica collegata
+            <input [formControl]="ricercaPratica" placeholder="Nessuna pratica · cerca codice, titolo, Cliente o Controparte">
+            <button type="button" class="calendar-share-add" *ngIf="appuntamentoForm.controls.praticaId.value" (click)="selezionaPraticaAgenda(null)">Rimuovi collegamento</button>
+          </label>
+          <div class="practice-autocomplete" *ngIf="praticheAgenda().length">
+            <button type="button" *ngFor="let pratica of praticheAgenda()" (click)="selezionaPraticaAgenda(pratica)">
+              <strong>{{pratica.codice}}</strong><span>{{pratica.titolo}}</span><small>{{pratica.statoCodice}}</small>
+            </button>
+          </div>
           <div class="appointment-options-grid">
             <label>Stato<select formControlName="statoDisponibilita"><option value="LIBERO">Libero</option><option value="PROVVISORIO">Provvisorio</option><option value="OCCUPATO">Occupato</option><option value="FUORI_SEDE">Fuori sede</option></select></label>
             <label>Promemoria<select formControlName="promemoriaMinuti"><option [ngValue]="0">Nessuno</option><option [ngValue]="5">5 minuti prima</option><option [ngValue]="15">15 minuti prima</option><option [ngValue]="30">30 minuti prima</option><option [ngValue]="60">1 ora prima</option><option [ngValue]="1440">1 giorno prima</option></select></label>
@@ -405,7 +419,7 @@
             <label *ngIf="appuntamentoForm.controls.ricorrenza.value !== 'NESSUNA'">Fine serie<input type="date" formControlName="fineRicorrenza"></label>
           </div>
           <label>Note<textarea formControlName="note"></textarea></label>
-          <button class="primary" type="submit" [disabled]="loading()">{{ loading() ? 'Salvataggio…' : 'Salva appuntamento' }}</button>
+          <button class="primary" type="submit" [disabled]="loading()">{{ loading() ? 'Salvataggio…' : (eventoInModificaId()?'Salva modifiche':'Salva appuntamento') }}</button>
         </form>
 
         <section class="appointment-panel event-detail-panel" *ngIf="eventoSelezionato() as evento">
@@ -421,8 +435,10 @@
             <div><dt>Categoria</dt><dd>{{ evento.categoria || 'Generale' }}</dd></div>
             <div><dt>Promemoria</dt><dd>{{ evento.promemoriaMinuti ? evento.promemoriaMinuti + ' minuti prima' : 'Nessuno' }}</dd></div>
             <div *ngIf="evento.ricorrenza && evento.ricorrenza !== 'NESSUNA'"><dt>Serie</dt><dd>{{ evento.ricorrenza }}</dd></div>
+            <div *ngIf="evento.praticaId"><dt>Pratica</dt><dd>{{evento.praticaCodice}} · {{evento.praticaTitolo}} · {{evento.praticaStato}}</dd></div>
           </dl>
           <section class="event-notes"><strong>Note</strong><p>{{ evento.note || 'Nessuna nota' }}</p></section>
+          <nav class="event-detail-actions"><button type="button" (click)="modificaEvento(evento)">Modifica evento</button><button type="button" class="calendar-delete" (click)="eliminaEvento(evento)">Elimina evento</button><button type="button" *ngIf="evento.praticaId" (click)="apriPraticaDaEvento(evento)">Apri pratica</button></nav>
         </section>
 
         <section class="appointment-panel calendar-management-panel" *ngIf="gestioneCalendariAperta()">
@@ -494,8 +510,10 @@
         </section>
       </section>
 
-      <app-anagrafiche *ngIf="widget.key === 'clienti'" [soggettoInizialeId]="anagraficaSelezionataId()" [nuovoIniziale]="nuovaAnagraficaRichiesta()"></app-anagrafiche>
-      <ng-container *ngIf="widget.key !== 'calendario' && widget.key !== 'collaboratori' && widget.key !== 'clienti'" [ngTemplateOutlet]="widgetStandard"></ng-container>
+      <app-anagrafiche *ngIf="widget.key === 'clienti'" [soggettoInizialeId]="anagraficaSelezionataId()" [nuovoIniziale]="nuovaAnagraficaRichiesta()" (praticaAperta)="apriPraticaDaAnagrafica($event)"></app-anagrafiche>
+      <app-pratiche *ngIf="widget.key === 'pratiche'" [praticaInizialeId]="praticaSelezionataId()" [nuovaIniziale]="nuovaPraticaRichiesta()"
+        (apriAnagrafica)="apriAnagraficaDaPratica($event)" (apriEventoAgenda)="apriEventoDaPratica($event)" (creaEventoAgenda)="creaEventoDaPratica($event)"></app-pratiche>
+      <ng-container *ngIf="widget.key !== 'calendario' && widget.key !== 'collaboratori' && widget.key !== 'clienti' && widget.key !== 'pratiche'" [ngTemplateOutlet]="widgetStandard"></ng-container>
 
       <ng-template #widgetStandard>
         <div class="expanded-list" aria-label="Riepilogo {{ widget.title }}">

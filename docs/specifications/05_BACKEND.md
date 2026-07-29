@@ -246,3 +246,9 @@ Nella foundation attuale gli endpoint implementati sono:
 - `PUT /api/v1/workspace/preferences`.
 
 `POST /api/v1/auth/register/studio` accetta anche logo/dati Studio iniziali. `PUT /api/v1/studio/profile` è riservato al titolare/admin Studio. Le preferenze workspace sono per singolo utente.
+
+## 14. Aggiornamento v3.3 — API Pratiche
+
+La verticale usa `/api/v1/pratiche` per cataloghi, elenco paginato, dettaglio, CRUD, transizioni, soggetti, team, documenti, attività, eventi, comunicazioni, dati giudiziari, economia e timeline. Ogni operazione deriva Studio e utente dal `TenantContext`; le risorse cross-tenant o non visibili rispondono 404.
+
+Gli aggiornamenti richiedono `version`; i conflitti rispondono con `PRATICA_VERSIONE_CONFLITTO`. Il servizio applicativo mantiene le invarianti di stato, l’ultimo Cliente, la membership del responsabile, la visibilità delle pratiche riservate, l’audit e la timeline append-only. Agenda valida il riferimento alla Pratica tramite lo stesso servizio di visibilità.

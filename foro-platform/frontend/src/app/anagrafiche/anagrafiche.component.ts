@@ -20,6 +20,7 @@ export class AnagraficheComponent implements OnInit, OnChanges {
   @Input() nuovoIniziale = false;
   @Output() soggettoSelezionato = new EventEmitter<Soggetto>();
   @Output() richiediEspansione = new EventEmitter<Soggetto | null>();
+  @Output() praticaAperta = new EventEmitter<string>();
   readonly soggetti = signal<Soggetto[]>([]);
   readonly tipi = signal<CatalogoAnagrafica[]>([]);
   readonly selezionato = signal<Soggetto | null>(null);
@@ -31,6 +32,7 @@ export class AnagraficheComponent implements OnInit, OnChanges {
   readonly formAperto = signal(false);
   readonly candidatiDuplicati = signal<Array<{id:string;nomeVisualizzato:string}>>([]);
   readonly confermaDuplicato = signal(false);
+  readonly praticheCollegate = signal<Array<{id:string;codice:string;titolo:string;statoCodice:string;ruoloCodice:string}>>([]);
   readonly ricerca = this.fb.nonNullable.control('');
   readonly filtroTipo = this.fb.nonNullable.control('');
   readonly filtroStato = this.fb.nonNullable.control('');
@@ -70,9 +72,10 @@ export class AnagraficheComponent implements OnInit, OnChanges {
   metrica():string{return this.totale()===0?'Nessuna anagrafica':this.totale()===1?'1 anagrafica attiva':`${this.totale()} anagrafiche attive`;}
   apri(s:Soggetto):void {
     this.selezionato.set(s);this.soggettoSelezionato.emit(s);
+    if(!this.compatto)this.caricaPratiche(s.id);
     if(this.compatto)this.richiediEspansione.emit(s);
   }
-  apriDettaglio(id:string):void{this.servizio.dettaglio(id).subscribe({next:s=>this.selezionato.set(s),error:()=>this.errore.set('Anagrafica non trovata.')});}
+  apriDettaglio(id:string):void{this.servizio.dettaglio(id).subscribe({next:s=>{this.selezionato.set(s);this.caricaPratiche(id);},error:()=>this.errore.set('Anagrafica non trovata.')});}
   nuova():void{
     if(this.compatto){this.richiediEspansione.emit(null);return;}
     this.form.reset({id:'',version:0,tipoCodice:'PERSONA_FISICA',nome:'',cognome:'',dataNascita:'',luogoNascita:'',provinciaNascita:'',statoNascita:'',denominazione:'',formaGiuridica:'',codiceFiscale:'',partitaIva:'',email:'',pec:'',telefono:'',cellulare:'',indirizzo:'',civico:'',cap:'',comune:'',provincia:'',statoIndirizzo:'Italia',note:'',stato:'ATTIVO'});
@@ -88,7 +91,7 @@ export class AnagraficheComponent implements OnInit, OnChanges {
   }
   private persiste(r:RichiestaSoggetto):void{
     const op=r.id?this.servizio.modifica(r.id,r):this.servizio.crea(r);
-    op.subscribe({next:s=>{this.formAperto.set(false);this.confermaDuplicato.set(false);this.selezionato.set(s);this.carica();},error:x=>this.errore.set(x?.error?.code==='ANAGRAFICA_VERSIONE_CONFLITTO'?'L’anagrafica è stata modificata da un altro utente. Ricarica i dati.':x?.error?.message??'Salvataggio non riuscito.')});
+    op.subscribe({next:s=>{this.formAperto.set(false);this.confermaDuplicato.set(false);this.selezionato.set(s);this.soggettoSelezionato.emit(s);this.carica();},error:x=>this.errore.set(x?.error?.code==='ANAGRAFICA_VERSIONE_CONFLITTO'?'L’anagrafica è stata modificata da un altro utente. Ricarica i dati.':x?.error?.message??'Salvataggio non riuscito.')});
   }
   cambiaStato(s:Soggetto):void{this.modifica(s);this.form.controls.stato.setValue(s.stato==='ATTIVO'?'DISATTIVATO':'ATTIVO');this.persiste(this.richiesta());}
   elimina(s:Soggetto):void{if(!confirm(`Eliminare logicamente ${this.nome(s)}?`))return;this.servizio.elimina(s.id).subscribe({next:()=>{this.selezionato.set(null);this.carica();},error:()=>this.errore.set('Eliminazione non riuscita.')});}
@@ -97,4 +100,5 @@ export class AnagraficheComponent implements OnInit, OnChanges {
   indirizzoCompleto(s:Soggetto):string{return [s.indirizzo,s.civico,s.cap,s.comune,s.provincia,s.statoIndirizzo].filter(Boolean).join(' ');}
   applicaValidazioniTipo():void{const persona=this.personaFisica();this.form.controls.nome.setValidators(persona?[Validators.required,Validators.maxLength(120)]:[Validators.maxLength(120)]);this.form.controls.cognome.setValidators(persona?[Validators.required,Validators.maxLength(120)]:[Validators.maxLength(120)]);this.form.controls.denominazione.setValidators(!persona?[Validators.required,Validators.maxLength(240)]:[Validators.maxLength(240)]);this.form.controls.nome.updateValueAndValidity();this.form.controls.cognome.updateValueAndValidity();this.form.controls.denominazione.updateValueAndValidity();}
   private richiesta():RichiestaSoggetto{const v=this.form.getRawValue();return {...v,id:v.id||undefined,dataNascita:v.dataNascita||null,nome:v.nome||null,cognome:v.cognome||null,luogoNascita:v.luogoNascita||null,provinciaNascita:v.provinciaNascita||null,statoNascita:v.statoNascita||null,denominazione:v.denominazione||null,formaGiuridica:v.formaGiuridica||null,codiceFiscale:v.codiceFiscale||null,partitaIva:v.partitaIva||null,email:v.email||null,pec:v.pec||null,telefono:v.telefono||null,cellulare:v.cellulare||null,indirizzo:v.indirizzo||null,civico:v.civico||null,cap:v.cap||null,comune:v.comune||null,provincia:v.provincia||null,statoIndirizzo:v.statoIndirizzo||null,note:v.note||null};}
+  private caricaPratiche(id:string):void{this.servizio.pratiche(id).subscribe({next:p=>this.praticheCollegate.set(p),error:()=>this.praticheCollegate.set([])});}
 }

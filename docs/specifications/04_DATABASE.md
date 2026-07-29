@@ -164,3 +164,9 @@ La prima release Anagrafiche usa `soggetto`, tenant-owned con `studio_id`, `vers
 - codici Studio in chiaro;
 - dati completi di pagamento futuri.
 
+## Aggiornamento v3.3 — Persistenza Pratiche
+
+La verticale Pratiche usa le tabelle `pratica`, `pratica_soggetto`, `pratica_utente`, `documento_pratica`, `attivita_pratica`, `comunicazione_pratica`, `pratica_giudiziaria`, `economia_pratica` e `pratica_timeline`. I cataloghi applicativi definiscono materia, tipologia, stato, priorità, ruolo team, stato/priorità attività e categoria documento.
+
+Il progressivo `PRA-AAAA-NNNNN` deriva da `contatore_pratica`, aggiornato atomicamente per Studio e anno. Le relazioni tenant-owned usano FK composite `(studio_id, id)` ove possibile. `evento_calendario.pratica_id` è opzionale e conserva la relazione storica quando la Pratica è cancellata logicamente.
+

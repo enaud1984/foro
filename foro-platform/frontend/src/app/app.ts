@@ -2,8 +2,12 @@ import { CommonModule } from '@angular/common';
 import { Component, HostListener, computed, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { AnagraficheComponent } from './anagrafiche/anagrafiche.component';
 import { Soggetto } from './anagrafiche/anagrafiche.modelli';
+import { PraticheComponent } from './pratiche/pratiche.component';
+import { EventoPratica, Pratica, PraticaSintetica } from './pratiche/pratiche.modelli';
+import { PraticheService } from './pratiche/pratiche.service';
 
 type Schermata = 'login' | 'registrazione' | 'scrivania';
 type ModalitaTema = 'LIGHT' | 'DARK';
@@ -75,6 +79,7 @@ interface RigaWidget {
   eventoId?: string;
   colore?: string;
   urgente?: boolean;
+  praticaId?: string;
 }
 
 interface NotificaScrivania {
@@ -101,7 +106,7 @@ interface CalendarioAgenda {
 interface CalendarioApi { id: string; nome: string; colore: string; condivisoTuttoStudio: boolean; condivisoCon: string[]; gestibile: boolean; }
 interface PersonaStudioApi { id: string; nome: string; }
 interface NotificaApi { id:string; tipo:string; titolo:string; descrizione:string; eventoId:string; letta:boolean; creataIl:string; }
-interface EventoApi { id: string; calendarioId: string; creatoreId: string; calendarioNome: string; colore: string; titolo: string; inizio: string; fine: string; note?: string; partecipanti?: string; statoDisponibilita: string; promemoriaMinuti?: number; categoria?: string; tuttoGiorno: boolean; serieId?: string; ricorrenza: string; fineRicorrenza?: string; }
+interface EventoApi { id: string; calendarioId: string; creatoreId: string; calendarioNome: string; colore: string; titolo: string; inizio: string; fine: string; note?: string; partecipanti?: string; statoDisponibilita: string; promemoriaMinuti?: number; categoria?: string; tuttoGiorno: boolean; serieId?: string; ricorrenza: string; fineRicorrenza?: string; praticaId?:string; praticaCodice?:string; praticaTitolo?:string; praticaStato?:string; }
 interface CollaboratoreStudio { id: string; nome: string; cognome: string; email: string; ruolo: RuoloCollaboratore; stato: 'ATTIVO' | 'DISABILITATO' | 'PENDING'; }
 
 interface EventoAgenda {
@@ -123,11 +128,15 @@ interface EventoAgenda {
   categoria?: string;
   ricorrenza?: string;
   tuttoGiorno?: boolean;
+  praticaId?:string;
+  praticaCodice?:string;
+  praticaTitolo?:string;
+  praticaStato?:string;
 }
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, ReactiveFormsModule, AnagraficheComponent],
+  imports: [CommonModule, ReactiveFormsModule, AnagraficheComponent, PraticheComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
@@ -153,6 +162,9 @@ export class App {
   readonly rigaWidgetSelezionata = signal<RigaWidget | null>(null);
   readonly anagraficaSelezionataId = signal<string | null>(null);
   readonly nuovaAnagraficaRichiesta = signal(false);
+  readonly praticaSelezionataId = signal<string | null>(null);
+  readonly nuovaPraticaRichiesta = signal(false);
+  readonly praticheAgenda = signal<PraticaSintetica[]>([]);
   readonly dragPlaceholder = signal<PosizioneGriglia | null>(null);
   readonly trascinamentoWidget = signal<TrascinamentoWidget | null>(null);
   readonly vistaCalendario = signal<VistaCalendario>('settimana');
@@ -165,6 +177,7 @@ export class App {
   readonly calendarioDaEliminare = signal<string | null>(null);
   readonly erroreAppuntamento = signal('');
   readonly eventoSelezionato = signal<EventoAgenda | null>(null);
+  readonly eventoInModificaId = signal<string | null>(null);
   readonly slotSelezionato = signal<string | null>(null);
   readonly calendariAgenda = signal<CalendarioAgenda[]>([
     { chiave: 'studio', nome: 'Studio Legale Verdi', classeColore: 'studio', selezionato: true, condivisoCon: [], condivisoConTuttoLoStudio: true },
@@ -198,7 +211,7 @@ export class App {
       icona: '📅',
       categoria: 'Appuntamento',
       titolo: 'Udienza civile confermata',
-      descrizione: 'Tribunale di Milano · Rossi / Alfa S.r.l. · ore 10:30',
+      descrizione: 'Tribunale di Milano · pratica demo collegata · ore 10:30',
       orario: '09:12',
       widget: 'calendario',
       oggettoTitolo: '10:30 — Udienza civile'
@@ -207,10 +220,10 @@ export class App {
       icona: '📁',
       categoria: 'Documento',
       titolo: 'Procura firmata caricata',
-      descrizione: 'Nuovo file nel fascicolo Esposito Successione',
+      descrizione: 'Nuovo file in un fascicolo demo',
       orario: '08:47',
       widget: 'documenti',
-      oggettoTitolo: 'Procura firmata Esposito.p7m'
+      oggettoTitolo: 'Procura firmata demo.p7m'
     },
     {
       icona: '✉️',
@@ -228,7 +241,7 @@ export class App {
       descrizione: 'Deposito memoria istruttoria · RG 1842/2025',
       orario: '2 gg',
       widget: 'pratiche',
-      oggettoTitolo: 'Rossi / Alfa S.r.l.'
+      oggettoTitolo: 'Aurora Servizi / recupero credito'
     }
   ];
   readonly tutteNotifiche = computed(() => [...this.notificheInviti(), ...this.notificheScrivania]);
@@ -238,7 +251,7 @@ export class App {
     { key: 'documenti', icon: '📁', title: 'Documenti', description: 'Atti, versioni, firme e fascicoli' },
     { key: 'email', icon: '✉️', title: 'Email', description: 'Posta ordinaria e associazioni pratica' },
     { key: 'clienti', icon: '👥', title: 'Anagrafiche', description: 'Persone, società, enti e altri soggetti' },
-    { key: 'pratiche', icon: '⚖️', title: 'Pratiche', description: 'Fascicolo interno e stato attività' },
+    { key: 'pratiche', icon: '⚖️', title: 'Pratiche', description: 'Fascicoli, scadenze e attività dello Studio' },
     { key: 'collaboratori', icon: '👥', title: 'Collaboratori', description: 'Avvocati, segreteria, ruoli e accessi' }
   ];
   readonly widgetDisponibili = computed(() => this.widgetLibrary.filter(widget => widget.key !== 'collaboratori' || !!this.studioProfile()?.canEditBranding));
@@ -253,6 +266,7 @@ export class App {
   readonly calendarioCondivisoForm;
   readonly collaboratoreForm;
   readonly cambioPasswordForm;
+  readonly ricercaPratica;
   private widgetTrascinato: ChiaveWidget | null = null;
   private layoutPrimaDelTrascinamento: WidgetScrivania[] | null = null;
   private trascinamentoConfermato = false;
@@ -278,10 +292,10 @@ export class App {
         h: 2,
         metric: '248 file',
         preview: 'Documenti recenti e da validare',
-        details: ['Comparsa_costituzione_v3.pdf', 'Procura_firmata_Esposito.p7m', 'Verbale_udienza_10-07.docx'],
+        details: ['Comparsa_costituzione_v3.pdf', 'Procura_firmata_demo.p7m', 'Verbale_udienza_10-07.docx'],
         righeAnteprima: [
-          { titolo: 'Comparsa costituzione v3.pdf', descrizione: 'Rossi / Alfa S.r.l.', stato: 'Da firmare' },
-          { titolo: 'Procura firmata Esposito.p7m', descrizione: 'Caricata oggi alle 09:14', stato: 'Firmato' },
+          { titolo: 'Comparsa costituzione v3.pdf', descrizione: 'Fascicolo demo', stato: 'Da firmare' },
+          { titolo: 'Procura firmata demo.p7m', descrizione: 'Caricata oggi alle 09:14', stato: 'Firmato' },
           { titolo: 'Verbale udienza 10-07.docx', descrizione: 'Bozza da revisionare', stato: 'Bozza' }
         ]
       },
@@ -293,10 +307,10 @@ export class App {
         h: 2,
         metric: '37 non lette',
         preview: 'Messaggi da lavorare e associare',
-        details: ['Tribunale di Milano — notifica provvedimento', 'cliente.rossi@pec.it — documenti integrativi', 'Cancelleria civile — ricevuta deposito'],
+        details: ['Tribunale di Milano — notifica provvedimento', 'cliente.demo@example.test — documenti integrativi', 'Cancelleria civile — ricevuta deposito'],
         righeAnteprima: [
           { titolo: 'Tribunale di Milano', descrizione: 'Notifica provvedimento · 2 allegati', stato: 'Nuova' },
-          { titolo: 'cliente.rossi@pec.it', descrizione: 'Documenti integrativi pratica lavoro', stato: 'Associare' },
+          { titolo: 'cliente.demo@example.test', descrizione: 'Documenti integrativi pratica lavoro', stato: 'Associare' },
           { titolo: 'Cancelleria civile', descrizione: 'Ricevuta deposito telematico', stato: 'Archiviata' }
         ]
       },
@@ -317,19 +331,16 @@ export class App {
         y: 4,
         w: 6,
         h: 2,
-        metric: '31 aperte',
-        preview: 'Pratiche aperte e prossime attività',
-        details: ['Rossi / Alfa S.r.l. — Urgente', 'Esposito Successione — Aperta', 'De Luca recupero crediti — In lavorazione'],
-        righeAnteprima: [
-          { titolo: 'Rossi / Alfa S.r.l.', descrizione: 'Opposizione decreto ingiuntivo · scadenza 12/07', stato: 'Urgente', evidenza: '2 gg' },
-          { titolo: 'Esposito Successione', descrizione: 'Volontaria giurisdizione · documenti mancanti', stato: 'Aperta', evidenza: '45%' },
-          { titolo: 'De Luca recupero crediti', descrizione: 'Diffida stragiudiziale · bozza in corso', stato: 'In lavorazione', evidenza: '28%' }
-        ]
+        metric: 'Pratiche',
+        preview: 'Fascicoli, scadenze e attività dello Studio',
+        details: [],
+        righeAnteprima: []
       }
     ];
   }
 
-  constructor(private readonly fb: FormBuilder, private readonly http: HttpClient) {
+  constructor(private readonly fb: FormBuilder, private readonly http: HttpClient, private readonly servizioPratiche: PraticheService) {
+    this.ricercaPratica = this.fb.nonNullable.control('');
     this.loginForm = this.fb.nonNullable.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', Validators.required]
@@ -378,7 +389,8 @@ export class App {
       categoria: ['GENERALE'],
       ricorrenza: ['NESSUNA'],
       fineRicorrenza: [''],
-      note: ['Preparare fascicolo e documenti cliente.']
+      note: ['Preparare fascicolo e documenti cliente.'],
+      praticaId: ['']
     });
     this.calendarioCondivisoForm = this.fb.nonNullable.group({
       nome: ['', Validators.required],
@@ -395,6 +407,7 @@ export class App {
       nuovaPassword: ['', [Validators.required, Validators.minLength(12)]],
       confermaPassword: ['', [Validators.required, Validators.minLength(12)]]
     });
+    this.ricercaPratica.valueChanges.pipe(debounceTime(250),distinctUntilChanged()).subscribe(testo=>this.cercaPraticheAgenda(testo));
   }
 
   useDemoLogin(): void {
@@ -669,9 +682,60 @@ export class App {
     if(widget)this.openWidget(widget);
   }
 
+  apriPraticaDaWidget(pratica: PraticaSintetica | null): void {
+    this.praticaSelezionataId.set(pratica?.id ?? null);
+    this.nuovaPraticaRichiesta.set(pratica===null);
+    const widget=this.activeWidgets().find(elemento=>elemento.key==='pratiche');
+    if(widget)this.openWidget(widget);
+  }
+
+  apriAnagraficaDaPratica(id:string):void {
+    this.anagraficaSelezionataId.set(id);this.nuovaAnagraficaRichiesta.set(false);
+    const widget=this.activeWidgets().find(elemento=>elemento.key==='clienti');
+    if(widget)this.openWidget(widget);
+  }
+
+  creaEventoDaPratica(pratica:Pratica):void {
+    const widget=this.activeWidgets().find(elemento=>elemento.key==='calendario');if(!widget)return;
+    this.appuntamentoForm.controls.praticaId.setValue(pratica.id);
+    this.ricercaPratica.setValue(`${pratica.codice} · ${pratica.titolo}`,{emitEvent:false});
+    this.praticheAgenda.set([pratica]);
+    this.eventoSelezionato.set(null);this.openWidget(widget);this.apriNuovoAppuntamento(true);
+  }
+
+  apriEventoDaPratica(evento:EventoPratica):void {
+    const widget=this.activeWidgets().find(elemento=>elemento.key==='calendario');if(!widget)return;
+    this.openWidget(widget);this.dataCalendario.set(this.inizioGiorno(new Date(evento.inizio)));
+    const trovato=this.eventiAgenda().find(e=>e.id===evento.id);
+    if(trovato)this.eventoSelezionato.set(trovato);
+  }
+
+  apriPraticaDaEvento(evento:EventoAgenda):void {
+    if(!evento.praticaId)return;
+    this.praticaSelezionataId.set(evento.praticaId);this.nuovaPraticaRichiesta.set(false);
+    const widget=this.activeWidgets().find(elemento=>elemento.key==='pratiche');if(widget)this.openWidget(widget);
+  }
+
+  apriPraticaDaAnagrafica(id:string):void {
+    this.praticaSelezionataId.set(id);this.nuovaPraticaRichiesta.set(false);
+    const widget=this.activeWidgets().find(elemento=>elemento.key==='pratiche');if(widget)this.openWidget(widget);
+  }
+
+  cercaPraticheAgenda(testo:string):void {
+    if(testo.trim().length<2){this.praticheAgenda.set([]);return;}
+    this.servizioPratiche.elenco({ricerca:testo.trim(),pagina:0,dimensione:8}).subscribe({next:p=>this.praticheAgenda.set(p.content),error:()=>this.praticheAgenda.set([])});
+  }
+
+  selezionaPraticaAgenda(pratica:PraticaSintetica|null):void {
+    this.appuntamentoForm.controls.praticaId.setValue(pratica?.id??'');
+    this.ricercaPratica.setValue(pratica?`${pratica.codice} · ${pratica.titolo}`:'',{emitEvent:false});
+    this.praticheAgenda.set([]);
+  }
+
   closeExpandedWidget(): void {
     this.expandedWidget.set(null);
     this.nuovaAnagraficaRichiesta.set(false);
+    this.nuovaPraticaRichiesta.set(false);
     this.rigaWidgetSelezionata.set(null);
     this.nuovoAppuntamentoAperto.set(false);
     this.chiudiGestioneCalendari();
@@ -711,9 +775,11 @@ export class App {
     });
   }
 
-  apriNuovoAppuntamento(): void {
+  apriNuovoAppuntamento(mantieniPratica=false): void {
     this.chiudiGestioneCalendari();
     this.erroreAppuntamento.set('');
+    this.eventoInModificaId.set(null);
+    if(!mantieniPratica){this.appuntamentoForm.controls.praticaId.setValue('');this.ricercaPratica.setValue('',{emitEvent:false});this.praticheAgenda.set([]);}
     this.nuovoAppuntamentoAperto.set(true);
   }
 
@@ -732,6 +798,7 @@ export class App {
 
   chiudiNuovoAppuntamento(): void {
     this.nuovoAppuntamentoAperto.set(false);
+    this.eventoInModificaId.set(null);
   }
 
   salvaAppuntamento(): void {
@@ -742,19 +809,36 @@ export class App {
     const fine = new Date(`${valore.data}T${valore.fine}:00`);
     if (fine <= inizio) { this.erroreAppuntamento.set('L’orario di fine deve essere successivo a quello di inizio.'); return; }
     this.loading.set(true); this.error.set('');
-    this.http.post<EventoApi>('/api/v1/calendario/eventi', {
+    const corpo = {
       calendarioId: valore.calendario, titolo: valore.titolo, inizio: inizio.toISOString(), fine: fine.toISOString(),
       note: valore.note, invitatiIds: this.personeInvitate().filter(p=>p.selezionata).map(p=>p.id),
       statoDisponibilita: valore.statoDisponibilita, promemoriaMinuti: valore.promemoriaMinuti,
       categoria: valore.categoria, tuttoGiorno: valore.tuttoGiorno, ricorrenza: valore.ricorrenza,
-      fineRicorrenza: valore.ricorrenza === 'NESSUNA' ? null : valore.fineRicorrenza
-    }).subscribe({
+      fineRicorrenza: valore.ricorrenza === 'NESSUNA' ? null : valore.fineRicorrenza,
+      praticaId: valore.praticaId || null
+    };
+    const idModifica=this.eventoInModificaId();
+    const richiesta=idModifica?this.http.put<EventoApi>(`/api/v1/calendario/eventi/${idModifica}`,corpo):this.http.post<EventoApi>('/api/v1/calendario/eventi',corpo);
+    richiesta.subscribe({
       next: () => { this.caricaAgenda(); this.caricaNotifiche(); this.nuovoAppuntamentoAperto.set(false); this.loading.set(false); },
       error: response => { this.erroreAppuntamento.set(response?.error?.message ?? 'Appuntamento non salvato. Riprova.'); this.loading.set(false); }
     });
   }
   apriDettaglioEvento(evento:EventoAgenda,event:Event):void { event.stopPropagation(); this.nuovoAppuntamentoAperto.set(false); this.eventoSelezionato.set(evento); }
   chiudiDettaglioEvento():void { this.eventoSelezionato.set(null); }
+  modificaEvento(evento:EventoAgenda):void {
+    this.eventoInModificaId.set(evento.id??null);this.eventoSelezionato.set(null);
+    this.appuntamentoForm.patchValue({titolo:evento.titolo,calendario:String(evento.calendario),data:evento.data,
+      inizio:this.formattaOra(evento.ora,evento.minuti),fine:evento.fine??'',tuttoGiorno:!!evento.tuttoGiorno,
+      statoDisponibilita:evento.statoDisponibilita??'OCCUPATO',promemoriaMinuti:evento.promemoriaMinuti??0,
+      categoria:evento.categoria??'GENERALE',ricorrenza:evento.ricorrenza??'NESSUNA',note:evento.note??'',praticaId:evento.praticaId??''});
+    this.ricercaPratica.setValue(evento.praticaCodice?`${evento.praticaCodice} · ${evento.praticaTitolo}`:'',{emitEvent:false});
+    this.nuovoAppuntamentoAperto.set(true);
+  }
+  eliminaEvento(evento:EventoAgenda):void {
+    if(!evento.id||!confirm(`Eliminare l’evento “${evento.titolo}”?`))return;
+    this.http.delete<void>(`/api/v1/calendario/eventi/${evento.id}`).subscribe({next:()=>{this.eventoSelezionato.set(null);this.caricaAgenda();},error:()=>this.error.set('Evento non eliminato.')});
+  }
   coloreEvento(evento:EventoAgenda):string { const colori:Record<string,string>={studio:'#0b67b2',private:'#7c3aed',hearings:'#0f766e',deadlines:'#dc2626',shared:'#d97706'};return colori[evento.colore||'']||evento.colore||'#0b67b2'; }
   etichettaStato(stato?:string):string { return ({LIBERO:'Libero',PROVVISORIO:'Provvisorio',OCCUPATO:'Occupato',FUORI_SEDE:'Fuori sede'} as Record<string,string>)[stato||'']||'Occupato'; }
   formattaOra(ora:number,minuti=0):string { return `${String(ora).padStart(2,'0')}:${String(minuti).padStart(2,'0')}`; }
@@ -1182,7 +1266,7 @@ export class App {
     const inizio = new Date(e.inizio);
     const organizzatore = this.personeStudio().find(persona => persona.id === e.creatoreId);
     const fine=new Date(e.fine);
-    return { id: e.id, data: this.dataIsoLocale(inizio), ora: inizio.getHours(), minuti: inizio.getMinutes(), fine:`${String(fine.getHours()).padStart(2,'0')}:${String(fine.getMinutes()).padStart(2,'0')}`, calendario: e.calendarioId, colore:e.colore, titolo: e.titolo, personaId: e.creatoreId, persona: organizzatore?.nome || this.userName() || 'Avvocato dello Studio', note:e.note, partecipanti:e.partecipanti, statoDisponibilita:e.statoDisponibilita, promemoriaMinuti:e.promemoriaMinuti, categoria:e.categoria, ricorrenza:e.ricorrenza, tuttoGiorno:e.tuttoGiorno };
+    return { id: e.id, data: this.dataIsoLocale(inizio), ora: inizio.getHours(), minuti: inizio.getMinutes(), fine:`${String(fine.getHours()).padStart(2,'0')}:${String(fine.getMinutes()).padStart(2,'0')}`, calendario: e.calendarioId, colore:e.colore, titolo: e.titolo, personaId: e.creatoreId, persona: organizzatore?.nome || this.userName() || 'Avvocato dello Studio', note:e.note, partecipanti:e.partecipanti, statoDisponibilita:e.statoDisponibilita, promemoriaMinuti:e.promemoriaMinuti, categoria:e.categoria, ricorrenza:e.ricorrenza, tuttoGiorno:e.tuttoGiorno,praticaId:e.praticaId,praticaCodice:e.praticaCodice,praticaTitolo:e.praticaTitolo,praticaStato:e.praticaStato };
   }
   aggiornaWidgetCalendario(): void {
     const adesso = this.oraAttuale();
@@ -1204,11 +1288,12 @@ export class App {
       const urgente = evento.data === oggi && categoria === 'Scadenza';
       return {
         titolo: `${urgente ? '⚠ ' : ''}${evento.tuttoGiorno ? 'Tutto il giorno' : this.formattaOra(evento.ora, evento.minuti)} — ${evento.titolo}`,
-        descrizione: `${categoria} · ${calendario?.nome ?? 'Calendario'}`,
+        descrizione: `${categoria} · ${calendario?.nome ?? 'Calendario'}${evento.praticaCodice?` · ${evento.praticaCodice} · ${evento.praticaTitolo}`:''}`,
         stato: evento.data === oggi ? 'Oggi' : evento.data === domani ? 'Domani' : new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: 'short' }).format(this.dataDaIso(evento.data)),
         eventoId: evento.id,
         colore: evento.colore ? this.coloreEvento(evento) : calendario?.classeColore ?? this.coloreEvento(evento),
-        urgente
+        urgente,
+        praticaId:evento.praticaId
       };
     });
     const quantita = eventiOggi.length;

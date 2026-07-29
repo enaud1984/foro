@@ -1,0 +1,178 @@
+<section class="pratiche" [class.compatto]="compatto">
+  <ng-container *ngIf="compatto; else vistaCompleta">
+    <header class="testata-compatta">
+      <div><strong>{{metrica()}}</strong><small>{{attenzione()}} richiedono attenzione</small></div>
+      <button type="button" class="primario" (click)="nuova()">Nuova pratica</button>
+    </header>
+    <label class="ricerca-compatta"><span class="sr-only">Cerca pratiche</span><input [formControl]="ricerca" placeholder="Cerca codice, titolo o soggetto…"></label>
+    <p class="stato-ui" *ngIf="caricamento()">Caricamento pratiche…</p>
+    <p class="stato-ui errore" role="alert" *ngIf="errore()">{{errore()}}</p>
+    <p class="stato-ui" *ngIf="!caricamento()&&!errore()&&!pratiche().length">Nessuna pratica da mostrare. Crea il primo fascicolo operativo.</p>
+    <div class="lista-compatta" *ngIf="!caricamento()&&pratiche().length">
+      <button type="button" *ngFor="let p of pratiche()" (click)="apri(p)">
+        <span class="codice">{{p.codice}}</span>
+        <span><strong>{{p.titolo}}</strong><small>{{etichetta('materie',p.materiaCodice)}} · {{etichetta('stati',p.statoCodice)}}</small><small *ngIf="p.prossimaScadenza">{{giorniScadenza(p.prossimaScadenza)}}</small></span>
+        <em [class.urgente]="p.prioritaCodice==='URGENTE'">{{etichetta('priorita',p.prioritaCodice)}}</em>
+      </button>
+    </div>
+    <p class="degradato" *ngIf="avviso()">{{avviso()}}</p>
+  </ng-container>
+
+  <ng-template #vistaCompleta>
+    <header class="testata">
+      <div><span class="eyebrow">FASCICOLI OPERATIVI</span><h3>Pratiche</h3><p>Fascicoli, scadenze e attività dello Studio</p></div>
+      <button type="button" class="primario" (click)="nuova()">Nuova pratica</button>
+    </header>
+    <div class="barra">
+      <label><span class="sr-only">Cerca pratiche</span><input [formControl]="ricerca" placeholder="Cerca codice, titolo, Cliente, Controparte o RG…"></label>
+      <select [formControl]="filtroStato" aria-label="Filtra per stato"><option value="">Tutti gli stati</option><option *ngFor="let x of cataloghi()['stati']" [value]="x.codice">{{x.descrizione}}</option></select>
+      <select [formControl]="filtroMateria" aria-label="Filtra per materia"><option value="">Tutte le materie</option><option *ngFor="let x of cataloghi()['materie']" [value]="x.codice">{{x.descrizione}}</option></select>
+      <select [formControl]="filtroPriorita" aria-label="Filtra per priorità"><option value="">Tutte le priorità</option><option *ngFor="let x of cataloghi()['priorita']" [value]="x.codice">{{x.descrizione}}</option></select>
+    </div>
+    <p class="stato-ui" *ngIf="caricamento()">Caricamento Pratiche…</p>
+    <p class="stato-ui errore" role="alert" *ngIf="errore()">{{errore()}}</p>
+    <p class="degradato" *ngIf="avviso()">{{avviso()}}</p>
+    <div class="corpo" *ngIf="!caricamento()">
+      <aside class="elenco">
+        <button type="button" *ngFor="let p of pratiche()" (click)="apri(p)" [class.selezionato]="selezionata()?.id===p.id">
+          <span class="codice">{{p.codice}}</span><strong>{{p.titolo}}</strong>
+          <small>{{p.clienti||'Nessun Cliente'}} · {{etichetta('stati',p.statoCodice)}}</small>
+          <span class="indicatori"><em>{{etichetta('priorita',p.prioritaCodice)}}</em><span *ngIf="p.riservata">Riservata</span><span *ngIf="p.prossimaScadenza">{{giorniScadenza(p.prossimaScadenza)}}</span></span>
+        </button>
+        <p class="stato-ui" *ngIf="!pratiche().length">Nessuna Pratica corrisponde ai filtri.</p>
+        <nav class="pagine" *ngIf="pagineTotali()>1"><button type="button" (click)="vai(-1)" [disabled]="pagina()===0">Precedente</button><span>{{pagina()+1}} / {{pagineTotali()}}</span><button type="button" (click)="vai(1)" [disabled]="pagina()+1>=pagineTotali()">Successiva</button></nav>
+      </aside>
+
+      <article class="dettaglio" *ngIf="selezionata() as p; else invitoSelezione">
+        <header>
+          <div><span class="codice">{{p.codice}}</span><h3>{{p.titolo}}</h3><p>{{etichetta('materie',p.materiaCodice)}} · {{etichetta('tipologie',p.tipologiaCodice)}}</p></div>
+          <div class="azioni"><button type="button" (click)="modifica(p)" [disabled]="!statoModificabile(p)">Modifica</button><button type="button" class="pericolo" (click)="elimina()">Elimina</button></div>
+        </header>
+        <nav class="schede" aria-label="Sezioni della Pratica">
+          <button type="button" *ngFor="let s of [
+            {id:'riepilogo',t:'Riepilogo'},{id:'soggetti',t:'Soggetti'},{id:'team',t:'Team'},{id:'documenti',t:'Documenti'},
+            {id:'attivita',t:'Attività'},{id:'agenda',t:'Agenda e scadenze'},{id:'comunicazioni',t:'Comunicazioni'},
+            {id:'giudiziari',t:'Dati giudiziari'},{id:'economia',t:'Economia'},{id:'timeline',t:'Timeline'}]"
+            [class.attiva]="scheda()===$any(s.id)" (click)="impostaScheda($any(s.id))">{{s.t}}</button>
+        </nav>
+
+        <section class="scheda" *ngIf="scheda()==='riepilogo'">
+          <div class="stato-pratica"><strong>{{etichetta('stati',p.statoCodice)}}</strong><span>{{etichetta('priorita',p.prioritaCodice)}}</span><span *ngIf="p.riservata">Accesso riservato</span></div>
+          <dl class="griglia-dati">
+            <div><dt>Descrizione</dt><dd>{{p.descrizione||'—'}}</dd></div><div><dt>Responsabile</dt><dd>{{p.responsabileNome}}</dd></div>
+            <div><dt>Data apertura</dt><dd>{{p.dataApertura|date:'dd/MM/yyyy'}}</dd></div><div><dt>Valore</dt><dd>{{p.valoreEconomico==null?'—':(p.valoreEconomico|currency:p.valuta:'symbol':'1.2-2':'it-IT')}}</dd></div>
+            <div><dt>Clienti</dt><dd><button type="button" *ngFor="let s of soggetti()" (click)="apriAnagrafica.emit(s.soggettoId)" [hidden]="s.ruoloCodice!=='CLIENTE'">{{s.nomeVisualizzato}}</button><span *ngIf="!soggetti().length">—</span></dd></div>
+            <div><dt>Controparti</dt><dd><ng-container *ngFor="let s of soggetti()"><button type="button" *ngIf="s.ruoloCodice==='CONTROPARTE'" (click)="apriAnagrafica.emit(s.soggettoId)">{{s.nomeVisualizzato}}</button></ng-container></dd></div>
+            <div><dt>Prossima scadenza</dt><dd>{{eventi()[0]?.inizio?(eventi()[0].inizio|date:'dd/MM/yyyy HH:mm'):'—'}}</dd></div><div><dt>Attività aperte</dt><dd>{{attivita().length}}</dd></div>
+          </dl>
+          <nav class="transizioni">
+            <button type="button" *ngIf="p.statoCodice==='BOZZA'||p.statoCodice==='IN_ATTESA'||p.statoCodice==='SOSPESA'" (click)="transizione('apri')">Apri</button>
+            <button type="button" *ngIf="p.statoCodice==='APERTA'" (click)="transizione('metti-in-attesa')">Metti in attesa</button>
+            <button type="button" *ngIf="p.statoCodice==='APERTA'||p.statoCodice==='IN_ATTESA'" (click)="transizione('sospendi')">Sospendi</button>
+            <button type="button" *ngIf="p.statoCodice==='APERTA'||p.statoCodice==='IN_ATTESA'||p.statoCodice==='SOSPESA'" (click)="transizione('definisci')">Definisci</button>
+            <button type="button" *ngIf="p.statoCodice==='DEFINITA'" (click)="transizione('archivia')">Archivia</button>
+            <button type="button" *ngIf="p.statoCodice==='ARCHIVIATA'" (click)="transizione('riapri')">Riapri</button>
+            <button type="button" (click)="scheda.set('documenti')">Aggiungi documento</button><button type="button" (click)="scheda.set('attivita')">Aggiungi attività</button><button type="button" (click)="creaEventoAgenda.emit(p)">Aggiungi evento</button>
+          </nav>
+        </section>
+
+        <section class="scheda" *ngIf="scheda()==='soggetti'">
+          <header><div><h4>Soggetti collegati</h4><p>Il ruolo appartiene alla relazione con questa Pratica.</p></div><button type="button" (click)="selettoreAnagrafiche.set(true)" [disabled]="!statoModificabile(p)">Collega Soggetto</button></header>
+          <div class="righe"><article *ngFor="let s of soggetti()"><button type="button" class="link" (click)="apriAnagrafica.emit(s.soggettoId)"><strong>{{s.nomeVisualizzato}}</strong></button><span>{{s.ruoloCodice.replaceAll('_',' ')}}</span><em *ngIf="s.principale">Principale</em><button type="button" class="pericolo" (click)="rimuoviSoggetto(s)" [disabled]="!statoModificabile(p)">Scollega</button></article></div>
+          <p class="stato-ui" *ngIf="!soggetti().length">Nessun Soggetto collegato.</p>
+        </section>
+
+        <section class="scheda" *ngIf="scheda()==='team'">
+          <h4>Team interno</h4>
+          <form class="form-riga" [formGroup]="teamForm" (ngSubmit)="aggiungiTeam()"><label>Collaboratore<select formControlName="utenteId"><option value="">Seleziona</option><option *ngFor="let x of persone()" [value]="x.id">{{x.nome}}</option></select></label><label>Ruolo<select formControlName="ruoloTeamCodice"><option *ngFor="let x of cataloghi()['ruoliTeam']" [value]="x.codice" [disabled]="x.codice==='RESPONSABILE'">{{x.descrizione}}</option></select></label><button type="submit" [disabled]="!statoModificabile(p)">Aggiungi</button></form>
+          <div class="righe"><article *ngFor="let m of team()"><strong>{{m.nomeVisualizzato}}</strong><span>{{m.ruoloTeamCodice.replaceAll('_',' ')}}</span><em *ngIf="m.principale">Principale</em><button type="button" class="pericolo" *ngIf="m.ruoloTeamCodice!=='RESPONSABILE'" (click)="rimuoviTeam(m)">Rimuovi</button></article></div>
+        </section>
+
+        <section class="scheda" *ngIf="scheda()==='documenti'">
+          <h4>Documenti della Pratica</h4>
+          <form class="form-riga documento" [formGroup]="documentoForm" (ngSubmit)="caricaDocumento()">
+            <label>Titolo<input formControlName="titolo"></label><label>Categoria<select formControlName="categoriaCodice"><option *ngFor="let x of cataloghi()['categorieDocumenti']" [value]="x.codice">{{x.descrizione}}</option></select></label>
+            <label>File<input type="file" accept=".pdf,.png,.jpg,.jpeg,.docx,.txt" (change)="selezionaFile($event)"></label><button type="submit" [disabled]="!fileSelezionato()||!statoModificabile(p)">Carica</button>
+          </form>
+          <div class="righe"><article *ngFor="let d of documenti()"><span><strong>{{d.titolo}}</strong><small>{{d.nomeFile}} · {{d.dimensione|number}} byte · v{{d.versioneNumero}}</small></span><em>{{d.categoriaCodice}}</em><button type="button" (click)="scaricaDocumento(d)" [disabled]="d.statoDocumento==='SOLO_METADATI'">Download</button><button type="button" class="pericolo" (click)="eliminaDocumento(d)">Elimina</button></article></div>
+          <p class="stato-ui" *ngIf="!documenti().length">Nessun documento caricato.</p>
+        </section>
+
+        <section class="scheda" *ngIf="scheda()==='attivita'">
+          <h4>Attività</h4>
+          <form class="form-riga" [formGroup]="attivitaForm" (ngSubmit)="creaAttivita()"><label>Titolo<input formControlName="titolo"></label><label>Assegnatario<select formControlName="assegnatarioId"><option value="">Non assegnata</option><option *ngFor="let x of persone()" [value]="x.id">{{x.nome}}</option></select></label><label>Priorità<select formControlName="prioritaCodice"><option *ngFor="let x of cataloghi()['prioritaAttivita']" [value]="x.codice">{{x.descrizione}}</option></select></label><label>Scadenza<input type="date" formControlName="dataScadenza"></label><button type="submit" [disabled]="!statoModificabile(p)">Crea</button></form>
+          <div class="righe"><article *ngFor="let a of attivita()"><span><strong>{{a.titolo}}</strong><small>{{a.dataScadenza?(a.dataScadenza|date:'dd/MM/yyyy'):'Nessuna scadenza'}}</small></span><em>{{a.prioritaCodice}} · {{a.statoCodice.replaceAll('_',' ')}}</em><button type="button" *ngIf="a.statoCodice!=='COMPLETATA'" (click)="completaAttivita(a)">Completa</button></article></div>
+        </section>
+
+        <section class="scheda" *ngIf="scheda()==='agenda'">
+          <header><div><h4>Agenda e scadenze</h4><p>Eventi futuri e storici collegati al fascicolo.</p></div><button type="button" (click)="creaEventoAgenda.emit(p)" [disabled]="!statoModificabile(p)">Nuovo evento</button></header>
+          <div class="righe"><article *ngFor="let e of eventi()"><span><strong>{{e.titolo}}</strong><small>{{e.inizio|date:'dd/MM/yyyy HH:mm'}} · {{e.calendarioNome}} · {{e.categoria||'Evento'}}</small></span><em>{{e.ricorrenza}}</em><button type="button" (click)="apriEventoAgenda.emit(e)">Apri in Agenda</button></article></div>
+          <p class="stato-ui" *ngIf="!eventi().length">Nessun evento collegato.</p>
+        </section>
+
+        <section class="scheda" *ngIf="scheda()==='comunicazioni'">
+          <h4>Comunicazioni e note operative</h4>
+          <form class="form-riga" [formGroup]="comunicazioneForm" (ngSubmit)="creaComunicazione()"><label>Tipo<select formControlName="tipo"><option *ngFor="let x of ['EMAIL','PEC','TELEFONATA','LETTERA','RIUNIONE','NOTA','ALTRO']" [value]="x">{{x}}</option></select></label><label>Oggetto<input formControlName="oggetto"></label><label>Data<input type="datetime-local" formControlName="dataComunicazione"></label><label>Descrizione<textarea formControlName="descrizione"></textarea></label><button type="submit" [disabled]="!statoModificabile(p)">Registra</button></form>
+          <div class="righe"><article *ngFor="let c of comunicazioni()"><span><strong>{{c.oggetto}}</strong><small>{{c.descrizione||'—'}}</small></span><em>{{c.tipo}} · {{c.dataComunicazione|date:'dd/MM/yyyy HH:mm'}}</em></article></div>
+        </section>
+
+        <section class="scheda" *ngIf="scheda()==='giudiziari'">
+          <h4>Dati giudiziari opzionali</h4>
+          <form class="griglia-form" [formGroup]="giudiziariForm" (ngSubmit)="salvaGiudiziari()">
+            <label>Autorità giudiziaria<input formControlName="autoritaGiudiziaria"></label><label>Ufficio<input formControlName="ufficio"></label><label>Sezione<input formControlName="sezione"></label><label>Numero RG<input formControlName="numeroRg"></label><label>Anno RG<input type="number" formControlName="annoRg"></label><label>Giudice<input formControlName="giudice"></label><label>Iscrizione a ruolo<input type="date" formControlName="dataIscrizioneRuolo"></label><label>Tipo procedimento<input formControlName="tipoProcedimento"></label><label>Grado<input formControlName="gradoGiudizio"></label><label>Ruolo processuale Cliente<input formControlName="ruoloProcessualeCliente"></label><label>Stato procedimento<input formControlName="statoProcedimento"></label><label>Note<textarea formControlName="note"></textarea></label><button type="submit" [disabled]="!statoModificabile(p)">Salva dati giudiziari</button>
+          </form>
+        </section>
+
+        <section class="scheda" *ngIf="scheda()==='economia'">
+          <h4>Economia essenziale</h4>
+          <form class="griglia-form economia" [formGroup]="economiaForm" (ngSubmit)="salvaEconomia()">
+            <label>Preventivo<input type="number" min="0" step="0.01" formControlName="preventivo"></label><label>Compenso concordato<input type="number" min="0" step="0.01" formControlName="compensoConcordato"></label><label>Acconti richiesti<input type="number" min="0" step="0.01" formControlName="accontiRichiesti"></label><label>Acconti pagati<input type="number" min="0" step="0.01" formControlName="accontiPagati"></label><label>Spese anticipate<input type="number" min="0" step="0.01" formControlName="speseAnticipate"></label><label>Contributo unificato<input type="number" min="0" step="0.01" formControlName="contributoUnificato"></label><label>Altre spese<input type="number" min="0" step="0.01" formControlName="altreSpese"></label><label>Fatturato<input type="number" min="0" step="0.01" formControlName="importoFatturato"></label><label>Incassato<input type="number" min="0" step="0.01" formControlName="importoIncassato"></label><label>Valuta<input formControlName="valuta" maxlength="3"></label><label>Note<textarea formControlName="note"></textarea></label><button type="submit" [disabled]="!statoModificabile(p)">Salva riepilogo economico</button>
+          </form>
+        </section>
+
+        <section class="scheda timeline" *ngIf="scheda()==='timeline'">
+          <h4>Timeline automatica</h4>
+          <ol><li *ngFor="let t of timeline()"><time>{{t.avvenutoIl|date:'dd/MM/yyyy HH:mm'}}</time><span><strong>{{t.titolo}}</strong><small>{{t.tipoEvento.replaceAll('_',' ')}}</small></span></li></ol>
+          <p class="stato-ui" *ngIf="!timeline().length">Nessun evento storico.</p>
+        </section>
+      </article>
+      <ng-template #invitoSelezione><section class="nessuna-selezione"><strong>Seleziona una Pratica</strong><p>Consulta il fascicolo oppure crea una nuova Pratica.</p></section></ng-template>
+    </div>
+  </ng-template>
+
+  <div class="pannello-form" *ngIf="!compatto&&formAperto()">
+    <form [formGroup]="form" (ngSubmit)="salva()">
+      <header><div><span class="eyebrow">PASSO {{passo()}} DI 5</span><h3>{{form.controls.id.value?'Modifica':'Nuova'}} Pratica</h3></div><button type="button" aria-label="Chiudi form" (click)="chiudiForm()">×</button></header>
+      <nav class="passi" aria-label="Passi creazione"><span [class.attivo]="passo()===1">Dati generali</span><span [class.attivo]="passo()===2">Clienti</span><span [class.attivo]="passo()===3">Altri soggetti</span><span [class.attivo]="passo()===4">Team</span><span [class.attivo]="passo()===5">Conferma</span></nav>
+      <section *ngIf="passo()===1" class="griglia-form">
+        <label class="largo">Titolo<input formControlName="titolo"></label><label class="largo">Descrizione<textarea formControlName="descrizione"></textarea></label>
+        <label>Materia<select formControlName="materiaCodice"><option *ngFor="let x of cataloghi()['materie']" [value]="x.codice">{{x.descrizione}}</option></select></label>
+        <label>Tipologia<select formControlName="tipologiaCodice"><option *ngFor="let x of cataloghi()['tipologie']" [value]="x.codice">{{x.descrizione}}</option></select></label>
+        <label>Priorità<select formControlName="prioritaCodice"><option *ngFor="let x of cataloghi()['priorita']" [value]="x.codice">{{x.descrizione}}</option></select></label>
+        <label>Responsabile<select formControlName="responsabileId"><option *ngFor="let x of persone()" [value]="x.id">{{x.nome}}</option></select></label>
+        <label>Valore economico<input type="number" min="0" step="0.01" formControlName="valoreEconomico"></label><label>Data apertura<input type="date" formControlName="dataApertura"></label>
+        <label class="check"><input type="checkbox" formControlName="riservata"> Pratica riservata</label><label class="largo">Note interne<textarea formControlName="noteInterne"></textarea></label>
+      </section>
+      <section *ngIf="passo()===2||passo()===3">
+        <h4>{{passo()===2?'Cliente/i':'Altri Soggetti'}}</h4><p>{{passo()===2?'La Bozza può essere salvata senza Cliente; per aprirla serve almeno un Cliente.':'Collega Controparti, Testimoni, Consulenti e gli altri ruoli contestuali.'}}</p>
+        <div [formGroup]="soggettoForm" class="form-riga"><label>Ruolo<select formControlName="ruoloCodice"><option *ngFor="let x of cataloghi()['ruoliSoggetto']" [value]="x.codice">{{x.descrizione}}</option></select></label><button type="button" (click)="selettoreAnagrafiche.set(true)">Cerca o crea Anagrafica</button></div>
+        <div class="righe"><article *ngFor="let s of soggettiBozza();let i=index"><strong>{{s.nome}}</strong><span>{{s.ruoloCodice.replaceAll('_',' ')}}</span><em *ngIf="s.principale">Principale</em><button type="button" (click)="rimuoviSoggettoBozza(i)">Rimuovi</button></article></div>
+      </section>
+      <section *ngIf="passo()===4">
+        <h4>Team</h4><p>Il responsabile viene aggiunto automaticamente con ruolo Responsabile.</p>
+        <div [formGroup]="teamForm" class="form-riga"><label>Collaboratore<select formControlName="utenteId"><option value="">Seleziona</option><option *ngFor="let x of persone()" [value]="x.id">{{x.nome}}</option></select></label><label>Ruolo<select formControlName="ruoloTeamCodice"><option *ngFor="let x of cataloghi()['ruoliTeam']" [value]="x.codice" [disabled]="x.codice==='RESPONSABILE'">{{x.descrizione}}</option></select></label><button type="button" (click)="aggiungiTeamBozza()">Aggiungi</button></div>
+        <div class="righe"><article *ngFor="let m of teamBozza()"><strong>{{m.nome}}</strong><span>{{m.ruoloTeamCodice.replaceAll('_',' ')}}</span></article></div>
+      </section>
+      <section *ngIf="passo()===5" class="conferma-pratica">
+        <h4>Conferma</h4><dl><div><dt>Titolo</dt><dd>{{form.controls.titolo.value}}</dd></div><div><dt>Materia</dt><dd>{{etichetta('materie',form.controls.materiaCodice.value)}}</dd></div><div><dt>Clienti</dt><dd>{{clientiBozza()}}</dd></div><div><dt>Team aggiuntivo</dt><dd>{{teamBozza().length}}</dd></div></dl>
+        <label>Salva come<select formControlName="stato"><option value="BOZZA">Bozza</option><option value="APERTA">Aperta</option></select></label>
+      </section>
+      <p class="errore" *ngIf="form.invalid&&form.touched">Controlla i campi obbligatori e gli importi.</p>
+      <footer><button type="button" (click)="vaiPasso(-1)" [disabled]="passo()===1">Indietro</button><button type="button" class="primario" *ngIf="passo()<5" (click)="vaiPasso(1)">Continua</button><button type="submit" class="primario" *ngIf="passo()===5||form.controls.id.value">Salva Pratica</button></footer>
+    </form>
+  </div>
+
+  <div class="selettore-anagrafica" *ngIf="!compatto&&selettoreAnagrafiche()">
+    <div><header><h3>Scegli o crea un’Anagrafica</h3><button type="button" (click)="selettoreAnagrafiche.set(false)">×</button></header><app-anagrafiche (soggettoSelezionato)="soggettoScelto($event)"></app-anagrafiche></div>
+  </div>
+</section>

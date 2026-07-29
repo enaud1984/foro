@@ -28,7 +28,7 @@ public class WorkspaceController {
       new Widget("documents","Documenti",false,"/documents"),
       new Widget("email","Email",true,"/email"),
       new Widget("clients","Anagrafiche",false,"/anagrafiche"),
-      new Widget("matters","Pratiche / Fascicolo",false,"/matters"));
+      new Widget("matters","Pratiche",false,"/pratiche"));
   }
 
   @GetMapping("/preferences")

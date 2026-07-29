@@ -25,16 +25,18 @@ public class EventoCalendario {
   @Column(name="serie_id") private UUID serieId;
   @Column(nullable=false) private String ricorrenza;
   @Column(name="fine_ricorrenza") private java.time.LocalDate fineRicorrenza;
+  @Column(name="pratica_id") private UUID praticaId;
   protected EventoCalendario() {}
-  public EventoCalendario(UUID studioId, UUID calendarioId, UUID creatoreId, String titolo, Instant inizio, Instant fine, String luogo, String note, String partecipanti, String statoDisponibilita, Integer promemoriaMinuti, String categoria, boolean tuttoGiorno, UUID serieId, String ricorrenza, java.time.LocalDate fineRicorrenza) {
+  public EventoCalendario(UUID studioId, UUID calendarioId, UUID creatoreId, String titolo, Instant inizio, Instant fine, String luogo, String note, String partecipanti, String statoDisponibilita, Integer promemoriaMinuti, String categoria, boolean tuttoGiorno, UUID serieId, String ricorrenza, java.time.LocalDate fineRicorrenza, UUID praticaId) {
     this.id=UUID.randomUUID(); this.studioId=studioId; this.calendarioId=calendarioId; this.creatoreId=creatoreId;
     this.titolo=titolo; this.inizio=inizio; this.fine=fine; this.luogo=luogo; this.note=note; this.partecipanti=partecipanti;
     this.creatoIl=Instant.now(); this.aggiornatoIl=this.creatoIl;
-    this.statoDisponibilita=statoDisponibilita;this.promemoriaMinuti=promemoriaMinuti;this.categoria=categoria;this.tuttoGiorno=tuttoGiorno;this.serieId=serieId;this.ricorrenza=ricorrenza;this.fineRicorrenza=fineRicorrenza;
+    this.statoDisponibilita=statoDisponibilita;this.promemoriaMinuti=promemoriaMinuti;this.categoria=categoria;this.tuttoGiorno=tuttoGiorno;this.serieId=serieId;this.ricorrenza=ricorrenza;this.fineRicorrenza=fineRicorrenza;this.praticaId=praticaId;
   }
   public UUID getId(){return id;} public UUID getCalendarioId(){return calendarioId;} public UUID getCreatoreId(){return creatoreId;} public String getTitolo(){return titolo;}
   public Instant getInizio(){return inizio;} public Instant getFine(){return fine;} public String getLuogo(){return luogo;}
   public String getNote(){return note;} public String getPartecipanti(){return partecipanti;}
   public String getStatoDisponibilita(){return statoDisponibilita;} public Integer getPromemoriaMinuti(){return promemoriaMinuti;} public String getCategoria(){return categoria;} public boolean isTuttoGiorno(){return tuttoGiorno;} public UUID getSerieId(){return serieId;} public String getRicorrenza(){return ricorrenza;} public java.time.LocalDate getFineRicorrenza(){return fineRicorrenza;}
-  public void aggiorna(UUID calendarioId,String titolo,Instant inizio,Instant fine,String note,String statoDisponibilita,Integer promemoriaMinuti,String categoria,boolean tuttoGiorno){this.calendarioId=calendarioId;this.titolo=titolo;this.inizio=inizio;this.fine=fine;this.note=note;this.statoDisponibilita=statoDisponibilita;this.promemoriaMinuti=promemoriaMinuti;this.categoria=categoria;this.tuttoGiorno=tuttoGiorno;this.aggiornatoIl=Instant.now();}
+  public UUID getPraticaId(){return praticaId;}
+  public void aggiorna(UUID calendarioId,String titolo,Instant inizio,Instant fine,String note,String statoDisponibilita,Integer promemoriaMinuti,String categoria,boolean tuttoGiorno,UUID praticaId){this.calendarioId=calendarioId;this.titolo=titolo;this.inizio=inizio;this.fine=fine;this.note=note;this.statoDisponibilita=statoDisponibilita;this.promemoriaMinuti=promemoriaMinuti;this.categoria=categoria;this.tuttoGiorno=tuttoGiorno;this.praticaId=praticaId;this.aggiornatoIl=Instant.now();}
 }

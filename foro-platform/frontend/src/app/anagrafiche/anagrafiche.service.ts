@@ -22,4 +22,7 @@ export class AnagraficheService {
     return this.http.post<Array<{id:string;nomeVisualizzato:string;tipoCodice:string;stato:string}>>(`${this.base}/verifica-duplicati`, richiesta);
   }
   tipi(): Observable<CatalogoAnagrafica[]> { return this.http.get<CatalogoAnagrafica[]>(`${this.base}/cataloghi/tipi-soggetto`); }
+  pratiche(id:string):Observable<Array<{id:string;codice:string;titolo:string;statoCodice:string;ruoloCodice:string}>> {
+    return this.http.get<Array<{id:string;codice:string;titolo:string;statoCodice:string;ruoloCodice:string}>>(`${this.base}/${id}/pratiche`);
+  }
 }

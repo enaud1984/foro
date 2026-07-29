@@ -120,6 +120,17 @@
 | BR-PRA-008 | Rimuovere un collaboratore revoca subito l’accesso. |
 | BR-PRA-009 | La timeline è append-only dal punto di vista storico. |
 | BR-PRA-010 | PCT è etichettato come Fase 3 e non operativo. |
+| BR-PRA-011 | Una Bozza può non avere Clienti; ogni altro stato richiede almeno un Cliente attivo e l’ultimo Cliente non può essere rimosso. |
+| BR-PRA-012 | Il codice `PRA-AAAA-NNNNN` è generato in modo atomico per Studio e anno. |
+| BR-PRA-013 | Le transizioni di stato sono controllate dal backend; una Pratica archiviata è in sola lettura fino alla riapertura esplicita. |
+| BR-PRA-014 | Il ruolo del Soggetto appartiene a `PraticaSoggetto`; lo stesso Soggetto può avere ruoli diversi nella stessa o in altre Pratiche. |
+| BR-PRA-015 | Il responsabile e i membri del team devono avere membership attiva nello Studio; il responsabile è anche membro `RESPONSABILE`. |
+| BR-PRA-016 | Una Pratica riservata è visibile al responsabile, ai membri associati e a `STUDIO_ADMIN`; le altre risorse ricevono 404. |
+| BR-PRA-017 | Archiviazione e cancellazione logica sono distinte; la cancellazione non elimina Anagrafiche, eventi, documenti, timeline o audit collegati. |
+| BR-PRA-018 | La timeline automatica è append-only e contiene soltanto metadati sintetici non sensibili. |
+| BR-PRA-019 | Gli importi della Pratica sono non negativi e gestiti come decimali, mai floating point. |
+| BR-PRA-020 | Un evento Agenda può collegarsi soltanto a una Pratica visibile, non eliminata e non archiviata dello stesso Studio. |
+| BR-PRA-021 | I documenti locali usano storage privato astratto, nome casuale, limite 25 MiB e verifica server-side; il percorso storage non è mai esposto. |
 
 ## 10. Audit e privacy
 

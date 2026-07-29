@@ -11,6 +11,15 @@ Le decisioni accettate prevalgono sugli altri documenti. Una decisione modificat
 
 ## Decisioni accettate
 
+### DEC-022 — Pratica come fascicolo operativo e integrazione Agenda
+
+- **Stato:** ACCEPTED
+- **Data:** 2026-07-29
+- **Contesto:** il widget Pratiche era dimostrativo. La verticale richiede un fascicolo persistito che colleghi Anagrafiche, team, documenti, attività, Agenda, comunicazioni, dati giudiziari, dati economici essenziali e timeline, senza anticipare PCT o contabilità completa.
+- **Decisione:** la superficie utente e il dominio applicativo usano il nome `Pratica`; la chiave tecnica `matters`/`pratiche` resta invariata per compatibilità con i layout. `PraticaSoggetto` assegna il ruolo contestuale del catalogo esistente. Il codice leggibile è generato da un contatore transazionale per Studio e anno. Le pratiche riservate sono visibili a responsabile, team associato e `STUDIO_ADMIN`; l’archiviazione è uno stato funzionale reversibile, distinto dalla cancellazione logica. Gli eventi Agenda conservano un riferimento opzionale alla Pratica e restano storicamente disponibili dopo la sua cancellazione logica. Per lo sviluppo locale i documenti usano un adapter filesystem privato, nomi storage casuali e verifica server-side di dimensione/firma MIME; l’adapter S3 con quarantena resta quello previsto per gli ambienti distribuiti.
+- **Conseguenze:** sono introdotti cataloghi e tabelle tenant-owned con audit, optimistic locking e soft delete. Una Pratica non in Bozza richiede almeno un Cliente attivo. Le superfici Pratiche, Agenda e Anagrafiche navigano tra loro senza duplicare dati. PCT, PEC reale, firma integrata, fatturazione elettronica e ACL avanzate restano fuori scope.
+- **Documenti interessati:** `DECISIONS.md`, specifiche Widget, Database, Backend, Frontend e Business Rules.
+
 ### DEC-021 — Anagrafiche e ruoli contestuali alla Pratica
 
 - **Stato:** ACCEPTED

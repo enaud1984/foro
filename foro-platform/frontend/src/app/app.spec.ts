@@ -23,6 +23,34 @@ describe('App', () => {
     expect(widget?.description).toContain('Persone, società, enti');
   });
 
+  it('espone Pratiche con descrizione operativa e senza righe demo hardcoded',()=>{
+    const app=TestBed.createComponent(App).componentInstance;
+    const definizione=app.widgetLibrary.find(w=>w.key==='pratiche');
+    const widget=app.activeWidgets().find(w=>w.key==='pratiche');
+    expect(definizione?.title).toBe('Pratiche');
+    expect(definizione?.description).toBe('Fascicoli, scadenze e attività dello Studio');
+    expect(widget?.righeAnteprima).toEqual([]);
+    expect(JSON.stringify(widget)).not.toContain('31 aperte');
+  });
+
+  it('seleziona e rimuove una Pratica nel form Agenda',()=>{
+    const app=TestBed.createComponent(App).componentInstance;
+    const pratica:any={id:'p1',codice:'PRA-2026-00001',titolo:'Pratica demo'};
+    app.selezionaPraticaAgenda(pratica);
+    expect(app.appuntamentoForm.controls.praticaId.value).toBe('p1');
+    expect(app.ricercaPratica.value).toContain('PRA-2026-00001');
+    app.selezionaPraticaAgenda(null);
+    expect(app.appuntamentoForm.controls.praticaId.value).toBe('');
+  });
+
+  it('apre dal dettaglio Agenda la Pratica collegata corretta',()=>{
+    const app=TestBed.createComponent(App).componentInstance;
+    const evento:any={praticaId:'p-collegata'};
+    app.apriPraticaDaEvento(evento);
+    expect(app.praticaSelezionataId()).toBe('p-collegata');
+    expect(app.expandedWidget()?.key).toBe('pratiche');
+  });
+
   it('mostra il titolo della Scrivania Digitale nella pagina di accesso', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();

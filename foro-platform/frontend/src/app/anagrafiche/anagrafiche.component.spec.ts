@@ -24,6 +24,7 @@ describe('AnagraficheComponent', () => {
     const fixture=TestBed.createComponent(AnagraficheComponent);fixture.detectChanges();rispondiIniziale([soggetto]);fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Giulia Ferrari');
     (fixture.nativeElement.querySelector('.lista button') as HTMLButtonElement).click();fixture.detectChanges();
+    http.expectOne('/api/v1/anagrafiche/1/pratiche').flush([]);
     expect(fixture.componentInstance.selezionato()?.id).toBe('1');
   });
   it('limita il widget compatto a cinque risultati tramite la richiesta API',()=>{

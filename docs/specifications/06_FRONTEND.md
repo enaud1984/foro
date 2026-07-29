@@ -271,3 +271,9 @@ La home autenticata deve essere sempre la Scrivania operativa, non la pagina imp
 ## 18. Aggiornamento v3.2 — Anagrafiche
 
 Il nome visibile del widget `clienti` è “Anagrafiche”. Widget compatto e vista espansa consumano le stesse API. La feature dedicata gestisce ricerca, filtri, paginazione, dettaglio, form dinamico, candidati duplicati, conflitti di versione e conferma di uscita da form modificato.
+
+## 19. Aggiornamento v3.3 — Pratiche
+
+La feature `pratiche/` contiene modelli, servizio e componenti dedicati. Widget compatto e vista espansa consumano le stesse API; la selezione del fascicolo è conservata nell’apertura espansa. Il form guidato carica i cataloghi dal backend e consente Bozza senza Cliente oppure apertura con almeno un Cliente.
+
+La navigazione coordinata permette di aprire un Soggetto nelle Anagrafiche e un evento nell’Agenda, nonché di precompilare la Pratica nel form evento esistente. Tutte le schede espongono loading, empty ed error state e non usano dati dimostrativi hardcoded.
