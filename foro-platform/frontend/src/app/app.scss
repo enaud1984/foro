@@ -486,25 +486,9 @@
 
 .op-head {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
-}
-
-.drag-handle {
-  width: 26px;
-  height: 28px;
-  display: grid;
-  place-items: center;
-  border: 1px solid #c8d3de;
-  border-radius: 6px;
-  background: #edf2f6;
-  color: #304b63 !important;
-}
-
-.op-head:hover .drag-handle {
-  border-color: #8fa2b4;
-  background: #e3eaf0;
 }
 
 .window-actions {
@@ -546,31 +530,6 @@
   color: var(--foro-danger);
 }
 
-.resize-corner {
-  position: absolute;
-  right: 10px;
-  bottom: 8px;
-  color: #233f58;
-  background: #e6edf3;
-  border: 1px solid #9eafbf;
-  border-radius: 7px;
-  width: 26px;
-  height: 26px;
-  display: grid;
-  place-items: center;
-  cursor: nwse-resize;
-  touch-action: none;
-  box-shadow: 0 1px 4px rgba(15, 39, 64, .14);
-}
-
-.resize-corner:hover,
-.resize-corner:focus-visible {
-  color: #fff;
-  background: var(--foro-accent);
-  border-color: var(--foro-accent);
-  outline: 2px solid color-mix(in srgb, var(--foro-accent) 34%, transparent);
-  outline-offset: 2px;
-}
 
 .drop-placeholder {
   z-index: 2;
@@ -1933,7 +1892,4 @@ textarea:focus-visible,
     min-height: 190px;
   }
 
-  .resize-corner {
-    display: none;
-  }
 }

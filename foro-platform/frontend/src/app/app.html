@@ -181,14 +181,12 @@
           <article class="op-widget"
             *ngFor="let widget of activeWidgets(); trackBy: identificaWidget"
             [class.dragging]="trascinamentoWidget()?.key === widget.key"
-            [class.resizing]="ridimensionamentoWidget()?.key === widget.key"
             [class.drop-invalid]="destinazioneNonValida() && trascinamentoWidget()?.key === widget.key"
             [style.transform]="trasformazioneTrascinamento(widget)"
             [style.grid-column]="widget.x + ' / span ' + widget.w"
             [style.grid-row]="widget.y + ' / span ' + widget.h">
             <div class="op-head"
               (pointerdown)="iniziaTrascinamentoWidget(widget,$event)">
-              <span class="drag-handle" title="Trascina widget" aria-hidden="true"><app-icona-foro nome="grip"></app-icona-foro></span>
               <h3><app-icona-foro [nome]="widget.icon"></app-icona-foro>{{ widget.title }}</h3>
               <div class="window-actions" (pointerdown)="$event.stopPropagation()">
                 <button type="button" class="widget-actions-trigger" [attr.aria-expanded]="menuWidgetAperto()===widget.key"
@@ -224,8 +222,6 @@
             </div>
             </ng-template>
             </ng-template>
-            <button type="button" class="resize-corner" aria-label="Ridimensiona widget"
-              title="Ridimensiona widget" (pointerdown)="iniziaRidimensionamentoWidget(widget,$event)"><app-icona-foro nome="ridimensiona"></app-icona-foro></button>
           </article>
         </div>
       </section>

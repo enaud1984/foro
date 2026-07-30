@@ -16,6 +16,10 @@ describe('PraticheComponent',()=>{
     statiAttivita:[{codice:'DA_FARE',descrizione:'Da fare',ordine:1}],
     prioritaAttivita:[{codice:'NORMALE',descrizione:'Normale',ordine:1}],
     categorieDocumenti:[{codice:'INCARICO',descrizione:'Incarico',ordine:1}],
+    templateDocumenti:[
+      {codice:'LETTERA_INCARICO',descrizione:'Lettera di incarico',ordine:1,configurato:false,formato:null},
+      {codice:'SCHEDA_RIEPILOGATIVA_PRATICA',descrizione:'Scheda riepilogativa pratica',ordine:2,configurato:true,formato:'TXT'}
+    ],
     ruoliSoggetto:[{codice:'CLIENTE',descrizione:'Cliente',ordine:1},{codice:'CONTROPARTE',descrizione:'Controparte',ordine:2}]
   };
   const pratica=(id='1'):PraticaSintetica=>({id,codice:`PRA-2026-0000${id}`,titolo:`Pratica ${id}`,materiaCodice:'CIVILE',
@@ -26,7 +30,7 @@ describe('PraticheComponent',()=>{
     servizio=jasmine.createSpyObj<PraticheService>('PraticheService',['cataloghi','personeStudio','elenco','dettaglio','crea','modifica','elimina','transizione',
       'soggetti','team','documenti','attivita','eventi','comunicazioni','timeline','datiGiudiziari','economia','aggiungiSoggetto','rimuoviSoggetto',
       'aggiungiTeam','rimuoviTeam','caricaDocumento','downloadDocumento','eliminaDocumento','creaAttivita','modificaAttivita','creaComunicazione',
-      'salvaDatiGiudiziari','salvaEconomia']);
+      'salvaDatiGiudiziari','salvaEconomia','generaDocumento']);
     servizio.cataloghi.and.returnValue(of(cataloghi));servizio.personeStudio.and.returnValue(of([{id:'u1',nome:'Avv. Demo'}]));
     servizio.elenco.and.returnValue(of({content:[pratica()],totalElements:1,totalPages:1,number:0,size:5}));
     servizio.soggetti.and.returnValue(of([]));servizio.team.and.returnValue(of([]));servizio.documenti.and.returnValue(of([]));
@@ -78,4 +82,18 @@ describe('PraticheComponent',()=>{
     f.componentInstance.ricerca.setValue('Aurora');tick(251);
     expect(servizio.elenco).toHaveBeenCalledWith(jasmine.objectContaining({ricerca:'Aurora'}));
   }));
+  it('mostra il catalogo template e distingue quelli non configurati',()=>{
+    const f=TestBed.createComponent(PraticheComponent);f.detectChanges();const c=f.componentInstance;
+    c.selezionata.set({...pratica(),descrizione:null,valoreEconomico:null,valuta:'EUR',dataDefinizione:null,dataArchiviazione:null,motivoAttesa:null,noteInterne:null,version:0,creatoIl:'2026-07-29T10:00:00Z'});
+    c.scheda.set('documenti');c.generazioneAperta.set(true);f.detectChanges();
+    expect(f.nativeElement.textContent).toContain('Scheda riepilogativa pratica');
+    expect(f.nativeElement.textContent).toContain('Lettera di incarico — non configurato');
+  });
+  it('non crea documenti vuoti per un template non configurato',()=>{
+    const c=TestBed.createComponent(PraticheComponent).componentInstance;c.ngOnInit();
+    c.selezionata.set({...pratica(),descrizione:null,valoreEconomico:null,valuta:'EUR',dataDefinizione:null,dataArchiviazione:null,motivoAttesa:null,noteInterne:null,version:0,creatoIl:'2026-07-29T10:00:00Z'});
+    c.cataloghi.set(cataloghi);c.generazioneForm.controls.templateCodice.setValue('LETTERA_INCARICO');c.generaDocumento();
+    expect(servizio.generaDocumento).not.toHaveBeenCalled();
+    expect(c.messaggioGenerazione()).toContain('non ancora configurato');
+  });
 });

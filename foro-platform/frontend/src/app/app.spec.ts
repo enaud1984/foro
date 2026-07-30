@@ -174,7 +174,7 @@ describe('App', () => {
     expect((app as any).overlaps(layout[0], layout[1])).toBeFalse();
   });
 
-  it('rende visibili placeholder e maniglia di resize accessibile', () => {
+  it('rende visibile il placeholder e usa l intera testata senza grip o resize', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     app.screen.set('scrivania');
@@ -184,9 +184,9 @@ describe('App', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.drop-placeholder')).toBeTruthy();
-    expect(compiled.querySelector('.resize-corner')?.getAttribute('aria-label')).toBe('Ridimensiona widget');
-    expect(compiled.querySelector('.resize-corner app-icona-foro svg')).toBeTruthy();
-    expect(compiled.querySelector('.drag-handle app-icona-foro svg')).toBeTruthy();
+    expect(compiled.querySelector('.op-head')).toBeTruthy();
+    expect(compiled.querySelector('.resize-corner')).toBeNull();
+    expect(compiled.querySelector('.drag-handle')).toBeNull();
     expect(compiled.querySelector('[aria-label="Aggiungi widget Anagrafiche"]')?.getAttribute('tabindex')).toBe('0');
   });
 
@@ -215,7 +215,8 @@ describe('App', () => {
     expect(compiled.querySelector('.widget-actions-menu')?.textContent).toContain('Apri vista completa');
     expect(compiled.querySelector('.widget-actions-menu')?.textContent).toContain('Rimuovi dalla scrivania');
     expect(compiled.querySelector('.expand-window')).toBeNull();
-    expect(compiled.querySelector('.resize-corner')?.textContent?.trim()).toBe('');
+    expect(compiled.querySelector('.resize-corner')).toBeNull();
+    expect(compiled.querySelector('.drag-handle')).toBeNull();
   });
 
   it('persiste posizione e dimensione normalizzate dopo una modifica al layout', () => {

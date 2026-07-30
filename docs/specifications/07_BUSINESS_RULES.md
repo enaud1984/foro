@@ -197,4 +197,8 @@ La scheda Anagrafica mostra documenti delle sole Pratiche visibili all’utente.
 
 ### BR-ANA-022 — Stampa della scheda
 
-La stampa usa dati correnti, esclude note per impostazione predefinita e non include mai dati economici o file allegati. Solo `SCHEDA_ANAGRAFICA` è generata nel MVP; gli altri template sono predisposti ma non configurati.
+La stampa usa dati correnti, esclude note per impostazione predefinita e non include mai dati economici o file allegati. `SCHEDA_ANAGRAFICA` è generata nel contesto Anagrafica; i modelli legali restano predisposti ma non configurati.
+
+### BR-PRA-022 — Generazione documenti della Pratica
+
+La Pratica può generare `SCHEDA_RIEPILOGATIVA_PRATICA` dai soli metadati operativi correnti, senza note interne o dati economici. Il documento è archiviato con origine `GENERATO`, codice template, Pratica e Soggetto opzionale collegato. Lettera di incarico, preventivo, procura alle liti e diffida non producono file finché il relativo contenuto legale non è configurato e approvato.

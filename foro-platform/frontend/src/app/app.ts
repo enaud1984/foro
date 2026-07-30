@@ -30,17 +30,6 @@ type TrascinamentoWidget = {
   spostamentoX: number;
   spostamentoY: number;
 };
-type RidimensionamentoWidget = {
-  key: ChiaveWidget;
-  pointerId: number;
-  origineX: number;
-  origineY: number;
-  larghezzaIniziale: number;
-  altezzaIniziale: number;
-  larghezzaColonna: number;
-  altezzaRiga: number;
-};
-
 interface ProfiloStudio {
   name: string;
   addressLine: string | null;
@@ -179,7 +168,6 @@ export class App {
   readonly praticheAgenda = signal<PraticaSintetica[]>([]);
   readonly dragPlaceholder = signal<PosizioneGriglia | null>(null);
   readonly trascinamentoWidget = signal<TrascinamentoWidget | null>(null);
-  readonly ridimensionamentoWidget = signal<RidimensionamentoWidget | null>(null);
   readonly destinazioneNonValida = signal(false);
   readonly menuWidgetAperto = signal<ChiaveWidget | null>(null);
   readonly vistaCalendario = signal<VistaCalendario>('settimana');
@@ -555,22 +543,6 @@ export class App {
 
   @HostListener('window:pointermove', ['$event'])
   aggiornaTrascinamentoWidget(event: PointerEvent): void {
-    const ridimensionamento = this.ridimensionamentoWidget();
-    if (ridimensionamento?.pointerId === event.pointerId) {
-      event.preventDefault();
-      const widget = this.activeWidgets().find(elemento => elemento.key === ridimensionamento.key);
-      if (!widget) return;
-      const w = Math.max(2, Math.min(13 - widget.x,
-        ridimensionamento.larghezzaIniziale + Math.round((event.clientX - ridimensionamento.origineX) / ridimensionamento.larghezzaColonna)));
-      const h = Math.max(2, Math.min(8,
-        ridimensionamento.altezzaIniziale + Math.round((event.clientY - ridimensionamento.origineY) / ridimensionamento.altezzaRiga)));
-      this.dragPlaceholder.set({ x: widget.x, y: widget.y, w, h });
-      this.activeWidgets.update(widgets => this.reorderWidgets(
-        widgets.map(elemento => elemento.key === widget.key ? { ...elemento, w, h } : elemento),
-        widget.key
-      ));
-      return;
-    }
     const trascinamento = this.trascinamentoWidget();
     if (!trascinamento || trascinamento.pointerId !== event.pointerId) return;
     event.preventDefault();
@@ -616,13 +588,6 @@ export class App {
 
   @HostListener('window:pointerup', ['$event'])
   terminaTrascinamentoWidget(event: PointerEvent): void {
-    const ridimensionamento = this.ridimensionamentoWidget();
-    if (ridimensionamento?.pointerId === event.pointerId) {
-      this.ridimensionamentoWidget.set(null);
-      this.dragPlaceholder.set(null);
-      this.salvaLayoutWidget();
-      return;
-    }
     const trascinamento = this.trascinamentoWidget();
     if (!trascinamento || trascinamento.pointerId !== event.pointerId) return;
     const destinazione = this.dragPlaceholder();
@@ -633,37 +598,8 @@ export class App {
     this.concludiTrascinamentoPointer(event);
   }
 
-  iniziaRidimensionamentoWidget(widget: WidgetScrivania, event: PointerEvent): void {
-    if (event.button !== 0) return;
-    event.preventDefault();
-    event.stopPropagation();
-    const griglia = (event.currentTarget as HTMLElement).closest('.operational-grid') as HTMLElement | null;
-    if (!griglia) return;
-    const stile = getComputedStyle(griglia);
-    const gap = Number.parseFloat(stile.columnGap) || 16;
-    const altezzaRiga = (Number.parseFloat(stile.gridAutoRows) || 92) + (Number.parseFloat(stile.rowGap) || 16);
-    const larghezzaColonna = (griglia.getBoundingClientRect().width - gap * 11) / 12 + gap;
-    this.ridimensionamentoWidget.set({
-      key: widget.key,
-      pointerId: event.pointerId,
-      origineX: event.clientX,
-      origineY: event.clientY,
-      larghezzaIniziale: widget.w,
-      altezzaIniziale: widget.h,
-      larghezzaColonna,
-      altezzaRiga
-    });
-    this.dragPlaceholder.set({ x: widget.x, y: widget.y, w: widget.w, h: widget.h });
-  }
-
   @HostListener('window:pointercancel', ['$event'])
   annullaTrascinamentoWidget(event: PointerEvent): void {
-    if (this.ridimensionamentoWidget()?.pointerId === event.pointerId) {
-      this.ridimensionamentoWidget.set(null);
-      this.dragPlaceholder.set(null);
-      this.destinazioneNonValida.set(false);
-      return;
-    }
     const trascinamento = this.trascinamentoWidget();
     if (!trascinamento || trascinamento.pointerId !== event.pointerId) return;
     if (this.layoutPrimaDelTrascinamento) {

@@ -160,13 +160,23 @@
 .anagrafiche:not(.compatto) .dettaglio > header h3 {
   margin: 2px 0 0;
   color: #102a43;
-  font-size: 18px;
+  font-size: 22px;
+  line-height: 1.2;
 }
 
-.anagrafiche:not(.compatto) .dettaglio > header button {
-  width: 30px;
-  height: 30px;
+.anagrafiche:not(.compatto) .dettaglio > header .pulsante-icona {
+  width: 36px;
+  height: 36px;
   padding: 0;
+  display: grid;
+  place-items: center;
+  flex: none;
+  line-height: 0;
+}
+
+.anagrafiche:not(.compatto) .dettaglio > header .pulsante-icona app-icona-foro {
+  width: 18px;
+  height: 18px;
 }
 
 .anagrafiche:not(.compatto) .dettaglio dl {
@@ -178,10 +188,10 @@
 
 .anagrafiche:not(.compatto) .dettaglio dt,
 .anagrafiche:not(.compatto) .dettaglio dd {
-  padding: .42rem 0;
+  padding: .55rem 0;
   border-bottom: 1px solid #edf1f5;
-  font-size: 12px;
-  line-height: 1.35;
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 .anagrafiche:not(.compatto) .dettaglio dt {
@@ -196,13 +206,13 @@
 .anagrafiche:not(.compatto) .pratiche-collegate h4 {
   margin: .25rem 0;
   color: #334155;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .anagrafiche:not(.compatto) .pratiche-collegate button {
-  padding: .45rem .6rem;
+  padding: .6rem .7rem;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .azioni-dettaglio {

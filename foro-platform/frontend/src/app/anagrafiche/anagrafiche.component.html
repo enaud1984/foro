@@ -55,7 +55,7 @@
         </div>
       </div>
     </div>
-    <article class="dettaglio" *ngIf="!compatto && selezionato() as s">
+    <article class="dettaglio" *ngIf="!compatto && !schedaCompleta() && selezionato() as s">
       <header><div><small>{{etichettaTipo(s.tipoCodice)}}</small><h3>{{nome(s)}}</h3></div><button type="button" class="pulsante-icona" (click)="selezionato.set(null)" aria-label="Chiudi dettaglio"><app-icona-foro nome="chiudi"></app-icona-foro></button></header>
       <dl>
         <ng-container *ngIf="s.tipoCodice==='PERSONA_FISICA'"><dt>Data e luogo di nascita</dt><dd>{{s.dataNascita||'—'}} · {{s.luogoNascita||'—'}}</dd></ng-container>

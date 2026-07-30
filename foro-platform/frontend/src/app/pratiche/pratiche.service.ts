@@ -20,6 +20,7 @@ export class PraticheService {
       statiAttivita:this.http.get<CatalogoPratica[]>(`${this.base}/cataloghi/stati-attivita`),
       prioritaAttivita:this.http.get<CatalogoPratica[]>(`${this.base}/cataloghi/priorita-attivita`),
       categorieDocumenti:this.http.get<CatalogoPratica[]>(`${this.base}/cataloghi/categorie-documenti`),
+      templateDocumenti:this.http.get<CatalogoPratica[]>(`${this.base}/cataloghi/template-documenti`),
       ruoliSoggetto:this.http.get<CatalogoPratica[]>('/api/v1/anagrafiche/cataloghi/ruoli-pratica')
     });
   }
@@ -42,6 +43,9 @@ export class PraticheService {
   rimuoviTeam(id:string,relazioneId:string):Observable<void>{return this.http.delete<void>(`${this.base}/${id}/team/${relazioneId}`);}
   documenti(id:string):Observable<DocumentoPratica[]>{return this.http.get<DocumentoPratica[]>(`${this.base}/${id}/documenti`);}
   caricaDocumento(id:string,dati:FormData):Observable<DocumentoPratica>{return this.http.post<DocumentoPratica>(`${this.base}/${id}/documenti`,dati);}
+  generaDocumento(id:string,dati:{templateCodice:string;soggettoId:string|null}):Observable<DocumentoPratica>{
+    return this.http.post<DocumentoPratica>(`${this.base}/${id}/documenti/genera`,dati);
+  }
   eliminaDocumento(id:string,documentoId:string):Observable<void>{return this.http.delete<void>(`${this.base}/${id}/documenti/${documentoId}`);}
   downloadDocumento(id:string,documentoId:string):Observable<Blob>{return this.http.get(`${this.base}/${id}/documenti/${documentoId}/download`,{responseType:'blob'});}
   attivita(id:string):Observable<AttivitaPratica[]>{return this.http.get<AttivitaPratica[]>(`${this.base}/${id}/attivita`);}

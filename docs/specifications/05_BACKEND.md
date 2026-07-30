@@ -255,3 +255,10 @@ Gli aggiornamenti richiedono `version`; i conflitti rispondono con `PRATICA_VERS
 ## Estensione v3.4 — Scheda Anagrafica e documenti
 
 Le API `/api/v1/anagrafiche/{id}/documenti` riusano archivio e registro documentale delle Pratiche. Le query applicano Studio, soft delete e visibilità delle Pratiche riservate. Sono disponibili elenco, dettaglio, upload, metadati, download, eliminazione, raggruppamento per Pratica, timeline e generazione della scheda stampabile.
+
+## Estensione v3.5 — Template documenti Pratica
+
+- `GET /api/v1/pratiche/cataloghi/template-documenti` restituisce codice, descrizione, ordine, stato di configurazione e formato.
+- `POST /api/v1/pratiche/{id}/documenti/genera` genera un documento configurato e ne registra Pratica, Soggetto opzionale, origine e template.
+- La generazione deriva Studio e utente dal security context, verifica la visibilità della Pratica e l’eventuale relazione del Soggetto.
+- I template non configurati rispondono `TEMPLATE_NON_CONFIGURATO` e non creano metadati né file.

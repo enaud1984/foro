@@ -42,6 +42,7 @@ public class PraticheController {
   }
   public record RichiestaVersione(@Min(0) long version) {}
   public record RichiestaDocumento(@NotBlank String titolo,@NotBlank String categoriaCodice,UUID soggettoId) {}
+  public record RichiestaGenerazioneDocumento(@NotBlank String templateCodice,UUID soggettoId) {}
   public record RichiestaAttivita(long version,@NotBlank @Size(max=240) String titolo,@Size(max=12000) String descrizione,
     UUID assegnatarioId,@NotBlank String statoCodice,@NotBlank String prioritaCodice,LocalDate dataScadenza,UUID eventoCalendarioId) {
     DatiAttivita dati() { return new DatiAttivita(titolo,descrizione,assegnatarioId,statoCodice,prioritaCodice,dataScadenza,eventoCalendarioId); }
@@ -59,6 +60,7 @@ public class PraticheController {
   @GetMapping("/cataloghi/stati-attivita") public List<Catalogo> statiAttivita() { return servizio.catalogo("stato_attivita_pratica"); }
   @GetMapping("/cataloghi/priorita-attivita") public List<Catalogo> prioritaAttivita() { return servizio.catalogo("priorita_attivita_pratica"); }
   @GetMapping("/cataloghi/categorie-documenti") public List<Catalogo> categorieDocumenti() { return servizio.catalogo("categoria_documento_pratica"); }
+  @GetMapping("/cataloghi/template-documenti") public List<TemplateDocumento> templateDocumenti() { return servizio.templateDocumenti(); }
 
   @GetMapping
   public Pagina elenco(@RequestParam(name="ricerca",required=false) String ricerca,
@@ -119,6 +121,10 @@ public class PraticheController {
     @RequestParam(name="soggettoId",required=false) UUID soggettoId,@RequestParam(name="origine",defaultValue="UPLOAD") String origine,
     @RequestParam(name="templateCodice",required=false) String templateCodice) {
     return servizio.caricaDocumento(id,categoria,titolo,soggettoId,origine,templateCodice,file);
+  }
+  @PostMapping("/{id}/documenti/genera") @ResponseStatus(HttpStatus.CREATED)
+  public Map<String,Object> generaDocumento(@PathVariable("id") UUID id,@Valid @RequestBody RichiestaGenerazioneDocumento richiesta) {
+    return servizio.generaDocumento(id,richiesta.templateCodice(),richiesta.soggettoId());
   }
   @GetMapping("/{id}/documenti/{documentoId}") public Map<String,Object> documento(@PathVariable("id") UUID id,@PathVariable("documentoId") UUID documentoId) {
     return servizio.documento(id,documentoId,false);

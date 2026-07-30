@@ -280,3 +280,7 @@ La navigazione coordinata permette di aprire un Soggetto nelle Anagrafiche e un 
 ## Estensione v3.4 — Scheda completa Anagrafica
 
 Anagrafiche espone una scheda completa dedicata con Riepilogo, Dati generali, Recapiti, Pratiche, Documenti e Timeline. Il menu Documenti consente upload, consultazione, anteprima sicura, download, stampa e generazione della scheda anagrafica. La navigazione conserva il Soggetto selezionato.
+
+## Estensione v3.5 — UX widget e generazione documenti
+
+La testata del widget è trascinabile per intero e non espone grip o resize handle. La vista Anagrafiche porta la scheda completa sopra il pannello dettaglio e mantiene accessibili Documenti e stampa. Nella scheda Documenti della Pratica il catalogo indica i template non configurati, impedisce la creazione di documenti vuoti e distingue visivamente origine `UPLOAD` e `GENERATO`.

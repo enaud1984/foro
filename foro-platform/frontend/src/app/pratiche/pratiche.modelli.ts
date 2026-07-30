@@ -1,4 +1,11 @@
-export interface CatalogoPratica { codice: string; descrizione: string; ordine: number; materiaCodice?: string | null; }
+export interface CatalogoPratica {
+  codice: string;
+  descrizione: string;
+  ordine: number;
+  materiaCodice?: string | null;
+  configurato?: boolean;
+  formato?: string | null;
+}
 export interface Pagina<T> { content: T[]; totalElements: number; totalPages: number; number: number; size: number; }
 export interface PraticaSintetica {
   id:string; codice:string; titolo:string; materiaCodice:string; tipologiaCodice:string; statoCodice:string;

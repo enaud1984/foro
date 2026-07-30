@@ -44,6 +44,19 @@ describe('AnagraficheComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Documenti delle Pratiche');
     expect(fixture.nativeElement.textContent).toContain('Stampa scheda anagrafica');
   });
+  it('apre realmente la scheda completa e porta ai documenti delle Pratiche',()=>{
+    const soggetto={id:'1',tipoCodice:'PERSONA_FISICA',nome:'Giulia',cognome:'Ferrari',denominazione:null,email:null,pec:null,telefono:null,cellulare:null,partitaIva:null,stato:'ATTIVO',version:0,creatoIl:'2026-07-29T08:00:00Z',aggiornatoIl:'2026-07-29T08:00:00Z'};
+    const fixture=TestBed.createComponent(AnagraficheComponent);fixture.detectChanges();rispondiIniziale([soggetto]);fixture.detectChanges();
+    fixture.componentInstance.apriSchedaCompleta(soggetto as any,'pratiche');fixture.detectChanges();
+    http.expectOne('/api/v1/anagrafiche/1/pratiche').flush([]);
+    http.expectOne('/api/v1/anagrafiche/cataloghi/categorie-documenti').flush([]);
+    http.expectOne('/api/v1/anagrafiche/1/timeline').flush([]);
+    http.match(r=>r.url==='/api/v1/anagrafiche/1/documenti').forEach(r=>r.flush({content:[],totalElements:0,totalPages:0,number:0,size:100}));
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-anagrafica-scheda-completa')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.dettaglio')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Documenti delle Pratiche');
+  });
   it('rende una lista professionale con colonne, selezione e menu azioni',()=>{
     const soggetto={id:'1',tipoCodice:'PERSONA_GIURIDICA',nome:null,cognome:null,denominazione:'Alfa Srl',codiceFiscale:'01234567890',email:'info@alfa.test',pec:null,telefono:null,cellulare:null,partitaIva:'01234567890',stato:'ATTIVO',version:0,creatoIl:'2026-07-29T08:00:00Z',aggiornatoIl:'2026-07-29T08:00:00Z'};
     const fixture=TestBed.createComponent(AnagraficheComponent);fixture.detectChanges();rispondiIniziale([soggetto]);fixture.detectChanges();

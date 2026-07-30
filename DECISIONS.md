@@ -162,7 +162,7 @@ Le decisioni accettate prevalgono sugli altri documenti. Una decisione modificat
 - **Stato:** ACCEPTED
 - **Data:** 2026-07-29
 - **Decisione:** `documento_pratica` resta il registro documentale MVP condiviso e viene esteso in modo additivo. Un documento deve riferirsi ad almeno una Pratica o a un Soggetto; se entrambi sono presenti, il Soggetto deve essere collegato alla Pratica. I file non sono duplicati. La scheda anagrafica viene generata come anteprima HTML stampabile con dati correnti e senza testi legali definitivi.
-- **Conseguenza:** upload, validazione, storage e download sicuro sono riusati. Le Pratiche riservate restano filtrate dal backend. I template diversi da `SCHEDA_ANAGRAFICA` sono catalogati ma rispondono `TEMPLATE_NON_CONFIGURATO`.
+- **Conseguenza:** upload, validazione, storage e download sicuro sono riusati. Le Pratiche riservate restano filtrate dal backend. `SCHEDA_ANAGRAFICA` e il documento interno non legale `SCHEDA_RIEPILOGATIVA_PRATICA` sono generabili dai dati correnti; i modelli legali restano catalogati ma rispondono `TEMPLATE_NON_CONFIGURATO` finché non viene approvato il relativo contenuto.
 
 ### OPEN-001 — Limiti documenti
 

@@ -17,7 +17,7 @@ type Scheda='riepilogo'|'soggetti'|'team'|'documenti'|'attivita'|'agenda'|'comun
   standalone:true,
   imports:[CommonModule,ReactiveFormsModule,AnagraficheComponent],
   templateUrl:'./pratiche.component.html',
-  styleUrl:'./pratiche.component.scss'
+  styleUrls:['./pratiche.component.scss','./pratiche-documenti.component.scss']
 })
 export class PraticheComponent implements OnInit,OnChanges {
   private readonly fb=inject(FormBuilder);
@@ -56,6 +56,9 @@ export class PraticheComponent implements OnInit,OnChanges {
   readonly comunicazioni=signal<ComunicazionePratica[]>([]);
   readonly timeline=signal<EventoTimeline[]>([]);
   readonly fileSelezionato=signal<File|null>(null);
+  readonly generazioneAperta=signal(false);
+  readonly generazioneInCorso=signal(false);
+  readonly messaggioGenerazione=signal('');
   readonly ricerca=this.fb.nonNullable.control('');
   readonly filtroStato=this.fb.nonNullable.control('');
   readonly filtroMateria=this.fb.nonNullable.control('');
@@ -69,6 +72,7 @@ export class PraticheComponent implements OnInit,OnChanges {
   readonly soggettoForm=this.fb.nonNullable.group({ruoloCodice:['CLIENTE'],principale:[false],descrizioneRuoloAltro:[''],note:['']});
   readonly teamForm=this.fb.nonNullable.group({utenteId:[''],ruoloTeamCodice:['COLLABORATORE'],principale:[false]});
   readonly documentoForm=this.fb.nonNullable.group({titolo:['',Validators.required],categoriaCodice:['INCARICO',Validators.required],soggettoId:['']});
+  readonly generazioneForm=this.fb.nonNullable.group({templateCodice:['SCHEDA_RIEPILOGATIVA_PRATICA',Validators.required],soggettoId:['']});
   readonly attivitaForm=this.fb.nonNullable.group({titolo:['',Validators.required],descrizione:[''],assegnatarioId:[''],statoCodice:['DA_FARE'],prioritaCodice:['NORMALE'],dataScadenza:['']});
   readonly comunicazioneForm=this.fb.nonNullable.group({tipo:['NOTA'],oggetto:['',Validators.required],descrizione:[''],dataComunicazione:[new Date().toISOString().slice(0,16)]});
   readonly giudiziariForm=this.fb.nonNullable.group({
@@ -189,6 +193,24 @@ export class PraticheComponent implements OnInit,OnChanges {
     const p=this.selezionata(),file=this.fileSelezionato();if(!p||!file||this.documentoForm.invalid)return;
     const v=this.documentoForm.getRawValue(),dati=new FormData();dati.append('file',file);dati.append('titolo',v.titolo);dati.append('categoriaCodice',v.categoriaCodice);dati.append('origine','UPLOAD');if(v.soggettoId)dati.append('soggettoId',v.soggettoId);
     this.servizio.caricaDocumento(p.id,dati).subscribe({next:()=>{this.documentoForm.reset({titolo:'',categoriaCodice:'INCARICO',soggettoId:''});this.fileSelezionato.set(null);this.caricaRisorse(p.id);},error:x=>this.errore.set(this.messaggioErrore(x))});
+  }
+  templateSelezionato():CatalogoPratica|null{
+    return this.cataloghi()['templateDocumenti']?.find(x=>x.codice===this.generazioneForm.controls.templateCodice.value)??null;
+  }
+  generaDocumento():void {
+    const p=this.selezionata(),template=this.templateSelezionato();
+    if(!p||!template||this.generazioneInCorso())return;
+    this.messaggioGenerazione.set('');
+    if(!template.configurato){
+      this.messaggioGenerazione.set('Template predisposto ma non ancora configurato: non è stato creato alcun documento.');
+      return;
+    }
+    this.generazioneInCorso.set(true);
+    const soggettoId=this.generazioneForm.controls.soggettoId.value||null;
+    this.servizio.generaDocumento(p.id,{templateCodice:template.codice,soggettoId}).subscribe({
+      next:()=>{this.generazioneInCorso.set(false);this.generazioneAperta.set(false);this.messaggioGenerazione.set('Documento generato e archiviato nella Pratica.');this.caricaRisorse(p.id);},
+      error:r=>{this.generazioneInCorso.set(false);this.messaggioGenerazione.set(this.messaggioErrore(r));}
+    });
   }
   scaricaDocumento(d:DocumentoPratica):void {
     const p=this.selezionata();if(!p)return;this.servizio.downloadDocumento(p.id,d.id).subscribe({next:b=>{const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=d.nomeFile;a.click();URL.revokeObjectURL(u);},error:()=>this.errore.set('Documento non disponibile per il download.')});

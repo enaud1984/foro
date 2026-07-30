@@ -4,6 +4,7 @@ import it.foro.platform.security.TenantContext;
 import it.foro.pratiche.domain.Pratica;
 import it.foro.pratiche.repository.PraticaRepository;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.time.*;
 import java.util.*;
@@ -34,6 +35,7 @@ public class PraticheService {
   }
 
   public record Catalogo(String codice, String descrizione, int ordine, String materiaCodice) {}
+  public record TemplateDocumento(String codice, String descrizione, int ordine, boolean configurato, String formato) {}
   public record DatiSoggetto(UUID soggettoId, String ruoloCodice, boolean principale, String descrizioneRuoloAltro, String note) {}
   public record DatiTeam(UUID utenteId, String ruoloTeamCodice, boolean principale) {}
   public record RichiestaPratica(Pratica.Dati dati, String stato, List<DatiSoggetto> soggetti, List<DatiTeam> team) {}
@@ -55,6 +57,21 @@ public class PraticheService {
     var materia = "tipologia_pratica".equals(tabella) ? ",materia_codice" : ",NULL::varchar AS materia_codice";
     return database.query("SELECT codice,descrizione,ordine" + materia + " FROM " + tabella + " WHERE attivo=TRUE ORDER BY ordine",
       (rs, n) -> new Catalogo(rs.getString("codice"), rs.getString("descrizione"), rs.getInt("ordine"), rs.getString("materia_codice")));
+  }
+
+  public List<TemplateDocumento> templateDocumenti() {
+    return List.of(
+      new TemplateDocumento("LETTERA_INCARICO", "Lettera di incarico", 1, false, null),
+      new TemplateDocumento("PREVENTIVO", "Preventivo", 2, false, null),
+      new TemplateDocumento("PROCURA_LITI", "Procura alle liti", 3, false, null),
+      new TemplateDocumento("DIFFIDA", "Diffida", 4, false, null),
+      new TemplateDocumento("SCHEDA_RIEPILOGATIVA_PRATICA", "Scheda riepilogativa pratica", 5, true, "TXT"),
+      new TemplateDocumento("INFORMATIVA_PRIVACY", "Informativa privacy", 6, false, null),
+      new TemplateDocumento("CONSENSO_TRATTAMENTO", "Consenso trattamento dati", 7, false, null),
+      new TemplateDocumento("IDENTIFICAZIONE_CLIENTE", "Modulo identificazione cliente", 8, false, null),
+      new TemplateDocumento("ADEGUATA_VERIFICA", "Modulo adeguata verifica", 9, false, null),
+      new TemplateDocumento("TITOLARE_EFFETTIVO", "Dichiarazione titolare effettivo", 10, false, null)
+    );
   }
 
   @Transactional(readOnly = true)
@@ -336,10 +353,54 @@ public class PraticheService {
     return documento(praticaId, id, false);
   }
 
+  @Transactional
+  public Map<String,Object> generaDocumento(UUID praticaId, String templateCodice, UUID soggettoId) {
+    var pratica = trovaVisibile(praticaId);
+    verificaOperativa(pratica);
+    var template = templateDocumenti().stream().filter(elemento -> elemento.codice().equals(templateCodice))
+      .findFirst().orElseThrow(() -> errore(HttpStatus.BAD_REQUEST, "PRATICA_TEMPLATE_NON_VALIDO"));
+    if (!template.configurato()) throw errore(HttpStatus.NOT_IMPLEMENTED, "TEMPLATE_NON_CONFIGURATO");
+    if (soggettoId != null && !soggettoCollegato(praticaId, soggettoId)) {
+      throw errore(HttpStatus.UNPROCESSABLE_ENTITY, "PRATICA_DOCUMENTO_NON_VALIDO");
+    }
+    if (!"SCHEDA_RIEPILOGATIVA_PRATICA".equals(template.codice())) {
+      throw errore(HttpStatus.NOT_IMPLEMENTED, "TEMPLATE_NON_CONFIGURATO");
+    }
+
+    var contenuto = """
+      FORO - SCHEDA RIEPILOGATIVA PRATICA
+
+      Codice: %s
+      Titolo: %s
+      Materia: %s
+      Tipologia: %s
+      Stato: %s
+      Priorita: %s
+      Data apertura: %s
+      Soggetto selezionato: %s
+      Generato il: %s
+      """.formatted(pratica.getCodice(), pratica.getTitolo(), pratica.getMateriaCodice(), pratica.getTipologiaCodice(),
+      pratica.getStatoCodice(), pratica.getPrioritaCodice(), pratica.getDataApertura(),
+      soggettoId == null ? "Nessuno" : soggettoId, LocalDate.now());
+    var nomeFile = "scheda-riepilogativa-" + pratica.getCodice().replaceAll("[^A-Za-z0-9_-]", "-") + ".txt";
+    var salvato = archivio.salvaGenerato(tenant.studioId(), praticaId, nomeFile,
+      contenuto.getBytes(StandardCharsets.UTF_8), "text/plain");
+    var id = UUID.randomUUID();
+    database.update("""
+      INSERT INTO documento_pratica(id,studio_id,pratica_id,soggetto_id,categoria_codice,titolo,nome_file,mime_type,dimensione,
+      percorso_storage,checksum_sha256,versione_numero,stato_documento,origine,template_codice,caricato_da,creato_il,aggiornato_il)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())
+      """, id, tenant.studioId(), praticaId, soggettoId, "ALTRO", template.descrizione(), salvato.nomeFile(), salvato.mimeType(),
+      salvato.dimensione(), salvato.percorso(), salvato.checksum(), 1, "DISPONIBILE", "GENERATO", template.codice(), tenant.userId());
+    timeline(praticaId, "PRATICA_DOCUMENTO_GENERATO", "Documento generato da template", "DOCUMENTO_PRATICA", id);
+    audit("PRATICA_DOCUMENTO_GENERATO", praticaId);
+    return documento(praticaId, id, false);
+  }
+
   @Transactional(readOnly = true)
   public Map<String,Object> documento(UUID praticaId, UUID documentoId, boolean includiPercorso) {
     trovaVisibile(praticaId);
-    var colonne = includiPercorso ? ",percorso_storage AS \"percorsoStorage\"" : "";
+    var colonne = includiPercorso ? ",percorso_storage AS \"percorsoStorage\" " : " ";
     var risultato = database.query("""
       SELECT id,categoria_codice AS "categoriaCodice",titolo,nome_file AS "nomeFile",mime_type AS "mimeType",dimensione,
       versione_numero AS "versioneNumero",stato_documento AS "statoDocumento",origine,template_codice AS "templateCodice",

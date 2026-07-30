@@ -12,6 +12,7 @@ import java.util.*;
 import org.junit.jupiter.api.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.server.ResponseStatusException;
@@ -20,6 +21,7 @@ class PraticheServiceTest {
   private PraticaRepository repository;
   private JdbcTemplate database;
   private PraticheService servizio;
+  private ArchivioDocumentiPratica archivio;
   private UUID studio;
   private UUID utente;
 
@@ -29,7 +31,8 @@ class PraticheServiceTest {
     var context=SecurityContextHolder.createEmptyContext();
     context.setAuthentication(new UsernamePasswordAuthenticationToken(new JwtPrincipal(utente,studio,"utente@example.test"),null,List.of()));
     SecurityContextHolder.setContext(context);
-    servizio=new PraticheService(repository,new TenantContext(),database,mock(ArchivioDocumentiPratica.class));
+    archivio=mock(ArchivioDocumentiPratica.class);
+    servizio=new PraticheService(repository,new TenantContext(),database,archivio);
   }
   @AfterEach void pulisci(){SecurityContextHolder.clearContext();}
 
@@ -75,6 +78,31 @@ class PraticheServiceTest {
     var pratica=pratica(false);when(repository.findByIdAndStudioIdAndEliminatoIlIsNull(pratica.getId(),studio)).thenReturn(Optional.of(pratica));
     assertErrore("PRATICA_DATI_ECONOMICI_NON_VALIDI",HttpStatus.UNPROCESSABLE_ENTITY,
       ()->servizio.salvaEconomia(pratica.getId(),Map.of("preventivo",-1,"version",0)));
+  }
+  @Test void catalogoTemplateDistingueConfiguratiENonConfigurati() {
+    assertThat(servizio.templateDocumenti()).extracting(PraticheService.TemplateDocumento::codice)
+      .contains("LETTERA_INCARICO","PREVENTIVO","PROCURA_LITI","DIFFIDA","SCHEDA_RIEPILOGATIVA_PRATICA");
+    assertThat(servizio.templateDocumenti()).filteredOn(PraticheService.TemplateDocumento::configurato)
+      .extracting(PraticheService.TemplateDocumento::codice).containsExactly("SCHEDA_RIEPILOGATIVA_PRATICA");
+  }
+  @Test void templateLegaleNonConfiguratoNonCreaDocumento() {
+    var pratica=pratica(false);
+    when(repository.findByIdAndStudioIdAndEliminatoIlIsNull(pratica.getId(),studio)).thenReturn(Optional.of(pratica));
+    assertErrore("TEMPLATE_NON_CONFIGURATO",HttpStatus.NOT_IMPLEMENTED,
+      ()->servizio.generaDocumento(pratica.getId(),"LETTERA_INCARICO",null));
+    verify(database,never()).update(contains("INSERT INTO documento_pratica"),any(Object[].class));
+  }
+  @Test void schedaRiepilogativaVieneGenerataETracciata() {
+    var pratica=pratica(false);
+    when(repository.findByIdAndStudioIdAndEliminatoIlIsNull(pratica.getId(),studio)).thenReturn(Optional.of(pratica));
+    when(archivio.salvaGenerato(eq(studio),eq(pratica.getId()),contains("scheda-riepilogativa"),any(byte[].class),eq("text/plain")))
+      .thenReturn(new ArchivioDocumentiPratica.DocumentoSalvato("scheda.txt","text/plain",12,"/privato/file","checksum"));
+    when(database.query(contains("FROM documento_pratica"),any(ResultSetExtractor.class),any(Object[].class)))
+      .thenReturn(Map.of("id",UUID.randomUUID(),"origine","GENERATO","templateCodice","SCHEDA_RIEPILOGATIVA_PRATICA"));
+    var documento=servizio.generaDocumento(pratica.getId(),"SCHEDA_RIEPILOGATIVA_PRATICA",null);
+    assertThat(documento).containsEntry("origine","GENERATO").containsEntry("templateCodice","SCHEDA_RIEPILOGATIVA_PRATICA");
+    verify(database).update(contains("INSERT INTO documento_pratica"),any(Object[].class));
+    verify(database).update(contains("INSERT INTO pratica_timeline"),any(Object[].class));
   }
   private Pratica pratica(boolean riservata){return new Pratica(studio,"PRA-2026-00001",utente,new Pratica.Dati("Demo",null,"CIVILE","CONSULENZA","NORMALE",utente,null,"EUR",riservata,LocalDate.now(),null,null));}
   private void assertErrore(String codice,HttpStatus stato,Runnable azione){

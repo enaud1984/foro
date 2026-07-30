@@ -90,11 +90,34 @@
 
         <section class="scheda" *ngIf="scheda()==='documenti'">
           <h4>Documenti della Pratica</h4>
+          <div class="testata-documenti">
+            <p>Carica file oppure genera un documento dai template disponibili.</p>
+            <button type="button" (click)="generazioneAperta.set(!generazioneAperta());messaggioGenerazione.set('')"
+              [disabled]="!statoModificabile(p)">Genera documento</button>
+          </div>
+          <form class="generazione-documento" *ngIf="generazioneAperta()" [formGroup]="generazioneForm" (ngSubmit)="generaDocumento()">
+            <label>Template
+              <select formControlName="templateCodice" (change)="messaggioGenerazione.set('')">
+                <option *ngFor="let x of cataloghi()['templateDocumenti']" [value]="x.codice">
+                  {{x.descrizione}}{{x.configurato?'':' — non configurato'}}
+                </option>
+              </select>
+            </label>
+            <label>Soggetto collegato (facoltativo)
+              <select formControlName="soggettoId"><option value="">Nessuno</option><option *ngFor="let s of soggetti()" [value]="s.soggettoId">{{s.nomeVisualizzato}} · {{s.ruoloCodice.replaceAll('_',' ')}}</option></select>
+            </label>
+            <p *ngIf="templateSelezionato() as template" [class.template-non-configurato]="!template.configurato">
+              {{template.configurato?'Il documento sarà generato dai dati correnti della Pratica e archiviato con origine tracciata.':'Template predisposto ma non ancora configurato: non verrà creato alcun documento.'}}
+            </p>
+            <nav><button type="button" (click)="generazioneAperta.set(false)">Annulla</button><button type="submit" class="primario" [disabled]="generazioneInCorso()||!statoModificabile(p)">{{generazioneInCorso()?'Generazione…':'Genera e archivia'}}</button></nav>
+          </form>
+          <p class="messaggio-generazione" *ngIf="messaggioGenerazione()">{{messaggioGenerazione()}}</p>
           <form class="form-riga documento" [formGroup]="documentoForm" (ngSubmit)="caricaDocumento()">
             <label>Titolo<input formControlName="titolo"></label><label>Categoria<select formControlName="categoriaCodice"><option *ngFor="let x of cataloghi()['categorieDocumenti']" [value]="x.codice">{{x.descrizione}}</option></select></label>
+            <label>Soggetto collegato (facoltativo)<select formControlName="soggettoId"><option value="">Nessuno</option><option *ngFor="let s of soggetti()" [value]="s.soggettoId">{{s.nomeVisualizzato}}</option></select></label>
             <label>File<input type="file" accept=".pdf,.png,.jpg,.jpeg,.docx,.txt" (change)="selezionaFile($event)"></label><button type="submit" [disabled]="!fileSelezionato()||!statoModificabile(p)">Carica</button>
           </form>
-          <div class="righe"><article *ngFor="let d of documenti()"><span><strong>{{d.titolo}}</strong><small>{{d.nomeFile}} · {{d.dimensione|number}} byte · v{{d.versioneNumero}}</small></span><em>{{d.categoriaCodice}}</em><button type="button" (click)="scaricaDocumento(d)" [disabled]="d.statoDocumento==='SOLO_METADATI'">Download</button><button type="button" class="pericolo" (click)="eliminaDocumento(d)">Elimina</button></article></div>
+          <div class="righe documenti-elenco"><article *ngFor="let d of documenti()"><span><strong>{{d.titolo}}</strong><small>{{d.nomeFile}} · {{d.dimensione|number}} byte · v{{d.versioneNumero}}</small></span><em>{{d.categoriaCodice}}</em><span class="origine-documento" [class.generato]="d.origine==='GENERATO'">{{d.origine==='GENERATO'?'Generato da template':'Caricato'}}</span><button type="button" (click)="scaricaDocumento(d)" [disabled]="d.statoDocumento==='SOLO_METADATI'">Download</button><button type="button" class="pericolo" (click)="eliminaDocumento(d)">Elimina</button></article></div>
           <p class="stato-ui" *ngIf="!documenti().length">Nessun documento caricato.</p>
         </section>
 

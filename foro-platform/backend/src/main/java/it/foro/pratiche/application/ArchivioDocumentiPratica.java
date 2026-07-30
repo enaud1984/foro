@@ -48,6 +48,25 @@ public class ArchivioDocumentiPratica {
     }
   }
 
+  public DocumentoSalvato salvaGenerato(UUID studioId, UUID praticaId, String nomeFile, byte[] contenuto, String mimeType) {
+    if (contenuto == null || contenuto.length == 0 || contenuto.length > DIMENSIONE_MASSIMA
+      || nomeFile == null || nomeFile.isBlank() || nomeFile.contains("/") || nomeFile.contains("\\") || nomeFile.contains("..")
+      || !MIME_AMMESSI.contains(mimeType)) {
+      throw new IllegalArgumentException("PRATICA_DOCUMENTO_NON_VALIDO");
+    }
+    try {
+      var cartella = radice.resolve(studioId.toString()).resolve(praticaId.toString()).normalize();
+      if (!cartella.startsWith(radice)) throw new IllegalArgumentException("PRATICA_DOCUMENTO_NON_VALIDO");
+      Files.createDirectories(cartella);
+      var destinazione = cartella.resolve(UUID.randomUUID().toString()).normalize();
+      if (!destinazione.startsWith(cartella)) throw new IllegalArgumentException("PRATICA_DOCUMENTO_NON_VALIDO");
+      Files.write(destinazione, contenuto, StandardOpenOption.CREATE_NEW);
+      return new DocumentoSalvato(nomeFile, mimeType, contenuto.length, destinazione.toString(), checksum(destinazione));
+    } catch (IOException | NoSuchAlgorithmException e) {
+      throw new IllegalStateException("PRATICA_DOCUMENTO_NON_VALIDO", e);
+    }
+  }
+
   public byte[] leggi(String percorso) {
     try {
       var file = Paths.get(percorso).toAbsolutePath().normalize();
