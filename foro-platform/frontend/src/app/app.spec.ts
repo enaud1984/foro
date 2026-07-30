@@ -1,5 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
 import { App } from './app';
 
 describe('App', () => {
@@ -117,6 +118,68 @@ describe('App', () => {
     expect(compiled.querySelector('.dash-head')?.textContent).not.toContain('Dashboard operativa');
     expect(compiled.querySelector('.widget-sidebar')?.textContent).not.toContain('La griglia evita le sovrapposizioni');
     expect(compiled.querySelector('.today-summary')?.textContent?.trim()).toBeTruthy();
+    expect(compiled.querySelector('.today-period b')?.textContent?.trim()).toBeTruthy();
+    expect(compiled.querySelector('.today-period small')?.textContent?.trim()).toMatch(/^\d{4}$/);
+  });
+
+  it('ricompatta il layout in modo deterministico senza sovrapposizioni', () => {
+    const app = TestBed.createComponent(App).componentInstance;
+    const base = app.activeWidgets().slice(0, 4).map((widget, indice) => ({
+      ...widget, x: indice < 2 ? 1 : 7, y: indice < 2 ? 1 : 8, w: 6, h: 2
+    }));
+    const risultato = (app as any).reorderWidgets(base, base[1].key);
+    const sovrapposti = risultato.some((widget: any, indice: number) =>
+      risultato.slice(indice + 1).some((altro: any) => (app as any).overlaps(widget, altro)));
+
+    expect(sovrapposti).toBeFalse();
+    expect(Math.min(...risultato.map((widget: any) => widget.y))).toBe(1);
+    expect((app as any).reorderWidgets(base, base[1].key)).toEqual(risultato);
+  });
+
+  it('normalizza un layout storico incoerente durante il ripristino', () => {
+    const app = TestBed.createComponent(App).componentInstance;
+    const chiavi = app.activeWidgets().slice(0, 2).map(widget => widget.key);
+    (app as any).ripristinaLayoutWidget(JSON.stringify([
+      { key: chiavi[0], x: -4, y: 0, w: 99, h: 0 },
+      { key: chiavi[1], x: 1.4, y: 1.8, w: 4.2, h: 2.2 }
+    ]));
+    const layout = app.activeWidgets();
+
+    expect(layout.length).toBe(2);
+    expect(layout.every(widget => Number.isInteger(widget.x) && Number.isInteger(widget.y))).toBeTrue();
+    expect(layout.every(widget => widget.x >= 1 && widget.x + widget.w <= 13 && widget.y >= 1)).toBeTrue();
+    expect((app as any).overlaps(layout[0], layout[1])).toBeFalse();
+  });
+
+  it('rende visibili placeholder e maniglia di resize accessibile', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.screen.set('scrivania');
+    const widget = app.activeWidgets()[0];
+    app.dragPlaceholder.set({ x: widget.x, y: widget.y, w: widget.w, h: widget.h });
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.drop-placeholder')).toBeTruthy();
+    expect(compiled.querySelector('.resize-corner')?.getAttribute('aria-label')).toBe('Ridimensiona widget');
+    expect(compiled.querySelector('[aria-label="Aggiungi widget Anagrafiche"]')?.getAttribute('tabindex')).toBe('0');
+  });
+
+  it('persiste posizione e dimensione normalizzate dopo una modifica al layout', () => {
+    const app = TestBed.createComponent(App).componentInstance;
+    const preferenze: any = {
+      themeMode: 'LIGHT', dashboardDensity: 'COMFORTABLE', personalAccentColor: '#0f766e', widgetLayout: '[]'
+    };
+    app.dashboardPreference.set(preferenze);
+    const richiesta = spyOn((app as any).http, 'put').and.returnValue(of(preferenze));
+
+    (app as any).salvaLayoutWidget();
+
+    const corpo = richiesta.calls.mostRecent().args[1] as any;
+    const layout = JSON.parse(corpo.widgetLayout);
+    expect(richiesta).toHaveBeenCalledWith('/api/v1/workspace/preferences', jasmine.any(Object));
+    expect(layout.length).toBe(app.activeWidgets().length);
+    expect(layout[0]).toEqual(jasmine.objectContaining({ key: jasmine.any(String), x: jasmine.any(Number), y: jasmine.any(Number), w: jasmine.any(Number), h: jasmine.any(Number) }));
   });
 
   it('mostra il comando di uscita soltanto nelle impostazioni', () => {

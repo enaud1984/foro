@@ -39,6 +39,10 @@ describe('AnagraficheComponent', () => {
     (fixture.nativeElement.querySelector('.lista button') as HTMLButtonElement).click();fixture.detectChanges();
     http.expectOne('/api/v1/anagrafiche/1/pratiche').flush([]);fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Apri scheda completa');
+    expect(fixture.nativeElement.querySelector('[role="table"]')).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain('Documenti dell’Anagrafica');
+    expect(fixture.nativeElement.textContent).toContain('Documenti delle Pratiche');
+    expect(fixture.nativeElement.textContent).toContain('Stampa scheda anagrafica');
   });
   it('gestisce le metriche vuota, singolare e plurale',()=>{
     const componente=TestBed.createComponent(AnagraficheComponent).componentInstance;

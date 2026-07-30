@@ -32,6 +32,7 @@ export class AnagraficheComponent implements OnInit, OnChanges {
   readonly totale = signal(0);
   readonly formAperto = signal(false);
   readonly schedaCompleta = signal(false);
+  readonly azioneScheda = signal<'anagrafica'|'pratiche'|'genera'|'stampa'|null>(null);
   readonly candidatiDuplicati = signal<Array<{id:string;nomeVisualizzato:string}>>([]);
   readonly confermaDuplicato = signal(false);
   readonly praticheCollegate = signal<PraticaCollegataAnagrafica[]>([]);
@@ -78,7 +79,9 @@ export class AnagraficheComponent implements OnInit, OnChanges {
     if(this.compatto)this.richiediEspansione.emit(s);
   }
   apriDettaglio(id:string,completa=false):void{this.servizio.dettaglio(id).subscribe({next:s=>{this.selezionato.set(s);this.caricaPratiche(id);this.schedaCompleta.set(completa);},error:()=>this.errore.set('Anagrafica non trovata.')});}
-  apriSchedaCompleta(s:Soggetto):void{this.selezionato.set(s);this.schedaCompleta.set(true);}
+  apriSchedaCompleta(s:Soggetto,azione:'anagrafica'|'pratiche'|'genera'|'stampa'|null=null):void{
+    this.selezionato.set(s);this.azioneScheda.set(azione);this.schedaCompleta.set(true);
+  }
   modificaDaScheda(s:Soggetto):void{this.schedaCompleta.set(false);this.modifica(s);}
   nuova():void{
     if(this.compatto){this.richiediEspansione.emit(null);return;}

@@ -150,7 +150,10 @@
           <h3>La tua scrivania</h3>
           <p>Scegli gli strumenti che vuoi avere sempre a portata di mano.</p>
         </div>
-        <article class="widget-source" *ngFor="let item of widgetDisponibili()" draggable="true" (dragstart)="startWidgetDrag(item.key)">
+        <article class="widget-source" *ngFor="let item of widgetDisponibili()" draggable="true" role="button" tabindex="0"
+          [attr.aria-label]="'Aggiungi widget '+item.title" (click)="aggiungiWidgetDaLibreria(item.key)"
+          (keydown.enter)="aggiungiWidgetDaLibreria(item.key)" (keydown.space)="aggiungiWidgetDaLibreria(item.key);$event.preventDefault()"
+          (dragstart)="startWidgetDrag(item.key)">
           <span>{{ item.icon }}</span>
           <div><strong>{{ item.title }}</strong><small>{{ item.description }}</small></div>
         </article>
@@ -164,9 +167,9 @@
             <p>Il tuo studio, le priorità e i prossimi impegni in un unico spazio.</p>
           </div>
           <div class="today-summary" aria-label="Data odierna">
-            <span>{{ giornoSettimanaOggi }}</span>
-            <strong>{{ giornoMeseOggi }}</strong>
-            <small>{{ meseAnnoOggi }}</small>
+            <span class="today-weekday">{{ giornoSettimanaOggi }}</span>
+            <strong class="today-day">{{ giornoMeseOggi }}</strong>
+            <span class="today-period"><b>{{ meseOggi }}</b><small>{{ annoOggi }}</small></span>
           </div>
         </div>
 
@@ -178,6 +181,7 @@
           <article class="op-widget"
             *ngFor="let widget of activeWidgets(); trackBy: identificaWidget"
             [class.dragging]="trascinamentoWidget()?.key === widget.key"
+            [class.resizing]="ridimensionamentoWidget()?.key === widget.key"
             [style.transform]="trasformazioneTrascinamento(widget)"
             [style.grid-column]="widget.x + ' / span ' + widget.w"
             [style.grid-row]="widget.y + ' / span ' + widget.h">
@@ -212,7 +216,8 @@
             </div>
             </ng-template>
             </ng-template>
-            <small class="resize-corner">↘</small>
+            <button type="button" class="resize-corner" aria-label="Ridimensiona widget"
+              title="Ridimensiona widget" (pointerdown)="iniziaRidimensionamentoWidget(widget,$event)">↘</button>
           </article>
         </div>
       </section>

@@ -29,6 +29,16 @@ type TrascinamentoWidget = {
   spostamentoX: number;
   spostamentoY: number;
 };
+type RidimensionamentoWidget = {
+  key: ChiaveWidget;
+  pointerId: number;
+  origineX: number;
+  origineY: number;
+  larghezzaIniziale: number;
+  altezzaIniziale: number;
+  larghezzaColonna: number;
+  altezzaRiga: number;
+};
 
 interface ProfiloStudio {
   name: string;
@@ -144,7 +154,8 @@ export class App {
   private readonly oggi = new Date();
   readonly giornoSettimanaOggi = new Intl.DateTimeFormat('it-IT', { weekday: 'long' }).format(this.oggi);
   readonly giornoMeseOggi = new Intl.DateTimeFormat('it-IT', { day: '2-digit' }).format(this.oggi);
-  readonly meseAnnoOggi = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeric' }).format(this.oggi);
+  readonly meseOggi = new Intl.DateTimeFormat('it-IT', { month: 'long' }).format(this.oggi);
+  readonly annoOggi = new Intl.DateTimeFormat('it-IT', { year: 'numeric' }).format(this.oggi);
   readonly screen = signal<Schermata>('login');
   readonly loading = signal(false);
   readonly error = signal('');
@@ -167,6 +178,7 @@ export class App {
   readonly praticheAgenda = signal<PraticaSintetica[]>([]);
   readonly dragPlaceholder = signal<PosizioneGriglia | null>(null);
   readonly trascinamentoWidget = signal<TrascinamentoWidget | null>(null);
+  readonly ridimensionamentoWidget = signal<RidimensionamentoWidget | null>(null);
   readonly vistaCalendario = signal<VistaCalendario>('settimana');
   readonly dataCalendario = signal(this.inizioGiorno(new Date()));
   readonly oraAttuale = signal(new Date());
@@ -511,6 +523,12 @@ export class App {
     if (widget) this.dragPlaceholder.set({ x: widget.x, y: widget.y, w: widget.w, h: widget.h });
   }
 
+  aggiungiWidgetDaLibreria(key: ChiaveWidget): void {
+    if (this.activeWidgets().some(widget => widget.key === key)) return;
+    const ultimaRiga = this.activeWidgets().reduce((massimo, widget) => Math.max(massimo, widget.y + widget.h), 1);
+    this.moveOrAddWidget(key, 1, ultimaRiga);
+  }
+
   iniziaTrascinamentoWidget(widget: WidgetScrivania, event: PointerEvent): void {
     if (event.button !== 0) return;
     event.preventDefault();
@@ -534,6 +552,22 @@ export class App {
 
   @HostListener('window:pointermove', ['$event'])
   aggiornaTrascinamentoWidget(event: PointerEvent): void {
+    const ridimensionamento = this.ridimensionamentoWidget();
+    if (ridimensionamento?.pointerId === event.pointerId) {
+      event.preventDefault();
+      const widget = this.activeWidgets().find(elemento => elemento.key === ridimensionamento.key);
+      if (!widget) return;
+      const w = Math.max(2, Math.min(13 - widget.x,
+        ridimensionamento.larghezzaIniziale + Math.round((event.clientX - ridimensionamento.origineX) / ridimensionamento.larghezzaColonna)));
+      const h = Math.max(2, Math.min(8,
+        ridimensionamento.altezzaIniziale + Math.round((event.clientY - ridimensionamento.origineY) / ridimensionamento.altezzaRiga)));
+      this.dragPlaceholder.set({ x: widget.x, y: widget.y, w, h });
+      this.activeWidgets.update(widgets => this.reorderWidgets(
+        widgets.map(elemento => elemento.key === widget.key ? { ...elemento, w, h } : elemento),
+        widget.key
+      ));
+      return;
+    }
     const trascinamento = this.trascinamentoWidget();
     if (!trascinamento || trascinamento.pointerId !== event.pointerId) return;
     event.preventDefault();
@@ -573,6 +607,13 @@ export class App {
 
   @HostListener('window:pointerup', ['$event'])
   terminaTrascinamentoWidget(event: PointerEvent): void {
+    const ridimensionamento = this.ridimensionamentoWidget();
+    if (ridimensionamento?.pointerId === event.pointerId) {
+      this.ridimensionamentoWidget.set(null);
+      this.dragPlaceholder.set(null);
+      this.salvaLayoutWidget();
+      return;
+    }
     const trascinamento = this.trascinamentoWidget();
     if (!trascinamento || trascinamento.pointerId !== event.pointerId) return;
     const destinazione = this.dragPlaceholder();
@@ -583,8 +624,36 @@ export class App {
     this.concludiTrascinamentoPointer(event);
   }
 
+  iniziaRidimensionamentoWidget(widget: WidgetScrivania, event: PointerEvent): void {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const griglia = (event.currentTarget as HTMLElement).closest('.operational-grid') as HTMLElement | null;
+    if (!griglia) return;
+    const stile = getComputedStyle(griglia);
+    const gap = Number.parseFloat(stile.columnGap) || 16;
+    const altezzaRiga = (Number.parseFloat(stile.gridAutoRows) || 92) + (Number.parseFloat(stile.rowGap) || 16);
+    const larghezzaColonna = (griglia.getBoundingClientRect().width - gap * 11) / 12 + gap;
+    this.ridimensionamentoWidget.set({
+      key: widget.key,
+      pointerId: event.pointerId,
+      origineX: event.clientX,
+      origineY: event.clientY,
+      larghezzaIniziale: widget.w,
+      altezzaIniziale: widget.h,
+      larghezzaColonna,
+      altezzaRiga
+    });
+    this.dragPlaceholder.set({ x: widget.x, y: widget.y, w: widget.w, h: widget.h });
+  }
+
   @HostListener('window:pointercancel', ['$event'])
   annullaTrascinamentoWidget(event: PointerEvent): void {
+    if (this.ridimensionamentoWidget()?.pointerId === event.pointerId) {
+      this.ridimensionamentoWidget.set(null);
+      this.dragPlaceholder.set(null);
+      return;
+    }
     const trascinamento = this.trascinamentoWidget();
     if (!trascinamento || trascinamento.pointerId !== event.pointerId) return;
     if (this.layoutPrimaDelTrascinamento) {
@@ -668,6 +737,7 @@ export class App {
   closeWidget(key: ChiaveWidget, event: Event): void {
     event.stopPropagation();
     this.activeWidgets.update(widgets => widgets.filter(widget => widget.key !== key));
+    this.salvaLayoutWidget();
   }
 
   openWidget(widget: WidgetScrivania): void {
@@ -1176,6 +1246,7 @@ export class App {
     });
     this.http.get<PreferenzeScrivania>('/api/v1/workspace/preferences').subscribe(preference => {
       this.dashboardPreference.set(preference);
+      this.ripristinaLayoutWidget(preference.widgetLayout);
       this.dashboardForm.patchValue({
         themeMode: preference.themeMode,
         dashboardDensity: preference.dashboardDensity,
@@ -1189,12 +1260,16 @@ export class App {
     const existing = this.activeWidgets().find(widget => widget.key === key);
     if (existing) {
       this.activeWidgets.update(widgets => this.reorderWidgets(widgets.map(widget => widget.key === key ? { ...widget, x, y } : widget), key));
+      this.salvaLayoutWidget();
       return;
     }
     const definition = this.widgetLibrary.find(widget => widget.key === key);
     if (!definition) return;
     const nuovoWidget = this.creaWidgetDaDefinizione(key, x, y);
-    if (nuovoWidget) this.activeWidgets.update(widgets => this.reorderWidgets([...widgets, nuovoWidget], key));
+    if (nuovoWidget) {
+      this.activeWidgets.update(widgets => this.reorderWidgets([...widgets, nuovoWidget], key));
+      this.salvaLayoutWidget();
+    }
   }
 
   private creaWidgetDaDefinizione(key: ChiaveWidget, x: number, y: number): WidgetScrivania | null {
@@ -1340,34 +1415,81 @@ export class App {
   }
 
   private reorderWidgets(widgets: WidgetScrivania[], activeKey: ChiaveWidget): WidgetScrivania[] {
-    const ordered = [...widgets].sort((a, b) => {
+    const ordered = widgets.map(widget => this.normalizzaWidget(widget)).sort((a, b) => {
+      const ordine = a.y - b.y || a.x - b.x;
+      if (ordine !== 0) return ordine;
       if (a.key === activeKey) return -1;
       if (b.key === activeKey) return 1;
-      return a.y - b.y || a.x - b.x;
+      return a.key.localeCompare(b.key);
     });
     const placed: WidgetScrivania[] = [];
     for (const widget of ordered) {
-      let next = { ...widget, x: Math.min(widget.x, 13 - widget.w), y: Math.max(1, widget.y) };
-      while (placed.some(other => this.overlaps(next, other))) {
-        next = { ...next, x: next.x + 1 };
-        if (next.x + next.w > 13) next = { ...next, x: 1, y: next.y + 1 };
-      }
-      placed.push(next);
+      placed.push(this.primaPosizioneLibera(widget, placed));
     }
     return placed.sort((a, b) => a.y - b.y || a.x - b.x);
   }
 
   private compactWidgets(widgets: WidgetScrivania[]): WidgetScrivania[] {
-    const ordered = [...widgets].sort((a, b) => a.y - b.y || a.x - b.x);
+    const ordered = widgets.map(widget => this.normalizzaWidget(widget))
+      .sort((a, b) => a.y - b.y || a.x - b.x || a.key.localeCompare(b.key));
     const placed: WidgetScrivania[] = [];
     for (const widget of ordered) {
-      let best = { ...widget, y: 1 };
-      while (best.y < widget.y && placed.some(other => this.overlaps(best, other))) {
-        best = { ...best, y: best.y + 1 };
-      }
-      placed.push(best);
+      placed.push(this.primaPosizioneLibera(widget, placed));
     }
     return placed.sort((a, b) => a.y - b.y || a.x - b.x);
+  }
+
+  private normalizzaWidget(widget: WidgetScrivania): WidgetScrivania {
+    const w = Math.max(2, Math.min(12, Number.isFinite(widget.w) ? Math.round(widget.w) : 3));
+    const h = Math.max(2, Math.min(8, Number.isFinite(widget.h) ? Math.round(widget.h) : 2));
+    return {
+      ...widget,
+      w,
+      h,
+      x: Math.max(1, Math.min(13 - w, Number.isFinite(widget.x) ? Math.round(widget.x) : 1)),
+      y: Math.max(1, Number.isFinite(widget.y) ? Math.round(widget.y) : 1)
+    };
+  }
+
+  private primaPosizioneLibera(widget: WidgetScrivania, occupati: WidgetScrivania[]): WidgetScrivania {
+    for (let y = 1; ; y++) {
+      for (let x = 1; x <= 13 - widget.w; x++) {
+        const candidato = { ...widget, x, y };
+        if (!occupati.some(altro => this.overlaps(candidato, altro))) return candidato;
+      }
+    }
+  }
+
+  private ripristinaLayoutWidget(layoutSerializzato: string | null | undefined): void {
+    if (!layoutSerializzato?.trim()) return;
+    try {
+      const posizioni = JSON.parse(layoutSerializzato) as Array<Partial<PosizioneGriglia> & { key?: ChiaveWidget }>;
+      if (!Array.isArray(posizioni)) return;
+      const correnti = new Map(this.activeWidgets().map(widget => [widget.key, widget]));
+      const ripristinati = posizioni
+        .filter(posizione => posizione?.key && correnti.has(posizione.key))
+        .map(posizione => ({
+          ...correnti.get(posizione.key!)!,
+          x: Number(posizione.x),
+          y: Number(posizione.y),
+          w: Number(posizione.w),
+          h: Number(posizione.h)
+        }));
+      if (ripristinati.length) this.activeWidgets.set(this.compactWidgets(ripristinati));
+    } catch {
+      // Un layout storico non valido non deve impedire l'apertura della Scrivania.
+      this.activeWidgets.set(this.compactWidgets(this.activeWidgets()));
+    }
+  }
+
+  private salvaLayoutWidget(): void {
+    const preferenze = this.dashboardPreference();
+    if (!preferenze) return;
+    const widgetLayout = JSON.stringify(this.activeWidgets().map(({ key, x, y, w, h }) => ({ key, x, y, w, h })));
+    this.http.put<PreferenzeScrivania>('/api/v1/workspace/preferences', { ...preferenze, widgetLayout }).subscribe({
+      next: aggiornate => this.dashboardPreference.set(aggiornate),
+      error: () => this.error.set('Layout della Scrivania non salvato. Riprova.')
+    });
   }
 
   private overlaps(a: PosizioneGriglia, b: PosizioneGriglia): boolean {

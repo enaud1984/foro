@@ -19,6 +19,7 @@ export class AnagraficaSchedaCompletaComponent implements OnInit,OnDestroy {
   private readonly sanificatore=inject(DomSanitizer);
   @Input({required:true}) soggetto!:Soggetto;
   @Input() tipi:CatalogoAnagrafica[]=[];
+  @Input() azioneIniziale:'anagrafica'|'pratiche'|'genera'|'stampa'|null=null;
   @Output() chiudi=new EventEmitter<void>();
   @Output() modifica=new EventEmitter<Soggetto>();
   @Output() apriPratica=new EventEmitter<string>();
@@ -55,11 +56,12 @@ export class AnagraficaSchedaCompletaComponent implements OnInit,OnDestroy {
   readonly templateForm=this.fb.nonNullable.group({codice:['SCHEDA_ANAGRAFICA',Validators.required],praticaId:['']});
 
   ngOnInit():void{
-    this.caricaTutto();
     this.filtroAmbito.valueChanges.subscribe(()=>this.caricaDocumenti());
     this.ricercaDocumenti.valueChanges.subscribe(()=>this.caricaDocumenti());
     this.filtroCategoria.valueChanges.subscribe(()=>this.caricaDocumenti());
     this.filtroOrigine.valueChanges.subscribe(()=>this.caricaDocumenti());
+    this.caricaTutto();
+    if(this.azioneIniziale)this.apriDocumenti(this.azioneIniziale);
   }
   ngOnDestroy():void{this.revocaAnteprima();}
   @HostListener('document:keydown.escape') gestisciEscape():void{
