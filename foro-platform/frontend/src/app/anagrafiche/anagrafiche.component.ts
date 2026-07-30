@@ -1,15 +1,16 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { AnagraficheService } from './anagrafiche.service';
 import { CatalogoAnagrafica, PraticaCollegataAnagrafica, RichiestaSoggetto, Soggetto, TipoSoggetto } from './anagrafiche.modelli';
 import { AnagraficaSchedaCompletaComponent } from './anagrafica-scheda-completa.component';
+import { IconaForoComponent } from '../shared/icona-foro.component';
 
 @Component({
   selector: 'app-anagrafiche',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, AnagraficaSchedaCompletaComponent],
+  imports: [CommonModule, ReactiveFormsModule, AnagraficaSchedaCompletaComponent, IconaForoComponent],
   templateUrl: './anagrafiche.component.html',
   styleUrl: './anagrafiche.component.scss'
 })
@@ -36,6 +37,16 @@ export class AnagraficheComponent implements OnInit, OnChanges {
   readonly candidatiDuplicati = signal<Array<{id:string;nomeVisualizzato:string}>>([]);
   readonly confermaDuplicato = signal(false);
   readonly praticheCollegate = signal<PraticaCollegataAnagrafica[]>([]);
+  readonly menuRigaAperto = signal<string|null>(null);
+  readonly ordinamento = signal<{campo:'nome'|'tipo'|'aggiornamento';direzione:1|-1}>({campo:'nome',direzione:1});
+  readonly soggettiOrdinati = computed(()=>{
+    const {campo,direzione}=this.ordinamento();
+    return [...this.soggetti()].sort((a,b)=>{
+      const av=campo==='nome'?this.nome(a):campo==='tipo'?this.etichettaTipo(a.tipoCodice):a.aggiornatoIl;
+      const bv=campo==='nome'?this.nome(b):campo==='tipo'?this.etichettaTipo(b.tipoCodice):b.aggiornatoIl;
+      return av.localeCompare(bv,'it')*direzione;
+    });
+  });
   readonly ricerca = this.fb.nonNullable.control('');
   readonly filtroTipo = this.fb.nonNullable.control('');
   readonly filtroStato = this.fb.nonNullable.control('');
@@ -72,8 +83,17 @@ export class AnagraficheComponent implements OnInit, OnChanges {
   nome(s:Soggetto):string{return s.denominazione||`${s.nome??''} ${s.cognome??''}`.trim();}
   etichettaTipo(codice:string):string{return this.tipi().find(t=>t.codice===codice)?.descrizione??codice.replaceAll('_',' ');}
   recapito(s:Soggetto):string{return s.email||s.pec||s.telefono||(s.partitaIva?`P.IVA ••••••${s.partitaIva.slice(-4)}`:'Nessun recapito');}
+  identificativoFiscale(s:Soggetto):string{return s.codiceFiscale||s.partitaIva||'—';}
   metrica():string{return this.totale()===0?'Nessuna anagrafica':this.totale()===1?'1 anagrafica attiva':`${this.totale()} anagrafiche attive`;}
+  persone():number{return this.soggetti().filter(s=>s.tipoCodice==='PERSONA_FISICA').length;}
+  organizzazioni():number{return this.soggetti().length-this.persone();}
+  attive():number{return this.soggetti().filter(s=>s.stato==='ATTIVO').length;}
+  cambiaOrdinamento(campo:'nome'|'tipo'|'aggiornamento'):void{
+    this.ordinamento.update(attuale=>attuale.campo===campo?{campo,direzione:attuale.direzione===1?-1:1}:{campo,direzione:1});
+  }
+  toggleMenuRiga(id:string,evento:Event):void{evento.stopPropagation();this.menuRigaAperto.update(aperto=>aperto===id?null:id);}
   apri(s:Soggetto):void {
+    this.menuRigaAperto.set(null);
     this.selezionato.set(s);this.soggettoSelezionato.emit(s);
     if(!this.compatto)this.caricaPratiche(s.id);
     if(this.compatto)this.richiediEspansione.emit(s);

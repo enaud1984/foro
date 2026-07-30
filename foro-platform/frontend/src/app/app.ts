@@ -8,6 +8,7 @@ import { Soggetto } from './anagrafiche/anagrafiche.modelli';
 import { PraticheComponent } from './pratiche/pratiche.component';
 import { EventoPratica, Pratica, PraticaSintetica } from './pratiche/pratiche.modelli';
 import { PraticheService } from './pratiche/pratiche.service';
+import { IconaForoComponent } from './shared/icona-foro.component';
 
 type Schermata = 'login' | 'registrazione' | 'scrivania';
 type ModalitaTema = 'LIGHT' | 'DARK';
@@ -146,7 +147,7 @@ interface EventoAgenda {
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, ReactiveFormsModule, AnagraficheComponent, PraticheComponent],
+  imports: [CommonModule, ReactiveFormsModule, AnagraficheComponent, PraticheComponent, IconaForoComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
@@ -179,6 +180,8 @@ export class App {
   readonly dragPlaceholder = signal<PosizioneGriglia | null>(null);
   readonly trascinamentoWidget = signal<TrascinamentoWidget | null>(null);
   readonly ridimensionamentoWidget = signal<RidimensionamentoWidget | null>(null);
+  readonly destinazioneNonValida = signal(false);
+  readonly menuWidgetAperto = signal<ChiaveWidget | null>(null);
   readonly vistaCalendario = signal<VistaCalendario>('settimana');
   readonly dataCalendario = signal(this.inizioGiorno(new Date()));
   readonly oraAttuale = signal(new Date());
@@ -220,7 +223,7 @@ export class App {
   readonly notificheInviti = signal<NotificaScrivania[]>([]);
   readonly notificheScrivania: NotificaScrivania[] = [
     {
-      icona: '📅',
+      icona: 'calendario',
       categoria: 'Appuntamento',
       titolo: 'Udienza civile confermata',
       descrizione: 'Tribunale di Milano · pratica demo collegata · ore 10:30',
@@ -229,7 +232,7 @@ export class App {
       oggettoTitolo: '10:30 — Udienza civile'
     },
     {
-      icona: '📁',
+      icona: 'documenti',
       categoria: 'Documento',
       titolo: 'Procura firmata caricata',
       descrizione: 'Nuovo file in un fascicolo demo',
@@ -238,7 +241,7 @@ export class App {
       oggettoTitolo: 'Procura firmata demo.p7m'
     },
     {
-      icona: '✉️',
+      icona: 'email',
       categoria: 'Email',
       titolo: 'PEC da associare a pratica',
       descrizione: 'Cancelleria civile · ricevuta deposito telematico',
@@ -247,7 +250,7 @@ export class App {
       oggettoTitolo: 'Cancelleria civile'
     },
     {
-      icona: '⚖️',
+      icona: 'pratiche',
       categoria: 'Pratica',
       titolo: 'Scadenza fra 2 giorni',
       descrizione: 'Deposito memoria istruttoria · RG 1842/2025',
@@ -259,12 +262,12 @@ export class App {
   readonly tutteNotifiche = computed(() => [...this.notificheInviti(), ...this.notificheScrivania]);
 
   readonly widgetLibrary: DefinizioneWidget[] = [
-    { key: 'calendario', icon: '📅', title: 'Calendario', description: 'Agenda stile Outlook, udienze e scadenze' },
-    { key: 'documenti', icon: '📁', title: 'Documenti', description: 'Atti, versioni, firme e fascicoli' },
-    { key: 'email', icon: '✉️', title: 'Email', description: 'Posta ordinaria e associazioni pratica' },
-    { key: 'clienti', icon: '👥', title: 'Anagrafiche', description: 'Persone, società, enti e altri soggetti' },
-    { key: 'pratiche', icon: '⚖️', title: 'Pratiche', description: 'Fascicoli, scadenze e attività dello Studio' },
-    { key: 'collaboratori', icon: '👥', title: 'Collaboratori', description: 'Avvocati, segreteria, ruoli e accessi' }
+    { key: 'calendario', icon: 'calendario', title: 'Calendario', description: 'Agenda stile Outlook, udienze e scadenze' },
+    { key: 'documenti', icon: 'documenti', title: 'Documenti', description: 'Atti, versioni, firme e fascicoli' },
+    { key: 'email', icon: 'email', title: 'Email', description: 'Posta ordinaria e associazioni pratica' },
+    { key: 'clienti', icon: 'anagrafiche', title: 'Anagrafiche', description: 'Persone, società, enti e altri soggetti' },
+    { key: 'pratiche', icon: 'pratiche', title: 'Pratiche', description: 'Fascicoli, scadenze e attività dello Studio' },
+    { key: 'collaboratori', icon: 'collaboratori', title: 'Collaboratori', description: 'Avvocati, segreteria, ruoli e accessi' }
   ];
   readonly widgetDisponibili = computed(() => this.widgetLibrary.filter(widget => widget.key !== 'collaboratori' || !!this.studioProfile()?.canEditBranding));
 
@@ -581,6 +584,12 @@ export class App {
     const layoutBase = this.layoutPrimaDelTrascinamento;
     const widget = layoutBase?.find(item => item.key === trascinamento.key);
     if (!griglia || !layoutBase || !widget) return;
+    if (!this.puntoDentroGriglia(event.clientX, event.clientY, griglia)) {
+      this.destinazioneNonValida.set(true);
+      this.dragPlaceholder.set(null);
+      return;
+    }
+    this.destinazioneNonValida.set(false);
     const posizione = this.positionFromCoordinates(
       event.clientX - trascinamento.scartoX,
       event.clientY - trascinamento.scartoY,
@@ -652,6 +661,7 @@ export class App {
     if (this.ridimensionamentoWidget()?.pointerId === event.pointerId) {
       this.ridimensionamentoWidget.set(null);
       this.dragPlaceholder.set(null);
+      this.destinazioneNonValida.set(false);
       return;
     }
     const trascinamento = this.trascinamentoWidget();
@@ -665,7 +675,7 @@ export class App {
   trasformazioneTrascinamento(widget: WidgetScrivania): string | null {
     const trascinamento = this.trascinamentoWidget();
     if (!trascinamento || trascinamento.key !== widget.key) return null;
-    return `translate3d(${trascinamento.spostamentoX}px, ${trascinamento.spostamentoY}px, 0) scale(1.018)`;
+    return `translate3d(${trascinamento.spostamentoX}px, ${trascinamento.spostamentoY}px, 0)`;
   }
 
   identificaWidget(_indice: number, widget: WidgetScrivania): ChiaveWidget {
@@ -675,6 +685,13 @@ export class App {
   updateDragPreview(event: DragEvent): void {
     event.preventDefault();
     if (!this.widgetTrascinato) return;
+    const elemento = event.currentTarget as HTMLElement;
+    if (!this.puntoDentroGriglia(event.clientX, event.clientY, elemento)) {
+      this.destinazioneNonValida.set(true);
+      this.dragPlaceholder.set(null);
+      return;
+    }
+    this.destinazioneNonValida.set(false);
     const posizione = this.positionFromPointer(event);
     const layoutBase = this.layoutPrimaDelTrascinamento ?? this.activeWidgets();
     const widget = layoutBase.find(item => item.key === this.widgetTrascinato);
@@ -694,6 +711,13 @@ export class App {
   dropWidget(event: DragEvent): void {
     event.preventDefault();
     if (!this.widgetTrascinato) return;
+    if (this.destinazioneNonValida()) {
+      if (this.layoutPrimaDelTrascinamento) {
+        this.activeWidgets.set(this.layoutPrimaDelTrascinamento.map(widget => ({ ...widget })));
+      }
+      this.endWidgetDrag();
+      return;
+    }
     const posizione = this.positionFromPointer(event);
     const layoutBase = this.layoutPrimaDelTrascinamento;
     if (layoutBase) this.activeWidgets.set(layoutBase.map(widget => ({ ...widget })));
@@ -706,18 +730,26 @@ export class App {
 
   endWidgetDrag(): void {
     if (!this.trascinamentoConfermato && this.layoutPrimaDelTrascinamento) {
-      this.activeWidgets.set(this.compactWidgets(this.layoutPrimaDelTrascinamento.map(widget => ({ ...widget }))));
+      this.activeWidgets.set(this.layoutPrimaDelTrascinamento.map(widget => ({ ...widget })));
     }
     this.widgetTrascinato = null;
     this.layoutPrimaDelTrascinamento = null;
     this.trascinamentoConfermato = false;
     this.dragPlaceholder.set(null);
+    this.destinazioneNonValida.set(false);
   }
 
   expandWidget(widget: WidgetScrivania, event: Event): void {
     event.stopPropagation();
+    this.menuWidgetAperto.set(null);
     this.rigaWidgetSelezionata.set(null);
     this.openWidget(widget);
+  }
+
+  toggleMenuWidget(widget: WidgetScrivania, event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.menuWidgetAperto.update(chiave => chiave === widget.key ? null : widget.key);
   }
 
   apriRigaWidget(widget: WidgetScrivania, riga: RigaWidget, event: Event): void {
@@ -736,6 +768,7 @@ export class App {
 
   closeWidget(key: ChiaveWidget, event: Event): void {
     event.stopPropagation();
+    this.menuWidgetAperto.set(null);
     this.activeWidgets.update(widgets => widgets.filter(widget => widget.key !== key));
     this.salvaLayoutWidget();
   }
@@ -1305,7 +1338,7 @@ export class App {
 
   private caricaNotifiche(): void {
     this.http.get<NotificaApi[]>('/api/v1/notifiche').subscribe(lista => this.notificheInviti.set(lista.map(n => ({
-      icona:'📅', categoria:'Appuntamento', titolo:n.titolo, descrizione:n.descrizione,
+      icona:'calendario', categoria:'Appuntamento', titolo:n.titolo, descrizione:n.descrizione,
       orario:new Intl.DateTimeFormat('it-IT',{hour:'2-digit',minute:'2-digit'}).format(new Date(n.creataIl)),
       widget:'calendario', oggettoTitolo:n.titolo
     }))));
@@ -1412,31 +1445,40 @@ export class App {
     this.widgetTrascinato = null;
     this.layoutPrimaDelTrascinamento = null;
     this.dragPlaceholder.set(null);
+    this.destinazioneNonValida.set(false);
   }
 
   private reorderWidgets(widgets: WidgetScrivania[], activeKey: ChiaveWidget): WidgetScrivania[] {
-    const ordered = widgets.map(widget => this.normalizzaWidget(widget)).sort((a, b) => {
-      const ordine = a.y - b.y || a.x - b.x;
-      if (ordine !== 0) return ordine;
-      if (a.key === activeKey) return -1;
-      if (b.key === activeKey) return 1;
-      return a.key.localeCompare(b.key);
-    });
-    const placed: WidgetScrivania[] = [];
-    for (const widget of ordered) {
-      placed.push(this.primaPosizioneLibera(widget, placed));
+    const risultato = widgets.map(widget => this.normalizzaWidget(widget));
+    const attivo = risultato.find(widget => widget.key === activeKey);
+    if (!attivo) return this.risolviSovrapposizioniStoriche(risultato);
+    const coda = [attivo.key];
+    const elaborati = new Set<ChiaveWidget>();
+    while (coda.length) {
+      const chiave = coda.shift()!;
+      if (elaborati.has(chiave)) continue;
+      elaborati.add(chiave);
+      const sorgente = risultato.find(widget => widget.key === chiave);
+      if (!sorgente) continue;
+      const collisioni = risultato
+        .filter(widget => widget.key !== sorgente.key && this.overlaps(sorgente, widget))
+        .sort((a, b) => a.y - b.y || a.x - b.x || a.key.localeCompare(b.key));
+      for (const collisione of collisioni) {
+        const indice = risultato.findIndex(widget => widget.key === collisione.key);
+        const occupati = risultato.filter(widget => widget.key !== collisione.key);
+        risultato[indice] = this.primaPosizioneLiberaSuccessiva(
+          collisione,
+          occupati,
+          Math.max(collisione.y, sorgente.y + sorgente.h)
+        );
+        coda.push(collisione.key);
+      }
     }
-    return placed.sort((a, b) => a.y - b.y || a.x - b.x);
+    return risultato;
   }
 
   private compactWidgets(widgets: WidgetScrivania[]): WidgetScrivania[] {
-    const ordered = widgets.map(widget => this.normalizzaWidget(widget))
-      .sort((a, b) => a.y - b.y || a.x - b.x || a.key.localeCompare(b.key));
-    const placed: WidgetScrivania[] = [];
-    for (const widget of ordered) {
-      placed.push(this.primaPosizioneLibera(widget, placed));
-    }
-    return placed.sort((a, b) => a.y - b.y || a.x - b.x);
+    return this.risolviSovrapposizioniStoriche(widgets.map(widget => this.normalizzaWidget(widget)));
   }
 
   private normalizzaWidget(widget: WidgetScrivania): WidgetScrivania {
@@ -1451,13 +1493,33 @@ export class App {
     };
   }
 
-  private primaPosizioneLibera(widget: WidgetScrivania, occupati: WidgetScrivania[]): WidgetScrivania {
-    for (let y = 1; ; y++) {
-      for (let x = 1; x <= 13 - widget.w; x++) {
+  private primaPosizioneLiberaSuccessiva(widget: WidgetScrivania, occupati: WidgetScrivania[], rigaMinima: number): WidgetScrivania {
+    const colonne = Array.from({ length: 13 - widget.w }, (_, indice) => indice + 1)
+      .sort((a, b) => Math.abs(a - widget.x) - Math.abs(b - widget.x) || a - b);
+    for (let y = Math.max(1, rigaMinima); ; y++) {
+      for (const x of colonne) {
         const candidato = { ...widget, x, y };
         if (!occupati.some(altro => this.overlaps(candidato, altro))) return candidato;
       }
     }
+  }
+
+  private risolviSovrapposizioniStoriche(widgets: WidgetScrivania[]): WidgetScrivania[] {
+    const risultato: WidgetScrivania[] = [];
+    for (const widget of widgets) {
+      risultato.push(
+        risultato.some(altro => this.overlaps(widget, altro))
+          ? this.primaPosizioneLiberaSuccessiva(widget, risultato, widget.y)
+          : widget
+      );
+    }
+    return risultato;
+  }
+
+  private puntoDentroGriglia(clientX: number, clientY: number, griglia: HTMLElement): boolean {
+    const rettangolo = griglia.getBoundingClientRect();
+    return clientX >= rettangolo.left && clientX <= rettangolo.right
+      && clientY >= rettangolo.top && clientY <= rettangolo.bottom;
   }
 
   private ripristinaLayoutWidget(layoutSerializzato: string | null | undefined): void {
@@ -1475,7 +1537,7 @@ export class App {
           w: Number(posizione.w),
           h: Number(posizione.h)
         }));
-      if (ripristinati.length) this.activeWidgets.set(this.compactWidgets(ripristinati));
+      if (ripristinati.length) this.activeWidgets.set(this.risolviSovrapposizioniStoriche(ripristinati.map(widget => this.normalizzaWidget(widget))));
     } catch {
       // Un layout storico non valido non deve impedire l'apertura della Scrivania.
       this.activeWidgets.set(this.compactWidgets(this.activeWidgets()));

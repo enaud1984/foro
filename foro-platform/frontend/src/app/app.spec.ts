@@ -120,20 +120,43 @@ describe('App', () => {
     expect(compiled.querySelector('.today-summary')?.textContent?.trim()).toBeTruthy();
     expect(compiled.querySelector('.today-period b')?.textContent?.trim()).toBeTruthy();
     expect(compiled.querySelector('.today-period small')?.textContent?.trim()).toMatch(/^\d{4}$/);
+    expect(compiled.querySelector('[aria-label="Notifiche"] app-icona-foro svg')).toBeTruthy();
+    expect(compiled.querySelector('[aria-label="Impostazioni"] app-icona-foro svg')).toBeTruthy();
   });
 
-  it('ricompatta il layout in modo deterministico senza sovrapposizioni', () => {
+  it('mantiene la riga richiesta quando lo spostamento non genera collisioni', () => {
     const app = TestBed.createComponent(App).componentInstance;
-    const base = app.activeWidgets().slice(0, 4).map((widget, indice) => ({
-      ...widget, x: indice < 2 ? 1 : 7, y: indice < 2 ? 1 : 8, w: 6, h: 2
+    const base = app.activeWidgets().slice(0, 2).map((widget, indice) => ({
+      ...widget, x: indice === 0 ? 1 : 7, y: indice === 0 ? 5 : 1, w: 6, h: 2
     }));
-    const risultato = (app as any).reorderWidgets(base, base[1].key);
-    const sovrapposti = risultato.some((widget: any, indice: number) =>
-      risultato.slice(indice + 1).some((altro: any) => (app as any).overlaps(widget, altro)));
+    const risultato = (app as any).reorderWidgets(base, base[0].key);
 
-    expect(sovrapposti).toBeFalse();
-    expect(Math.min(...risultato.map((widget: any) => widget.y))).toBe(1);
+    expect(risultato.find((widget: any) => widget.key === base[0].key).y).toBe(5);
+    expect(risultato.find((widget: any) => widget.key === base[1].key))
+      .toEqual(jasmine.objectContaining({ x: 7, y: 1, w: 6, h: 2 }));
     expect((app as any).reorderWidgets(base, base[1].key)).toEqual(risultato);
+  });
+
+  it('rialloca soltanto il widget in collisione e lascia invariati gli altri', () => {
+    const app = TestBed.createComponent(App).componentInstance;
+    const base = app.activeWidgets().slice(0, 3).map((widget, indice) => ({
+      ...widget,
+      x: indice === 2 ? 7 : 1,
+      y: indice === 1 ? 1 : indice === 0 ? 4 : 9,
+      w: 6,
+      h: 2
+    }));
+    const spostati = base.map(widget => widget.key === base[0].key ? { ...widget, y: 1 } : widget);
+    const risultato = (app as any).reorderWidgets(spostati, base[0].key);
+    const attivo = risultato.find((widget: any) => widget.key === base[0].key);
+    const urtato = risultato.find((widget: any) => widget.key === base[1].key);
+    const estraneo = risultato.find((widget: any) => widget.key === base[2].key);
+
+    expect(attivo.y).toBe(1);
+    expect(urtato.y).toBeGreaterThanOrEqual(3);
+    expect(estraneo).toEqual(jasmine.objectContaining({ x: 7, y: 9, w: 6, h: 2 }));
+    expect(risultato.some((widget: any, indice: number) =>
+      risultato.slice(indice + 1).some((altro: any) => (app as any).overlaps(widget, altro)))).toBeFalse();
   });
 
   it('normalizza un layout storico incoerente durante il ripristino', () => {
@@ -162,7 +185,37 @@ describe('App', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.drop-placeholder')).toBeTruthy();
     expect(compiled.querySelector('.resize-corner')?.getAttribute('aria-label')).toBe('Ridimensiona widget');
+    expect(compiled.querySelector('.resize-corner app-icona-foro svg')).toBeTruthy();
+    expect(compiled.querySelector('.drag-handle app-icona-foro svg')).toBeTruthy();
     expect(compiled.querySelector('[aria-label="Aggiungi widget Anagrafiche"]')?.getAttribute('tabindex')).toBe('0');
+  });
+
+  it('segnala una destinazione di trascinamento esterna come non valida', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.screen.set('scrivania');
+    app.destinazioneNonValida.set(true);
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('.operational-grid.drop-invalid')).toBeTruthy();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.drop-placeholder')).toBeNull();
+  });
+
+  it('espone le azioni widget in un menu SVG senza controlli simbolici duplicati', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.screen.set('scrivania');
+    fixture.detectChanges();
+    const trigger = (fixture.nativeElement as HTMLElement).querySelector('.widget-actions-trigger') as HTMLButtonElement;
+    trigger.click();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.widget-actions-menu')).toBeTruthy();
+    expect(compiled.querySelector('.widget-actions-menu')?.textContent).toContain('Apri vista completa');
+    expect(compiled.querySelector('.widget-actions-menu')?.textContent).toContain('Rimuovi dalla scrivania');
+    expect(compiled.querySelector('.expand-window')).toBeNull();
+    expect(compiled.querySelector('.resize-corner')?.textContent?.trim()).toBe('');
   });
 
   it('persiste posizione e dimensione normalizzate dopo una modifica al layout', () => {
@@ -221,7 +274,7 @@ describe('App', () => {
     const app = fixture.componentInstance;
     app.screen.set('scrivania');
     const widgetCollaboratori = app.widgetDisponibili().find(widget => widget.key === 'collaboratori')
-      ?? { key: 'collaboratori' as const, icon: '👥', title: 'Collaboratori', description: 'Ruoli e accessi' };
+      ?? { key: 'collaboratori' as const, icon: 'collaboratori', title: 'Collaboratori', description: 'Ruoli e accessi' };
     app.expandedWidget.set({
       ...widgetCollaboratori, x: 1, y: 1, w: 4, h: 2, metric: '1 persona', preview: '', details: [], righeAnteprima: []
     });

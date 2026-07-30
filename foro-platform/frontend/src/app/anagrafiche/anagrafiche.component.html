@@ -1,5 +1,17 @@
 <section class="anagrafiche" [class.compatto]="compatto">
   <strong class="metrica" *ngIf="compatto&&!caricamento()">{{metrica()}}</strong>
+  <header class="anagrafiche-header" *ngIf="!compatto">
+    <div class="titolo-anagrafiche">
+      <span class="icona-sezione"><app-icona-foro nome="anagrafiche"></app-icona-foro></span>
+      <div><h3>Anagrafiche</h3><p>Persone, società, enti e soggetti collegati allo Studio</p></div>
+    </div>
+    <div class="kpi-anagrafiche" aria-label="Indicatori Anagrafiche">
+      <article><small>Totale</small><strong>{{totale()}}</strong></article>
+      <article><small>Persone</small><strong>{{persone()}}</strong></article>
+      <article><small>Organizzazioni</small><strong>{{organizzazioni()}}</strong></article>
+      <article><small>Attive</small><strong>{{attive()}}</strong></article>
+    </div>
+  </header>
   <div class="comandi">
     <label><span class="sr-only">Cerca anagrafiche</span><input [formControl]="ricerca" placeholder="Cerca anagrafiche…"></label>
     <button type="button" class="primario" (click)="nuova()">Nuova anagrafica</button>
@@ -15,14 +27,36 @@
   <p class="stato-ui" *ngIf="!caricamento()&&!errore()&&!soggetti().length">Nessuna anagrafica trovata.</p>
   <div class="corpo" *ngIf="!caricamento()&&soggetti().length">
     <div class="lista" role="table" aria-label="Elenco anagrafiche">
-      <div class="intestazione-lista" role="row" *ngIf="!compatto"><span>Soggetto</span><span>Tipologia</span><span>Recapito</span><span>Stato</span></div>
-      <button type="button" role="row" *ngFor="let soggetto of soggetti()" (click)="apri(soggetto)" [class.selezionato]="selezionato()?.id===soggetto.id">
-        <strong>{{nome(soggetto)}}</strong><small class="tipo-riga">{{etichettaTipo(soggetto.tipoCodice)}}</small><small class="recapito-riga">{{recapito(soggetto)}}</small>
+      <div class="intestazione-lista" role="row" *ngIf="!compatto">
+        <button type="button" (click)="cambiaOrdinamento('nome')">Soggetto</button>
+        <button type="button" (click)="cambiaOrdinamento('tipo')">Tipologia</button>
+        <span>CF / P.IVA</span><span>Recapito</span><span>Pratiche</span><span>Stato</span>
+        <button type="button" (click)="cambiaOrdinamento('aggiornamento')">Ultima modifica</button><span>Azioni</span>
+      </div>
+      <div class="riga-anagrafica" role="row" *ngFor="let soggetto of soggettiOrdinati()" [class.selezionato]="selezionato()?.id===soggetto.id">
+        <button type="button" class="soggetto-apri" (click)="apri(soggetto)"><strong>{{nome(soggetto)}}</strong></button>
+        <small class="tipo-riga">{{etichettaTipo(soggetto.tipoCodice)}}</small>
+        <small class="fiscale-riga" [title]="identificativoFiscale(soggetto)">{{identificativoFiscale(soggetto)}}</small>
+        <small class="recapito-riga" [title]="recapito(soggetto)">{{recapito(soggetto)}}</small>
+        <small class="pratiche-riga">{{selezionato()?.id===soggetto.id?praticheCollegate().length:'—'}}</small>
         <em [class.disattivo]="soggetto.stato==='DISATTIVATO'">{{soggetto.stato==='ATTIVO'?'Attiva':'Disattivata'}}</em>
-      </button>
+        <small class="aggiornamento-riga">{{soggetto.aggiornatoIl|date:'dd/MM/yyyy'}}</small>
+        <div class="azioni-riga">
+          <button type="button" class="menu-riga-trigger" [attr.aria-label]="'Azioni per '+nome(soggetto)" [attr.aria-expanded]="menuRigaAperto()===soggetto.id" (click)="toggleMenuRiga(soggetto.id,$event)"><app-icona-foro nome="azioni"></app-icona-foro></button>
+          <div *ngIf="menuRigaAperto()===soggetto.id" class="menu-riga" (click)="$event.stopPropagation()">
+            <button type="button" (click)="apriSchedaCompleta(soggetto)">Apri scheda</button>
+            <button type="button" (click)="modifica(soggetto)">Modifica</button>
+            <button type="button" (click)="apriSchedaCompleta(soggetto,'anagrafica')">Documenti</button>
+            <button type="button" (click)="apriSchedaCompleta(soggetto,'stampa')">Stampa scheda</button>
+            <button type="button" (click)="apri(soggetto)">Pratiche collegate</button>
+            <button type="button" (click)="cambiaStato(soggetto)">{{soggetto.stato==='ATTIVO'?'Disattiva':'Riattiva'}}</button>
+            <button type="button" class="pericolo" (click)="elimina(soggetto)">Elimina</button>
+          </div>
+        </div>
+      </div>
     </div>
     <article class="dettaglio" *ngIf="!compatto && selezionato() as s">
-      <header><div><small>{{etichettaTipo(s.tipoCodice)}}</small><h3>{{nome(s)}}</h3></div><button type="button" (click)="selezionato.set(null)" aria-label="Chiudi dettaglio">×</button></header>
+      <header><div><small>{{etichettaTipo(s.tipoCodice)}}</small><h3>{{nome(s)}}</h3></div><button type="button" class="pulsante-icona" (click)="selezionato.set(null)" aria-label="Chiudi dettaglio"><app-icona-foro nome="chiudi"></app-icona-foro></button></header>
       <dl>
         <ng-container *ngIf="s.tipoCodice==='PERSONA_FISICA'"><dt>Data e luogo di nascita</dt><dd>{{s.dataNascita||'—'}} · {{s.luogoNascita||'—'}}</dd></ng-container>
         <ng-container *ngIf="s.formaGiuridica"><dt>Forma giuridica</dt><dd>{{s.formaGiuridica}}</dd></ng-container>
@@ -53,14 +87,14 @@
 
   <div class="pannello-form" *ngIf="!compatto&&formAperto()">
     <form [formGroup]="form" (ngSubmit)="salva()">
-      <header><h3>{{form.controls.id.value?'Modifica':'Nuova'}} anagrafica</h3><button type="button" (click)="chiudiForm()">×</button></header>
+      <header><h3>{{form.controls.id.value?'Modifica':'Nuova'}} anagrafica</h3><button type="button" class="pulsante-icona" aria-label="Chiudi form anagrafica" (click)="chiudiForm()"><app-icona-foro nome="chiudi"></app-icona-foro></button></header>
       <label>Tipologia<select formControlName="tipoCodice" (change)="applicaValidazioniTipo()"><option *ngFor="let tipo of tipi()" [value]="tipo.codice">{{tipo.descrizione}}</option></select></label>
       <div class="due" *ngIf="personaFisica(); else organizzazione"><label>Nome<input formControlName="nome"></label><label>Cognome<input formControlName="cognome"></label><label>Data di nascita<input type="date" formControlName="dataNascita"></label><label>Luogo di nascita<input formControlName="luogoNascita"></label><label>Provincia di nascita<input maxlength="2" formControlName="provinciaNascita"></label><label>Stato di nascita<input formControlName="statoNascita"></label></div>
       <ng-template #organizzazione><div class="due"><label>Denominazione<input formControlName="denominazione"></label><label>Forma giuridica<input formControlName="formaGiuridica"></label></div></ng-template>
       <div class="due"><label>Codice fiscale<input formControlName="codiceFiscale"></label><label>Partita IVA<input formControlName="partitaIva"></label><label>Email<input type="email" formControlName="email"></label><label>PEC<input type="email" formControlName="pec"></label><label>Telefono<input formControlName="telefono"></label><label>Cellulare<input formControlName="cellulare"></label><label>Indirizzo<input formControlName="indirizzo"></label><label>Civico<input formControlName="civico"></label><label>CAP<input formControlName="cap"></label><label>Comune<input formControlName="comune"></label><label>Provincia<input maxlength="2" formControlName="provincia"></label><label>Stato<input formControlName="statoIndirizzo"></label></div>
       <label>Note<textarea formControlName="note" rows="3"></textarea></label>
       <p class="errore" *ngIf="form.invalid&&form.touched">Controlla i campi obbligatori e i formati indicati.</p>
-      <button class="primario" type="submit">Salva anagrafica</button>
+      <footer class="azioni-form"><button type="button" (click)="chiudiForm()">Annulla</button><button class="primario" type="submit">Salva anagrafica</button></footer>
     </form>
   </div>
   <div class="conferma" *ngIf="confermaDuplicato()"><div><h3>Possibile duplicato</h3><p>Esistono anagrafiche simili nello Studio:</p><ul><li *ngFor="let c of candidatiDuplicati()">{{c.nomeVisualizzato}}</li></ul><button type="button" (click)="confermaDuplicato.set(false)">Annulla</button><button type="button" class="primario" (click)="salva(true)">Salva comunque</button></div></div>

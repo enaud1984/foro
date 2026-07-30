@@ -146,6 +146,10 @@
   background: #fff;
 }
 
+.anagrafiche:not(.compatto) .lista {
+  overflow: visible;
+}
+
 .anagrafiche:not(.compatto) .dettaglio > header {
   align-items: flex-start;
   padding: .85rem 1rem;
@@ -307,5 +311,349 @@
   .anagrafiche:not(.compatto) .lista em {
     grid-column: 2;
     grid-row: 1 / span 3;
+  }
+}
+
+.anagrafiche-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 0 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #dce4eb;
+}
+
+.titolo-anagrafiche {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.titolo-anagrafiche h3,
+.titolo-anagrafiche p {
+  margin: 0;
+}
+
+.titolo-anagrafiche h3 {
+  color: #102a43;
+  font-size: 20px;
+  font-weight: 650;
+}
+
+.titolo-anagrafiche p {
+  margin-top: 3px;
+  color: #607080;
+  font-size: 12px;
+}
+
+.icona-sezione {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #cbd6e0;
+  border-radius: 8px;
+  background: #edf2f6;
+  color: #294860;
+  font-size: 20px;
+}
+
+.kpi-anagrafiche {
+  display: flex;
+  gap: 8px;
+}
+
+.kpi-anagrafiche article {
+  min-width: 78px;
+  padding: 7px 10px;
+  border: 1px solid #d8e1e9;
+  border-radius: 7px;
+  background: #f7f9fb;
+}
+
+.kpi-anagrafiche small,
+.kpi-anagrafiche strong {
+  display: block;
+}
+
+.kpi-anagrafiche small {
+  color: #687888;
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+
+.kpi-anagrafiche strong {
+  margin-top: 2px;
+  color: #173a59;
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.anagrafiche:not(.compatto) .corpo {
+  display: block;
+  width: 100%;
+}
+
+.anagrafiche:not(.compatto) .intestazione-lista,
+.anagrafiche:not(.compatto) .riga-anagrafica {
+  display: grid;
+  grid-template-columns: minmax(150px,1.35fr) minmax(110px,.8fr) minmax(120px,.9fr) minmax(150px,1.1fr) 64px 78px 102px 58px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+}
+
+.anagrafiche:not(.compatto) .intestazione-lista {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  min-height: 38px;
+}
+
+.intestazione-lista button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.intestazione-lista button::after {
+  content: " ↕";
+  color: #7c8b99;
+}
+
+.riga-anagrafica {
+  position: relative;
+  min-height: 50px;
+  border-bottom: 1px solid #e7edf2;
+  background: #fff;
+}
+
+.riga-anagrafica:nth-child(odd) {
+  background: #fbfcfd;
+}
+
+.riga-anagrafica:hover {
+  background: #f2f6f9;
+}
+
+.riga-anagrafica.selezionato {
+  background: #edf4f7;
+  box-shadow: inset 3px 0 #315d7a;
+}
+
+.soggetto-apri {
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  padding: 10px 0;
+  color: #162d42;
+  text-align: left;
+  cursor: pointer;
+}
+
+.soggetto-apri strong {
+  display: block;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.riga-anagrafica small {
+  overflow: hidden;
+  color: #5c6d7d;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.riga-anagrafica em {
+  justify-self: start;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: #e5f2eb;
+  color: #236344;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: .035em;
+  text-transform: uppercase;
+}
+
+.riga-anagrafica em.disattivo {
+  background: #f5ead8;
+  color: #805719;
+}
+
+.azioni-riga {
+  position: relative;
+  justify-self: end;
+}
+
+.menu-riga-trigger {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #cad5df;
+  border-radius: 6px;
+  background: #fff;
+  color: #304b63;
+  cursor: pointer;
+}
+
+.menu-riga {
+  position: absolute;
+  z-index: 8;
+  top: calc(100% + 4px);
+  right: 0;
+  width: 190px;
+  padding: 5px;
+  border: 1px solid #ccd6df;
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(15,23,42,.16);
+}
+
+.menu-riga button {
+  width: 100%;
+  display: block;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  padding: 7px 8px;
+  color: #26394b;
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu-riga button:hover {
+  background: #edf2f6;
+}
+
+.anagrafiche:not(.compatto) .dettaglio {
+  position: fixed;
+  z-index: 215;
+  top: 5vh;
+  right: 3vw;
+  width: min(720px, 52vw);
+  height: 90vh;
+  box-sizing: border-box;
+  overflow: auto;
+  box-shadow: -16px 0 50px rgba(15,23,42,.2);
+}
+
+.anagrafiche:not(.compatto) .pannello-form {
+  position: fixed;
+  z-index: 230;
+  inset: 6vh auto auto 50%;
+  width: min(1180px, 88vw);
+  height: 88vh;
+  box-sizing: border-box;
+  transform: translateX(-50%);
+  overflow: auto;
+  border-radius: 10px;
+  padding: 20px 24px;
+  background: #fff;
+  box-shadow: 0 0 0 100vmax rgba(15, 23, 42, .42), 0 24px 70px rgba(15, 23, 42, .24);
+}
+
+.pannello-form header {
+  position: sticky;
+  z-index: 2;
+  top: -20px;
+  align-items: center;
+  margin: -20px -24px 12px;
+  padding: 16px 24px;
+  border-bottom: 1px solid #dbe3ea;
+  background: #fff;
+}
+
+.pannello-form header button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #c7d2dc;
+  border-radius: 6px;
+  background: #f7f9fb;
+}
+
+.azioni-form {
+  position: sticky;
+  z-index: 2;
+  bottom: -20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 12px -24px -20px;
+  padding: 14px 24px;
+  border-top: 1px solid #dbe3ea;
+  background: #fff;
+}
+
+.azioni-form button {
+  min-width: 120px;
+}
+
+.pulsante-icona app-icona-foro {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.compatto .riga-anagrafica {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  gap: 3px 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5ebf0;
+}
+
+.compatto .soggetto-apri,
+.compatto .tipo-riga,
+.compatto .recapito-riga {
+  grid-column: 1;
+}
+
+.compatto .fiscale-riga,
+.compatto .pratiche-riga,
+.compatto .aggiornamento-riga,
+.compatto .azioni-riga {
+  display: none;
+}
+
+.compatto .riga-anagrafica em {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+}
+
+@media(max-width: 980px) {
+  .anagrafiche-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .anagrafiche:not(.compatto) .lista {
+    overflow-x: auto;
+  }
+
+  .anagrafiche:not(.compatto) .intestazione-lista,
+  .anagrafiche:not(.compatto) .riga-anagrafica {
+    min-width: 980px;
+  }
+
+  .anagrafiche:not(.compatto) .dettaglio {
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
   }
 }

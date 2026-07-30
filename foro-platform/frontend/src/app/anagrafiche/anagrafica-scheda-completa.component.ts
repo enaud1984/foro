@@ -5,11 +5,12 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { CatalogoAnagrafica, DocumentoAnagrafica, EventoTimelineAnagrafica, OpzioniScheda,
   PraticaCollegataAnagrafica, SchedaStampabile, Soggetto } from './anagrafiche.modelli';
 import { AnagraficheService } from './anagrafiche.service';
+import { IconaForoComponent } from '../shared/icona-foro.component';
 
 @Component({
   selector:'app-anagrafica-scheda-completa',
   standalone:true,
-  imports:[CommonModule,ReactiveFormsModule],
+  imports:[CommonModule,ReactiveFormsModule,IconaForoComponent],
   templateUrl:'./anagrafica-scheda-completa.component.html',
   styleUrl:'./anagrafica-scheda-completa.component.scss'
 })

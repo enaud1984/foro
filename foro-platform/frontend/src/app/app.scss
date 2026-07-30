@@ -1,4 +1,4 @@
-:host{display:block;min-height:100vh;color:#172331}
+:host{display:block;min-height:100vh;color:#172331;--foro-primary-hover:#173a59;--foro-surface:#fff;--foro-surface-muted:#f4f7fa;--foro-border:#d5dee7;--foro-text:#172331;--foro-text-muted:#5f6f80;--foro-success:#287a55;--foro-warning:#9a6414;--foro-danger:#a83232;--foro-focus:#2779a7}
 .auth-shell{min-height:100vh;display:grid;grid-template-columns:minmax(390px,46%) 1fr;background:#fbfaf7}
 .brand-panel{position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:48px 64px;color:#fff;background:radial-gradient(circle at 78% 25%,var(--foro-secondary,#128c8c) 0,transparent 36%),linear-gradient(145deg,#071f38,var(--foro-primary,#092746) 65%,#0d5963)}
 .brand-panel:after{content:"";position:absolute;width:420px;height:420px;border:1px solid #ffffff20;border-radius:50%;right:-170px;bottom:-140px}
@@ -413,12 +413,11 @@
   transition: transform .2s cubic-bezier(.2, .8, .2, 1), box-shadow .2s ease,
     grid-column .2s cubic-bezier(.2, .8, .2, 1), grid-row .2s cubic-bezier(.2, .8, .2, 1);
   will-change: transform;
-  overflow: auto;
+  overflow: hidden;
 }
 
 .op-widget:active {
-  transform: scale(1.015);
-  box-shadow: 0 28px 70px rgba(15, 23, 42, .18);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, .14);
 }
 
 .op-head {
@@ -442,8 +441,9 @@
 
 .op-widget.dragging {
   z-index: 5;
-  opacity: .96;
-  box-shadow: 0 34px 82px rgba(15, 23, 42, .24);
+  opacity: .94;
+  border-color: #35546f;
+  box-shadow: 0 18px 44px rgba(15, 39, 64, .22);
   transition: box-shadow .16s ease;
 }
 
@@ -458,12 +458,20 @@
 }
 
 .op-head h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   color: #111827;
-  font-size: 17px;
+  font-size: 15px;
+  font-weight: 650;
 }
 
 .op-widget>b {
-  color: var(--foro-accent);
+  display: inline-block;
+  margin: 8px 0;
+  color: #173a59;
+  font-size: 21px;
+  font-weight: 650;
 }
 
 .window-actions button {
@@ -476,24 +484,75 @@
   font-size: 17px;
 }
 
-.window-actions .expand-window:hover {
-  background: #ecfdf5;
-  color: #0f766e;
-  border-color: #99f6e4;
+.op-head {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
 }
 
-.window-actions .close-window:hover {
-  background: #fef2f2;
-  color: #b91c1c;
+.drag-handle {
+  width: 26px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #c8d3de;
+  border-radius: 6px;
+  background: #edf2f6;
+  color: #304b63 !important;
+}
+
+.op-head:hover .drag-handle {
+  border-color: #8fa2b4;
+  background: #e3eaf0;
+}
+
+.window-actions {
+  position: relative;
+}
+
+.widget-actions-menu {
+  position: absolute;
+  z-index: 12;
+  top: calc(100% + 5px);
+  right: 0;
+  width: 220px;
+  padding: 5px;
+  border: 1px solid var(--foro-border);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, .16);
+}
+
+.widget-actions-menu button {
+  width: 100%;
+  height: auto;
+  min-height: 36px;
+  display: flex;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 8px;
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+  text-align: left;
+}
+
+.widget-actions-menu button:hover {
+  background: #edf2f6;
+}
+
+.widget-actions-menu .azione-pericolosa {
+  color: var(--foro-danger);
 }
 
 .resize-corner {
   position: absolute;
   right: 10px;
   bottom: 8px;
-  color: #0f2740;
-  background: #e8eef5;
-  border: 1px solid #aebdcb;
+  color: #233f58;
+  background: #e6edf3;
+  border: 1px solid #9eafbf;
   border-radius: 7px;
   width: 26px;
   height: 26px;
@@ -501,7 +560,7 @@
   place-items: center;
   cursor: nwse-resize;
   touch-action: none;
-  box-shadow: 0 2px 7px rgba(15, 39, 64, .16);
+  box-shadow: 0 1px 4px rgba(15, 39, 64, .14);
 }
 
 .resize-corner:hover,
@@ -514,12 +573,22 @@
 }
 
 .drop-placeholder {
-  border: 2px dashed color-mix(in srgb, var(--foro-accent) 64%, #94a3b8);
+  z-index: 2;
+  border: 1px dashed #315d7a;
   border-radius: 14px;
-  background: color-mix(in srgb, var(--foro-accent) 14%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--foro-accent) 12%, transparent);
+  background: rgba(49, 93, 122, .09);
+  box-shadow: inset 0 0 0 1px rgba(49, 93, 122, .08);
   transition: grid-column .16s cubic-bezier(.2, .8, .2, 1), grid-row .16s cubic-bezier(.2, .8, .2, 1);
-  animation: placeholderPulse .8s ease-in-out infinite alternate;
+}
+
+.operational-grid.drop-invalid,
+.op-widget.drop-invalid,
+.op-widget.drop-invalid .op-head {
+  cursor: not-allowed;
+}
+
+.op-widget.drop-invalid {
+  border-color: #a83232;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -528,11 +597,6 @@
     transition: none;
     animation: none;
   }
-}
-
-@keyframes placeholderPulse {
-  from { opacity: .55; }
-  to { opacity: 1; }
 }
 
 .agenda-preview {
@@ -1831,7 +1895,11 @@
     grid-template-columns: 1fr;
   }
 }
-.widget-modal.pratiche-modal{width:min(96vw,1500px);height:min(94vh,980px);overflow:auto}.practice-autocomplete{display:grid;gap:.25rem;max-height:13rem;overflow:auto}.practice-autocomplete button{display:grid;grid-template-columns:8rem 1fr auto;gap:.5rem;text-align:left;padding:.45rem;border:1px solid #d8e0e8;background:#fff;border-radius:.45rem}.event-detail-actions{display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.8rem}
+.widget-modal.pratiche-modal{width:min(96vw,1500px);height:min(94vh,980px);overflow:auto}.widget-modal.anagrafiche-modal{width:min(96vw,1500px);height:min(94vh,980px);box-sizing:border-box;overflow:auto;border-radius:12px;padding:24px 28px}.widget-modal h2{display:flex;align-items:center;gap:10px;font-size:28px}.practice-autocomplete{display:grid;gap:.25rem;max-height:13rem;overflow:auto}.practice-autocomplete button{display:grid;grid-template-columns:8rem 1fr auto;gap:.5rem;text-align:left;padding:.45rem;border:1px solid #d8e0e8;background:#fff;border-radius:.45rem}.event-detail-actions{display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.8rem}
+
+.icon-action app-icona-foro{font-size:22px}.notification-icon{color:#294860}.notification-icon app-icona-foro{font-size:20px}.widget-source>span{color:#294860}.widget-source>span app-icona-foro{font-size:20px}.modal-close{display:grid;place-items:center;padding:0}.calendar-share-add{display:flex;align-items:center;gap:7px}
+.workspace .topbar .top-actions .icon-action{border-color:#dbe4ee;background:#fff;color:#253f57}
+.widget-modal.anagrafiche-modal>.eyebrow,.widget-modal.anagrafiche-modal>h2,.widget-modal.anagrafiche-modal>p{display:none}.widget-modal.anagrafiche-modal{padding-top:54px}
 
 button,
 input,
