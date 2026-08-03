@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnDestroy, computed, signal } from '@angular/core';
+import { Component, OnDestroy, ViewChild, computed, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
@@ -9,6 +9,8 @@ import { PraticheComponent } from './pratiche/pratiche.component';
 import { EventoPratica, Pratica, PraticaSintetica } from './pratiche/pratiche.modelli';
 import { PraticheService } from './pratiche/pratiche.service';
 import { IconaForoComponent } from './shared/icona-foro.component';
+import { GridStackNode, GridStackOptions, GridStackWidget } from 'gridstack';
+import { GridstackComponent, GridstackItemComponent, elementCB, nodesCB } from 'gridstack/dist/angular';
 
 type Schermata = 'login' | 'registrazione' | 'scrivania';
 type ModalitaTema = 'LIGHT' | 'DARK';
@@ -20,35 +22,33 @@ type PianoDemo = 'essential' | 'professional';
 type VistaCalendario = 'giorno' | 'settimana' | 'mese';
 type ChiaveCalendario = 'studio' | 'privato' | 'udienze' | 'scadenze' | string;
 type PosizioneGriglia = { x: number; y: number; w: number; h: number };
-type TrascinamentoWidget = {
-  key: ChiaveWidget;
-  pointerId: number;
-  origineX: number;
-  origineY: number;
-  scartoX: number;
-  scartoY: number;
-  spostamentoX: number;
-  spostamentoY: number;
-  attivo: boolean;
+const CONFIGURAZIONE_GRIDSTACK: GridStackOptions = {
+  column: 24,
+  cellHeight: 46,
+  margin: 8,
+  animate: true,
+  float: false,
+  draggable: { handle: '.op-head', cancel: 'button, a, input, select, textarea, [role="button"], .widget-actions-menu' },
+  resizable: { handles: 'se' },
+  minRow: 1,
+  columnOpts: {
+    breakpoints: [
+      { w: 768, c: 1, layout: 'list' },
+      { w: 1100, c: 12, layout: 'moveScale' }
+    ],
+    layout: 'moveScale'
+  }
 };
-type RidimensionamentoWidget = {
-  key: ChiaveWidget;
-  pointerId: number;
-  origineX: number;
-  origineY: number;
-  posizioneOriginale: PosizioneGriglia;
-  anteprima: PosizioneGriglia;
-  valida: boolean;
+const VERSIONE_LAYOUT_GRIDSTACK = 3;
+const FATTORE_CONVERSIONE_LAYOUT_12_COLONNE = 2;
+const DIMENSIONI_WIDGET: Record<ChiaveWidget, { w: number; h: number; minW: number; minH: number; maxW: number; maxH: number }> = {
+  calendario: { w: 12, h: 6, minW: 6, minH: 5, maxW: 24, maxH: 16 },
+  documenti: { w: 7, h: 5, minW: 4, minH: 4, maxW: 18, maxH: 14 },
+  email: { w: 7, h: 5, minW: 4, minH: 4, maxW: 18, maxH: 14 },
+  clienti: { w: 7, h: 5, minW: 5, minH: 4, maxW: 18, maxH: 14 },
+  pratiche: { w: 7, h: 5, minW: 5, minH: 4, maxW: 18, maxH: 14 },
+  collaboratori: { w: 7, h: 5, minW: 5, minH: 4, maxW: 18, maxH: 14 }
 };
-const CONFIGURAZIONE_GRIGLIA = {
-  colonne: 24,
-  altezzaRigaPixel: 46,
-  spazioPixel: 8,
-  versioneLayout: 2,
-  fattoreConversioneLayoutStorico: 2
-} as const;
-const DIMENSIONE_PREDEFINITA_WIDGET = { w: 7, h: 5 } as const;
-const LIMITI_WIDGET = { larghezzaMinima: 4, altezzaMinima: 4, altezzaMassima: 16 } as const;
 interface ProfiloStudio {
   name: string;
   addressLine: string | null;
@@ -155,7 +155,7 @@ interface EventoAgenda {
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, ReactiveFormsModule, AnagraficheComponent, PraticheComponent, IconaForoComponent],
+  imports: [CommonModule, ReactiveFormsModule, AnagraficheComponent, PraticheComponent, IconaForoComponent, GridstackComponent, GridstackItemComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
@@ -185,12 +185,6 @@ export class App implements OnDestroy {
   readonly praticaSelezionataId = signal<string | null>(null);
   readonly nuovaPraticaRichiesta = signal(false);
   readonly praticheAgenda = signal<PraticaSintetica[]>([]);
-  readonly dragPlaceholder = signal<PosizioneGriglia | null>(null);
-  readonly trascinamentoWidget = signal<TrascinamentoWidget | null>(null);
-  readonly destinazioneNonValida = signal(false);
-  readonly targetScambio = signal<ChiaveWidget | null>(null);
-  readonly anteprimaTarget = signal<PosizioneGriglia | null>(null);
-  readonly ridimensionamentoWidget = signal<RidimensionamentoWidget | null>(null);
   readonly menuWidgetAperto = signal<ChiaveWidget | null>(null);
   readonly vistaCalendario = signal<VistaCalendario>('settimana');
   readonly dataCalendario = signal(this.inizioGiorno(new Date()));
@@ -292,12 +286,8 @@ export class App implements OnDestroy {
   readonly collaboratoreForm;
   readonly cambioPasswordForm;
   readonly ricercaPratica;
-  private widgetTrascinato: ChiaveWidget | null = null;
-  private layoutPrimaDelTrascinamento: WidgetScrivania[] | null = null;
-  private trascinamentoConfermato = false;
-  private readonly sogliaTrascinamentoPixel = 8;
-  private readonly sogliaSovrapposizioneTarget = .55;
-  private elementoPointerAttivo: HTMLElement | null = null;
+  @ViewChild(GridstackComponent) grigliaScrivania?: GridstackComponent;
+  readonly opzioniGriglia = CONFIGURAZIONE_GRIDSTACK;
 
   private creaWidgetIniziali(): WidgetScrivania[] {
     return [
@@ -316,7 +306,7 @@ export class App implements OnDestroy {
         ...this.widgetLibrary[1],
         x: 13,
         y: 1,
-        ...DIMENSIONE_PREDEFINITA_WIDGET,
+        ...this.dimensioniPredefinite('documenti'),
         metric: '248 file',
         preview: 'Documenti recenti e da validare',
         details: ['Comparsa_costituzione_v3.pdf', 'Procura_firmata_demo.p7m', 'Verbale_udienza_10-07.docx'],
@@ -330,7 +320,7 @@ export class App implements OnDestroy {
         ...this.widgetLibrary[2],
         x: 13,
         y: 6,
-        ...DIMENSIONE_PREDEFINITA_WIDGET,
+        ...this.dimensioniPredefinite('email'),
         metric: '37 non lette',
         preview: 'Messaggi da lavorare e associare',
         details: ['Tribunale di Milano — notifica provvedimento', 'cliente.demo@example.test — documenti integrativi', 'Cancelleria civile — ricevuta deposito'],
@@ -344,7 +334,7 @@ export class App implements OnDestroy {
         ...this.widgetLibrary[3],
         x: 1,
         y: 7,
-        ...DIMENSIONE_PREDEFINITA_WIDGET,
+        ...this.dimensioniPredefinite('clienti'),
         metric: 'Anagrafiche',
         preview: 'Ricerca e gestisci persone e organizzazioni',
         details: [],
@@ -354,7 +344,7 @@ export class App implements OnDestroy {
         ...this.widgetLibrary[4],
         x: 8,
         y: 7,
-        ...DIMENSIONE_PREDEFINITA_WIDGET,
+        ...this.dimensioniPredefinite('pratiche'),
         metric: 'Pratiche',
         preview: 'Fascicoli, scadenze e attività dello Studio',
         details: [],
@@ -435,7 +425,7 @@ export class App implements OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.annullaInterazioneWidget();
+    // Il wrapper ufficiale distrugge l'istanza GridStack e tutti i listener associati.
   }
 
   useDemoLogin(): void {
@@ -461,7 +451,7 @@ export class App implements OnDestroy {
       ?? this.creaWidgetDaDefinizione(notifica.widget, 1, 1);
     if (!widget) return;
     if (!this.activeWidgets().some(item => item.key === widget.key)) {
-      this.activeWidgets.update(widgets => this.reorderWidgets([...widgets, widget], widget.key));
+      this.activeWidgets.update(widgets => [...widgets, widget]);
     }
     const riga = widget.righeAnteprima.find(item => item.titolo === notifica.oggettoTitolo)
       ?? widget.righeAnteprima.find(item => item.titolo.includes(notifica.oggettoTitolo) || notifica.oggettoTitolo.includes(item.titolo));
@@ -531,216 +521,55 @@ export class App implements OnDestroy {
     this.show('login');
   }
 
-  startWidgetDrag(key: ChiaveWidget): void {
-    this.widgetTrascinato = key;
-    this.trascinamentoConfermato = false;
-    this.layoutPrimaDelTrascinamento = this.activeWidgets().map(widget => ({ ...widget }));
-    const widget = this.activeWidgets().find(item => item.key === key);
-    if (widget) this.dragPlaceholder.set({ x: widget.x, y: widget.y, w: widget.w, h: widget.h });
-  }
-
   aggiungiWidgetDaLibreria(key: ChiaveWidget): void {
     if (this.activeWidgets().some(widget => widget.key === key)) return;
-    const ultimaRiga = this.activeWidgets().reduce((massimo, widget) => Math.max(massimo, widget.y + widget.h), 1);
-    this.moveOrAddWidget(key, 1, ultimaRiga);
+    const nuovoWidget = this.creaWidgetDaDefinizione(key, 1, 1);
+    if (!nuovoWidget) return;
+    this.activeWidgets.update(widget => [...widget, nuovoWidget]);
+    queueMicrotask(() => this.grigliaScrivania?.updateAll());
+    this.salvaLayoutWidget();
   }
 
-  iniziaTrascinamentoWidget(widget: WidgetScrivania, event: PointerEvent): void {
-    if (event.button !== 0 || this.trascinamentoWidget() || this.ridimensionamentoWidget() || this.elementoInterattivo(event.target)) return;
-    const testata = event.currentTarget as HTMLElement;
-    const card = (event.currentTarget as HTMLElement).closest('.op-widget') as HTMLElement | null;
-    const rettangoloCard = card?.getBoundingClientRect();
-    this.trascinamentoConfermato = false;
-    this.layoutPrimaDelTrascinamento = this.activeWidgets().map(item => ({ ...item }));
-    this.trascinamentoWidget.set({
-      key: widget.key,
-      pointerId: event.pointerId,
-      origineX: event.clientX,
-      origineY: event.clientY,
-      scartoX: rettangoloCard ? event.clientX - rettangoloCard.left : 0,
-      scartoY: rettangoloCard ? event.clientY - rettangoloCard.top : 0,
-      spostamentoX: 0,
-      spostamentoY: 0,
-      attivo: false
-    });
-    this.catturaPointer(testata, event.pointerId);
+  opzioniWidget(widget: WidgetScrivania): GridStackWidget {
+    const limiti = DIMENSIONI_WIDGET[widget.key];
+    return {
+      id: widget.key,
+      x: widget.x - 1,
+      y: widget.y - 1,
+      w: widget.w,
+      h: widget.h,
+      minW: limiti.minW,
+      minH: limiti.minH,
+      maxW: limiti.maxW,
+      maxH: limiti.maxH
+    };
   }
 
-  @HostListener('window:pointermove', ['$event'])
-  aggiornaTrascinamentoWidget(event: PointerEvent): void {
-    const trascinamento = this.trascinamentoWidget();
-    if (!trascinamento || trascinamento.pointerId !== event.pointerId) return;
-    const spostamentoX = event.clientX - trascinamento.origineX;
-    const spostamentoY = event.clientY - trascinamento.origineY;
-    const attivo = trascinamento.attivo
-      || Math.hypot(spostamentoX, spostamentoY) > this.sogliaTrascinamentoPixel;
-    this.trascinamentoWidget.set({
-      ...trascinamento,
-      spostamentoX,
-      spostamentoY,
-      attivo
-    });
-    if (!attivo) return;
-    event.preventDefault();
-    this.widgetTrascinato = trascinamento.key;
-
-    const griglia = document.querySelector('.operational-grid') as HTMLElement | null;
-    const layoutBase = this.layoutPrimaDelTrascinamento;
-    const widget = layoutBase?.find(item => item.key === trascinamento.key);
-    if (!griglia || !layoutBase || !widget) return;
-    if (!this.puntoDentroGriglia(event.clientX, event.clientY, griglia)) {
-      this.destinazioneNonValida.set(true);
-      this.dragPlaceholder.set(null);
-      this.targetScambio.set(null);
-      this.anteprimaTarget.set(null);
-      return;
-    }
-    const posizione = this.positionFromCoordinates(
-      event.clientX - trascinamento.scartoX,
-      event.clientY - trascinamento.scartoY,
-      griglia,
-      widget.w
-    );
-    const nuovaPosizione = { x: posizione.x, y: posizione.y, w: widget.w, h: widget.h };
-    const target = this.trovaTargetScambio(nuovaPosizione, widget.key, layoutBase);
-    const scambioValido = target ? this.scambioGeometricamenteValido(widget, target, layoutBase) : false;
-    const cellaLibera = !layoutBase.some(item => item.key !== widget.key && this.overlaps(nuovaPosizione, item));
-    this.targetScambio.set(target?.key ?? null);
-    this.anteprimaTarget.set(target && scambioValido
-      ? { x: widget.x, y: widget.y, w: target.w, h: target.h }
-      : null);
-    this.dragPlaceholder.set(target && scambioValido
-      ? { x: target.x, y: target.y, w: widget.w, h: widget.h }
-      : nuovaPosizione);
-    this.destinazioneNonValida.set(!!target ? !scambioValido : !cellaLibera);
+  aggiornaModelloDaGridStack(evento: nodesCB): void {
+    this.applicaNodiGridStack(evento.nodes);
   }
 
-  @HostListener('window:pointerup', ['$event'])
-  terminaTrascinamentoWidget(event: PointerEvent): void {
-    const trascinamento = this.trascinamentoWidget();
-    if (!trascinamento || trascinamento.pointerId !== event.pointerId) return;
-    if (!trascinamento.attivo) {
-      this.concludiTrascinamentoPointer(event);
-      return;
-    }
-    const destinazione = this.dragPlaceholder();
-    const layoutBase = this.layoutPrimaDelTrascinamento;
-    if (layoutBase && destinazione && !this.destinazioneNonValida()) {
-      const target = layoutBase.find(widget => widget.key === this.targetScambio());
-      const trascinato = layoutBase.find(widget => widget.key === trascinamento.key);
-      if (target && trascinato) {
-        this.activeWidgets.set(layoutBase.map(widget => widget.key === trascinato.key
-          ? { ...widget, x: target.x, y: target.y }
-          : widget.key === target.key ? { ...widget, x: trascinato.x, y: trascinato.y } : { ...widget }));
-      } else {
-        this.activeWidgets.set(layoutBase.map(widget => widget.key === trascinamento.key
-          ? { ...widget, x: destinazione.x, y: destinazione.y } : { ...widget }));
-      }
-      this.trascinamentoConfermato = true;
-      this.salvaLayoutWidget();
-    } else if (layoutBase) {
-      this.activeWidgets.set(layoutBase.map(widget => ({ ...widget })));
-    }
-    this.concludiTrascinamentoPointer(event);
+  terminaSpostamentoGridStack(evento: elementCB): void {
+    if (evento.el.gridstackNode) this.applicaNodiGridStack([evento.el.gridstackNode]);
+    this.salvaLayoutWidget();
   }
 
-  @HostListener('window:pointercancel', ['$event'])
-  annullaTrascinamentoWidget(event: PointerEvent): void {
-    const trascinamento = this.trascinamentoWidget();
-    if (!trascinamento || trascinamento.pointerId !== event.pointerId) return;
-    if (this.layoutPrimaDelTrascinamento) {
-      this.activeWidgets.set(this.layoutPrimaDelTrascinamento.map(widget => ({ ...widget })));
-    }
-    this.concludiTrascinamentoPointer(event);
+  terminaRidimensionamentoGridStack(evento: elementCB): void {
+    if (evento.el.gridstackNode) this.applicaNodiGridStack([evento.el.gridstackNode]);
+    this.salvaLayoutWidget();
   }
 
-  @HostListener('window:keydown.escape')
-  annullaInterazioneWidget(): void {
-    const pointerId = this.trascinamentoWidget()?.pointerId ?? this.ridimensionamentoWidget()?.pointerId;
-    if (this.layoutPrimaDelTrascinamento) {
-      this.activeWidgets.set(this.layoutPrimaDelTrascinamento.map(widget => ({ ...widget })));
-    }
-    this.trascinamentoWidget.set(null);
-    this.ridimensionamentoWidget.set(null);
-    this.widgetTrascinato = null;
-    this.layoutPrimaDelTrascinamento = null;
-    this.dragPlaceholder.set(null);
-    this.targetScambio.set(null);
-    this.anteprimaTarget.set(null);
-    this.destinazioneNonValida.set(false);
-    if (pointerId !== undefined) this.rilasciaPointer(pointerId);
+  registraWidgetGridStack(evento: nodesCB): void {
+    this.applicaNodiGridStack(evento.nodes);
   }
 
-  @HostListener('window:blur')
-  annullaInterazioneWidgetAllaPerditaFocus(): void {
-    if (this.trascinamentoWidget() || this.ridimensionamentoWidget()) this.annullaInterazioneWidget();
-  }
-
-  trasformazioneTrascinamento(widget: WidgetScrivania): string | null {
-    const trascinamento = this.trascinamentoWidget();
-    if (!trascinamento?.attivo || trascinamento.key !== widget.key) return null;
-    return `translate3d(${trascinamento.spostamentoX}px, ${trascinamento.spostamentoY}px, 0)`;
+  rimuoviWidgetGridStack(evento: nodesCB): void {
+    const rimossi = new Set(evento.nodes.map(nodo => nodo.id as ChiaveWidget));
+    this.activeWidgets.update(widget => widget.filter(elemento => !rimossi.has(elemento.key)));
   }
 
   identificaWidget(_indice: number, widget: WidgetScrivania): ChiaveWidget {
     return widget.key;
-  }
-
-  updateDragPreview(event: DragEvent): void {
-    event.preventDefault();
-    if (!this.widgetTrascinato) return;
-    const elemento = event.currentTarget as HTMLElement;
-    if (!this.puntoDentroGriglia(event.clientX, event.clientY, elemento)) {
-      this.destinazioneNonValida.set(true);
-      this.dragPlaceholder.set(null);
-      return;
-    }
-    this.destinazioneNonValida.set(false);
-    const posizione = this.positionFromPointer(event);
-    const layoutBase = this.layoutPrimaDelTrascinamento ?? this.activeWidgets();
-    const widget = layoutBase.find(item => item.key === this.widgetTrascinato);
-    if (!posizione || !widget) return;
-    const nuovaPosizione = { x: posizione.x, y: posizione.y, w: widget.w, h: widget.h };
-    const posizioneCorrente = this.dragPlaceholder();
-    if (posizioneCorrente && this.samePosition(posizioneCorrente, nuovaPosizione)) return;
-    this.dragPlaceholder.set(nuovaPosizione);
-    this.activeWidgets.set(
-      this.reorderWidgets(
-        layoutBase.map(item => item.key === this.widgetTrascinato ? { ...item, x: posizione.x, y: posizione.y } : item),
-        this.widgetTrascinato as ChiaveWidget
-      )
-    );
-  }
-
-  dropWidget(event: DragEvent): void {
-    event.preventDefault();
-    if (!this.widgetTrascinato) return;
-    if (this.destinazioneNonValida()) {
-      if (this.layoutPrimaDelTrascinamento) {
-        this.activeWidgets.set(this.layoutPrimaDelTrascinamento.map(widget => ({ ...widget })));
-      }
-      this.endWidgetDrag();
-      return;
-    }
-    const posizione = this.positionFromPointer(event);
-    const layoutBase = this.layoutPrimaDelTrascinamento;
-    if (layoutBase) this.activeWidgets.set(layoutBase.map(widget => ({ ...widget })));
-    if (posizione) this.moveOrAddWidget(this.widgetTrascinato, posizione.x, posizione.y);
-    this.trascinamentoConfermato = true;
-    this.widgetTrascinato = null;
-    this.layoutPrimaDelTrascinamento = null;
-    this.dragPlaceholder.set(null);
-  }
-
-  endWidgetDrag(): void {
-    if (!this.trascinamentoConfermato && this.layoutPrimaDelTrascinamento) {
-      this.activeWidgets.set(this.layoutPrimaDelTrascinamento.map(widget => ({ ...widget })));
-    }
-    this.widgetTrascinato = null;
-    this.layoutPrimaDelTrascinamento = null;
-    this.trascinamentoConfermato = false;
-    this.dragPlaceholder.set(null);
-    this.destinazioneNonValida.set(false);
   }
 
   expandWidget(widget: WidgetScrivania, event: Event): void {
@@ -774,6 +603,7 @@ export class App implements OnDestroy {
     event.stopPropagation();
     this.menuWidgetAperto.set(null);
     this.activeWidgets.update(widgets => widgets.filter(widget => widget.key !== key));
+    queueMicrotask(() => this.grigliaScrivania?.updateAll());
     this.salvaLayoutWidget();
   }
 
@@ -1211,7 +1041,7 @@ export class App implements OnDestroy {
     this.loading.set(true);
     this.settingsMessage.set('');
     const value = this.dashboardForm.getRawValue();
-    const widgetLayout = JSON.stringify(this.activeWidgets().map(({ key, x, y, w, h }) => ({ key, x, y, w, h })));
+    const widgetLayout = JSON.stringify(this.activeWidgets().map(({ key, x, y, w, h }) => ({ key, x, y, w, h, versioneLayout: VERSIONE_LAYOUT_GRIDSTACK })));
     this.http.put<PreferenzeScrivania>('/api/v1/workspace/preferences', { ...value, widgetLayout }).subscribe({
       next: preference => {
         this.dashboardPreference.set(preference);
@@ -1270,7 +1100,7 @@ export class App implements OnDestroy {
       this.applyTheme(profile, this.dashboardPreference());
       if (profile.canEditBranding) {
         if (!this.activeWidgets().some(widget=>widget.key==='collaboratori')) {
-          const widget=this.creaWidgetDaDefinizione('collaboratori',7,5); if(widget)this.activeWidgets.update(lista=>this.reorderWidgets([...lista,widget],'collaboratori'));
+          const widget=this.creaWidgetDaDefinizione('collaboratori',7,5); if(widget)this.activeWidgets.update(lista=>[...lista,widget]);
         }
       } else {
         this.activeWidgets.update(lista=>lista.filter(widget=>widget.key!=='collaboratori'));
@@ -1293,22 +1123,6 @@ export class App implements OnDestroy {
     });
   }
 
-  private moveOrAddWidget(key: ChiaveWidget, x: number, y: number): void {
-    const existing = this.activeWidgets().find(widget => widget.key === key);
-    if (existing) {
-      this.activeWidgets.update(widgets => this.reorderWidgets(widgets.map(widget => widget.key === key ? { ...widget, x, y } : widget), key));
-      this.salvaLayoutWidget();
-      return;
-    }
-    const definition = this.widgetLibrary.find(widget => widget.key === key);
-    if (!definition) return;
-    const nuovoWidget = this.creaWidgetDaDefinizione(key, x, y);
-    if (nuovoWidget) {
-      this.activeWidgets.update(widgets => this.reorderWidgets([...widgets, nuovoWidget], key));
-      this.salvaLayoutWidget();
-    }
-  }
-
   private creaWidgetDaDefinizione(key: ChiaveWidget, x: number, y: number): WidgetScrivania | null {
     const definition = this.widgetLibrary.find(widget => widget.key === key);
     if (!definition) return null;
@@ -1316,7 +1130,7 @@ export class App implements OnDestroy {
       ...definition,
       x,
       y,
-      ...DIMENSIONE_PREDEFINITA_WIDGET,
+      ...this.dimensioniPredefinite(key),
       metric: 'Nuovo',
       preview: 'Widget aggiunto alla scrivania.',
       details: ['Anteprima operativa', 'Azioni rapide', 'Vista estesa'],
@@ -1331,13 +1145,6 @@ export class App implements OnDestroy {
   private righeCollaboratori(): RigaWidget[] { return this.collaboratoriStudio().slice(0,4).map(c=>({titolo:`${c.nome} ${c.cognome}`,descrizione:c.email,stato:this.etichettaRuoloCollaboratore(c.ruolo)})); }
   private aggiornaWidgetCollaboratori(): void { this.activeWidgets.update(widgets=>widgets.map(widget=>widget.key==='collaboratori'?{...widget,metric:`${this.collaboratoriStudio().length} persone`,preview:'Ruoli e accessi amministrati dal titolare',details:this.collaboratoriStudio().map(c=>`${c.nome} ${c.cognome}`),righeAnteprima:this.righeCollaboratori()}:widget)); }
 
-  private positionFromPointer(event: DragEvent): { x: number; y: number } | null {
-    const element = event.currentTarget as HTMLElement;
-    const rowHeight = CONFIGURAZIONE_GRIGLIA.altezzaRigaPixel + CONFIGURAZIONE_GRIGLIA.spazioPixel;
-    const dragged = this.widgetTrascinato ? this.activeWidgets().find(widget => widget.key === this.widgetTrascinato) : null;
-    const width = dragged?.w ?? DIMENSIONE_PREDEFINITA_WIDGET.w;
-    return this.positionFromCoordinates(event.clientX, event.clientY, element, width, rowHeight);
-  }
 
   private caricaNotifiche(): void {
     this.http.get<NotificaApi[]>('/api/v1/notifiche').subscribe(lista => this.notificheInviti.set(lista.map(n => ({
@@ -1429,201 +1236,29 @@ export class App implements OnDestroy {
     return 'Evento';
   }
 
-  private positionFromCoordinates(
-    clientX: number,
-    clientY: number,
-    element: HTMLElement,
-    width: number,
-    rowHeight = CONFIGURAZIONE_GRIGLIA.altezzaRigaPixel + CONFIGURAZIONE_GRIGLIA.spazioPixel
-  ): { x: number; y: number } {
-    const rect = element.getBoundingClientRect();
-    const colWidth = (rect.width + CONFIGURAZIONE_GRIGLIA.spazioPixel) / CONFIGURAZIONE_GRIGLIA.colonne;
-    const x = Math.min(CONFIGURAZIONE_GRIGLIA.colonne + 1 - width, Math.max(1, Math.floor((clientX - rect.left) / colWidth) + 1));
-    const y = Math.max(1, Math.floor((clientY - rect.top) / rowHeight) + 1);
-    return { x, y };
+  private applicaNodiGridStack(nodi: GridStackNode[]): void {
+    const posizioni = new Map(nodi
+      .filter(nodo => nodo.id && nodo.x !== undefined && nodo.y !== undefined && nodo.w !== undefined && nodo.h !== undefined)
+      .map(nodo => [nodo.id as ChiaveWidget, { x: nodo.x! + 1, y: nodo.y! + 1, w: nodo.w!, h: nodo.h! }]));
+    if (!posizioni.size) return;
+    this.activeWidgets.update(widget => widget.map(elemento => ({ ...elemento, ...(posizioni.get(elemento.key) ?? {}) })));
   }
 
-  private concludiTrascinamentoPointer(event: PointerEvent): void {
-    this.rilasciaPointer(event.pointerId);
-    this.trascinamentoWidget.set(null);
-    this.widgetTrascinato = null;
-    this.layoutPrimaDelTrascinamento = null;
-    this.dragPlaceholder.set(null);
-    this.destinazioneNonValida.set(false);
-    this.targetScambio.set(null);
-    this.anteprimaTarget.set(null);
-  }
-
-  iniziaRidimensionamentoWidget(widget: WidgetScrivania, event: PointerEvent): void {
-    if (event.button !== 0 || event.pointerType === 'touch' || this.trascinamentoWidget() || this.ridimensionamentoWidget()) return;
-    event.preventDefault();
-    event.stopPropagation();
-    const posizioneOriginale = { x: widget.x, y: widget.y, w: widget.w, h: widget.h };
-    this.layoutPrimaDelTrascinamento = this.activeWidgets().map(item => ({ ...item }));
-    this.ridimensionamentoWidget.set({
-      key: widget.key, pointerId: event.pointerId, origineX: event.clientX, origineY: event.clientY,
-      posizioneOriginale, anteprima: posizioneOriginale, valida: true
-    });
-    this.catturaPointer(event.currentTarget as HTMLElement, event.pointerId);
-  }
-
-  @HostListener('window:pointermove', ['$event'])
-  aggiornaRidimensionamentoWidget(event: PointerEvent): void {
-    const ridimensionamento = this.ridimensionamentoWidget();
-    if (!ridimensionamento || ridimensionamento.pointerId !== event.pointerId) return;
-    event.preventDefault();
-    const griglia = document.querySelector('.operational-grid') as HTMLElement | null;
-    const layout = this.layoutPrimaDelTrascinamento;
-    if (!griglia || !layout) return;
-    const rettangolo = griglia.getBoundingClientRect();
-    const larghezzaCella = (rettangolo.width + CONFIGURAZIONE_GRIGLIA.spazioPixel) / CONFIGURAZIONE_GRIGLIA.colonne;
-    const altezzaCella = CONFIGURAZIONE_GRIGLIA.altezzaRigaPixel + CONFIGURAZIONE_GRIGLIA.spazioPixel;
-    const w = Math.max(LIMITI_WIDGET.larghezzaMinima, Math.min(CONFIGURAZIONE_GRIGLIA.colonne - ridimensionamento.posizioneOriginale.x + 1,
-      Math.round(ridimensionamento.posizioneOriginale.w + (event.clientX - ridimensionamento.origineX) / larghezzaCella)));
-    const h = Math.max(LIMITI_WIDGET.altezzaMinima, Math.min(LIMITI_WIDGET.altezzaMassima,
-      Math.round(ridimensionamento.posizioneOriginale.h + (event.clientY - ridimensionamento.origineY) / altezzaCella)));
-    const anteprima = { ...ridimensionamento.posizioneOriginale, w, h };
-    const valida = !layout.some(widget => widget.key !== ridimensionamento.key && this.overlaps(anteprima, widget));
-    this.ridimensionamentoWidget.set({ ...ridimensionamento, anteprima, valida });
-    this.destinazioneNonValida.set(!valida);
-  }
-
-  @HostListener('window:pointerup', ['$event'])
-  terminaRidimensionamentoWidget(event: PointerEvent): void {
-    const ridimensionamento = this.ridimensionamentoWidget();
-    if (!ridimensionamento || ridimensionamento.pointerId !== event.pointerId) return;
-    if (ridimensionamento.valida && !this.samePosition(ridimensionamento.posizioneOriginale, ridimensionamento.anteprima)) {
-      this.activeWidgets.update(widgets => widgets.map(widget => widget.key === ridimensionamento.key
-        ? { ...widget, ...ridimensionamento.anteprima } : widget));
-      this.salvaLayoutWidget();
-    }
-    this.ridimensionamentoWidget.set(null);
-    this.layoutPrimaDelTrascinamento = null;
-    this.destinazioneNonValida.set(false);
-    this.rilasciaPointer(event.pointerId);
-  }
-
-  @HostListener('window:pointercancel', ['$event'])
-  annullaRidimensionamentoWidget(event: PointerEvent): void {
-    const ridimensionamento = this.ridimensionamentoWidget();
-    if (!ridimensionamento || ridimensionamento.pointerId !== event.pointerId) return;
-    this.ridimensionamentoWidget.set(null);
-    this.layoutPrimaDelTrascinamento = null;
-    this.destinazioneNonValida.set(false);
-    this.rilasciaPointer(event.pointerId);
-  }
-
-  dimensioneVisualeWidget(widget: WidgetScrivania): PosizioneGriglia {
-    const ridimensionamento = this.ridimensionamentoWidget();
-    return ridimensionamento?.key === widget.key ? ridimensionamento.anteprima : widget;
-  }
-
-  private trovaTargetScambio(posizione: PosizioneGriglia, chiave: ChiaveWidget, layout: WidgetScrivania[]): WidgetScrivania | null {
-    return layout
-      .filter(widget => widget.key !== chiave)
-      .map(widget => ({ widget, rapporto: this.rapportoSovrapposizione(posizione, widget) }))
-      .filter(candidato => candidato.rapporto >= this.sogliaSovrapposizioneTarget)
-      .sort((a, b) => b.rapporto - a.rapporto || a.widget.key.localeCompare(b.widget.key))[0]?.widget ?? null;
-  }
-
-  private rapportoSovrapposizione(a: PosizioneGriglia, b: PosizioneGriglia): number {
-    const larghezza = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
-    const altezza = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
-    return (larghezza * altezza) / Math.min(a.w * a.h, b.w * b.h);
-  }
-
-  private scambioGeometricamenteValido(trascinato: WidgetScrivania, target: WidgetScrivania, layout: WidgetScrivania[]): boolean {
-    const destinazioneTrascinato = { ...trascinato, x: target.x, y: target.y };
-    const destinazioneTarget = { ...target, x: trascinato.x, y: trascinato.y };
-    if (destinazioneTrascinato.x + destinazioneTrascinato.w > CONFIGURAZIONE_GRIGLIA.colonne + 1 || destinazioneTarget.x + destinazioneTarget.w > CONFIGURAZIONE_GRIGLIA.colonne + 1) return false;
-    return !layout.some(widget => widget.key !== trascinato.key && widget.key !== target.key
-      && (this.overlaps(destinazioneTrascinato, widget) || this.overlaps(destinazioneTarget, widget)));
-  }
-
-  private reorderWidgets(widgets: WidgetScrivania[], activeKey: ChiaveWidget): WidgetScrivania[] {
-    const risultato = widgets.map(widget => this.normalizzaWidget(widget));
-    const attivo = risultato.find(widget => widget.key === activeKey);
-    if (!attivo) return this.risolviSovrapposizioniStoriche(risultato);
-    const coda = [attivo.key];
-    const elaborati = new Set<ChiaveWidget>();
-    while (coda.length) {
-      const chiave = coda.shift()!;
-      if (elaborati.has(chiave)) continue;
-      elaborati.add(chiave);
-      const sorgente = risultato.find(widget => widget.key === chiave);
-      if (!sorgente) continue;
-      const collisioni = risultato
-        .filter(widget => widget.key !== sorgente.key && this.overlaps(sorgente, widget))
-        .sort((a, b) => a.y - b.y || a.x - b.x || a.key.localeCompare(b.key));
-      for (const collisione of collisioni) {
-        const indice = risultato.findIndex(widget => widget.key === collisione.key);
-        const occupati = risultato.filter(widget => widget.key !== collisione.key);
-        risultato[indice] = this.primaPosizioneLiberaSuccessiva(
-          collisione,
-          occupati,
-          Math.max(collisione.y, sorgente.y + sorgente.h)
-        );
-        coda.push(collisione.key);
-      }
-    }
-    return risultato;
-  }
-
-  private compactWidgets(widgets: WidgetScrivania[]): WidgetScrivania[] {
-    return this.risolviSovrapposizioniStoriche(widgets.map(widget => this.normalizzaWidget(widget)));
-  }
-
-  private normalizzaWidget(widget: WidgetScrivania): WidgetScrivania {
-    const w = Math.max(LIMITI_WIDGET.larghezzaMinima, Math.min(CONFIGURAZIONE_GRIGLIA.colonne, Number.isFinite(widget.w) ? Math.round(widget.w) : DIMENSIONE_PREDEFINITA_WIDGET.w));
-    const h = Math.max(LIMITI_WIDGET.altezzaMinima, Math.min(LIMITI_WIDGET.altezzaMassima, Number.isFinite(widget.h) ? Math.round(widget.h) : DIMENSIONE_PREDEFINITA_WIDGET.h));
-    return {
-      ...widget,
-      w,
-      h,
-      x: Math.max(1, Math.min(CONFIGURAZIONE_GRIGLIA.colonne + 1 - w, Number.isFinite(widget.x) ? Math.round(widget.x) : 1)),
-      y: Math.max(1, Number.isFinite(widget.y) ? Math.round(widget.y) : 1)
-    };
-  }
-
-  private primaPosizioneLiberaSuccessiva(widget: WidgetScrivania, occupati: WidgetScrivania[], rigaMinima: number): WidgetScrivania {
-    const colonne = Array.from({ length: CONFIGURAZIONE_GRIGLIA.colonne + 1 - widget.w }, (_, indice) => indice + 1)
-      .sort((a, b) => Math.abs(a - widget.x) - Math.abs(b - widget.x) || a - b);
-    for (let y = Math.max(1, rigaMinima); ; y++) {
-      for (const x of colonne) {
-        const candidato = { ...widget, x, y };
-        if (!occupati.some(altro => this.overlaps(candidato, altro))) return candidato;
-      }
-    }
-  }
-
-  private risolviSovrapposizioniStoriche(widgets: WidgetScrivania[]): WidgetScrivania[] {
-    const risultato: WidgetScrivania[] = [];
-    for (const widget of widgets) {
-      risultato.push(
-        risultato.some(altro => this.overlaps(widget, altro))
-          ? this.primaPosizioneLiberaSuccessiva(widget, risultato, widget.y)
-          : widget
-      );
-    }
-    return risultato;
-  }
-
-  private puntoDentroGriglia(clientX: number, clientY: number, griglia: HTMLElement): boolean {
-    const rettangolo = griglia.getBoundingClientRect();
-    return clientX >= rettangolo.left && clientX <= rettangolo.right
-      && clientY >= rettangolo.top && clientY <= rettangolo.bottom;
+  private dimensioniPredefinite(key: ChiaveWidget): { w: number; h: number } {
+    const { w, h } = DIMENSIONI_WIDGET[key];
+    return { w, h };
   }
 
   private ripristinaLayoutWidget(layoutSerializzato: string | null | undefined): void {
     if (!layoutSerializzato?.trim()) return;
     try {
-      const posizioni = JSON.parse(layoutSerializzato) as Array<Partial<PosizioneGriglia> & { key?: ChiaveWidget }>;
+      const posizioni = JSON.parse(layoutSerializzato) as Array<Partial<PosizioneGriglia> & { key?: ChiaveWidget; versioneLayout?: number }>;
       if (!Array.isArray(posizioni)) return;
       const correnti = new Map(this.activeWidgets().map(widget => [widget.key, widget]));
-      const layoutStorico = !posizioni.some(posizione => posizione && (posizione as { versioneLayout?: number }).versioneLayout === CONFIGURAZIONE_GRIGLIA.versioneLayout);
-      const fattore = layoutStorico ? CONFIGURAZIONE_GRIGLIA.fattoreConversioneLayoutStorico : 1;
+      const layoutDodiciColonne = !posizioni.some(posizione => posizione?.versioneLayout && posizione.versioneLayout >= 2);
+      const fattore = layoutDodiciColonne ? FATTORE_CONVERSIONE_LAYOUT_12_COLONNE : 1;
       const ripristinati = posizioni
-        .filter(posizione => posizione?.key && correnti.has(posizione.key))
+        .filter(posizione => posizione?.key && correnti.has(posizione.key) && [posizione.x, posizione.y, posizione.w, posizione.h].every(Number.isFinite))
         .map(posizione => ({
           ...correnti.get(posizione.key!)!,
           x: (Number(posizione.x) - 1) * fattore + 1,
@@ -1631,51 +1266,23 @@ export class App implements OnDestroy {
           w: Number(posizione.w) * fattore,
           h: Number(posizione.h) * fattore
         }));
-      if (ripristinati.length) this.activeWidgets.set(this.risolviSovrapposizioniStoriche(ripristinati.map(widget => this.normalizzaWidget(widget))));
+      if (ripristinati.length) {
+        this.activeWidgets.set(ripristinati);
+        queueMicrotask(() => this.grigliaScrivania?.updateAll());
+      }
     } catch {
-      // Un layout storico non valido non deve impedire l'apertura della Scrivania.
-      this.activeWidgets.set(this.compactWidgets(this.activeWidgets()));
+      // Il layout applicativo resta invariato: GridStack compatterà soltanto coordinate valide.
     }
   }
 
   private salvaLayoutWidget(): void {
     const preferenze = this.dashboardPreference();
     if (!preferenze) return;
-    const widgetLayout = JSON.stringify(this.activeWidgets().map(({ key, x, y, w, h }) => ({ key, x, y, w, h, versioneLayout: CONFIGURAZIONE_GRIGLIA.versioneLayout })));
+    const widgetLayout = JSON.stringify(this.activeWidgets().map(({ key, x, y, w, h }) => ({ key, x, y, w, h, versioneLayout: VERSIONE_LAYOUT_GRIDSTACK })));
     this.http.put<PreferenzeScrivania>('/api/v1/workspace/preferences', { ...preferenze, widgetLayout }).subscribe({
       next: aggiornate => this.dashboardPreference.set(aggiornate),
       error: () => this.error.set('Layout della Scrivania non salvato. Riprova.')
     });
-  }
-
-  private overlaps(a: PosizioneGriglia, b: PosizioneGriglia): boolean {
-    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
-  }
-
-  private samePosition(a: PosizioneGriglia, b: PosizioneGriglia): boolean {
-    return a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h;
-  }
-
-  private elementoInterattivo(target: EventTarget | null): boolean {
-    return target instanceof Element && !!target.closest('button, a, input, select, textarea, [role="button"], .resize-corner');
-  }
-
-  private catturaPointer(elemento: HTMLElement, pointerId: number): void {
-    this.elementoPointerAttivo = elemento;
-    try {
-      elemento.setPointerCapture?.(pointerId);
-    } catch {
-      // Gli eventi sintetici e i browser privi di un pointer attivo continuano a usare i listener window.
-    }
-  }
-
-  private rilasciaPointer(pointerId: number): void {
-    try {
-      if (this.elementoPointerAttivo?.hasPointerCapture?.(pointerId)) this.elementoPointerAttivo.releasePointerCapture(pointerId);
-    } catch {
-      // Il browser può avere già rilasciato automaticamente la cattura al pointercancel.
-    }
-    this.elementoPointerAttivo = null;
   }
 
   private readLogoFile(event: Event, onLoad: (logoUrl: string) => void): void {

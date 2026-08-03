@@ -124,357 +124,51 @@ describe('App', () => {
     expect(compiled.querySelector('[aria-label="Impostazioni"] app-icona-foro svg')).toBeTruthy();
   });
 
-  it('mantiene la riga richiesta quando lo spostamento non genera collisioni', () => {
-    const app = TestBed.createComponent(App).componentInstance;
-    const base = app.activeWidgets().slice(0, 2).map((widget, indice) => ({
-      ...widget, x: indice === 0 ? 1 : 7, y: indice === 0 ? 6 : 1, w: 6, h: 4
-    }));
-    const risultato = (app as any).reorderWidgets(base, base[0].key);
-
-    expect(risultato.find((widget: any) => widget.key === base[0].key).y).toBe(6);
-    expect(risultato.find((widget: any) => widget.key === base[1].key))
-      .toEqual(jasmine.objectContaining({ x: 7, y: 1, w: 6, h: 4 }));
-    expect((app as any).reorderWidgets(base, base[1].key)).toEqual(risultato);
-  });
-
-  it('rialloca soltanto il widget in collisione e lascia invariati gli altri', () => {
-    const app = TestBed.createComponent(App).componentInstance;
-    const base = app.activeWidgets().slice(0, 3).map((widget, indice) => ({
-      ...widget,
-      x: indice === 2 ? 7 : 1,
-      y: indice === 1 ? 1 : indice === 0 ? 5 : 10,
-      w: 6,
-      h: 4
-    }));
-    const spostati = base.map(widget => widget.key === base[0].key ? { ...widget, y: 1 } : widget);
-    const risultato = (app as any).reorderWidgets(spostati, base[0].key);
-    const attivo = risultato.find((widget: any) => widget.key === base[0].key);
-    const urtato = risultato.find((widget: any) => widget.key === base[1].key);
-    const estraneo = risultato.find((widget: any) => widget.key === base[2].key);
-
-    expect(attivo.y).toBe(1);
-    expect(urtato.y).toBeGreaterThanOrEqual(5);
-    expect(estraneo).toEqual(jasmine.objectContaining({ x: 7, y: 10, w: 6, h: 4 }));
-    expect(risultato.some((widget: any, indice: number) =>
-      risultato.slice(indice + 1).some((altro: any) => (app as any).overlaps(widget, altro)))).toBeFalse();
-  });
-
-  it('normalizza un layout storico incoerente durante il ripristino', () => {
-    const app = TestBed.createComponent(App).componentInstance;
-    const chiavi = app.activeWidgets().slice(0, 2).map(widget => widget.key);
-    (app as any).ripristinaLayoutWidget(JSON.stringify([
-      { key: chiavi[0], x: -4, y: 0, w: 99, h: 0 },
-      { key: chiavi[1], x: 1.4, y: 1.8, w: 4.2, h: 2.2 }
-    ]));
-    const layout = app.activeWidgets();
-
-    expect(layout.length).toBe(2);
-    expect(layout.every(widget => Number.isInteger(widget.x) && Number.isInteger(widget.y))).toBeTrue();
-    expect(layout.every(widget => widget.x >= 1 && widget.x + widget.w <= 25 && widget.y >= 1)).toBeTrue();
-    expect((app as any).overlaps(layout[0], layout[1])).toBeFalse();
-  });
-
-  it('rende visibile il placeholder e usa la testata senza grip con angolo resize invisibile', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    app.screen.set('scrivania');
-    const widget = app.activeWidgets()[0];
-    app.dragPlaceholder.set({ x: widget.x, y: widget.y, w: widget.w, h: widget.h });
-    fixture.detectChanges();
-
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.drop-placeholder')).toBeTruthy();
-    expect(compiled.querySelector('.op-head')).toBeTruthy();
-    expect(compiled.querySelector('.resize-corner')).toBeTruthy();
-    expect(compiled.querySelector('.resize-corner')?.textContent?.trim()).toBe('');
-    expect(compiled.querySelector('.drag-handle')).toBeNull();
-    expect(compiled.querySelector('[aria-label="Aggiungi widget Anagrafiche"]')?.getAttribute('tabindex')).toBe('0');
-  });
-
-  it('segnala una destinazione di trascinamento esterna come non valida', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    app.screen.set('scrivania');
-    app.destinazioneNonValida.set(true);
-    fixture.detectChanges();
-
-    expect((fixture.nativeElement as HTMLElement).querySelector('.operational-grid.drop-invalid')).toBeTruthy();
-    expect((fixture.nativeElement as HTMLElement).querySelector('.drop-placeholder')).toBeNull();
-  });
-
-  it('espone le azioni widget in un menu SVG senza controlli simbolici duplicati', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    app.screen.set('scrivania');
-    fixture.detectChanges();
-    const trigger = (fixture.nativeElement as HTMLElement).querySelector('.widget-actions-trigger') as HTMLButtonElement;
-    trigger.click();
-    fixture.detectChanges();
-
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.widget-actions-menu')).toBeTruthy();
-    expect(compiled.querySelector('.widget-actions-menu')?.textContent).toContain('Apri vista completa');
-    expect(compiled.querySelector('.widget-actions-menu')?.textContent).toContain('Rimuovi dalla scrivania');
-    expect(compiled.querySelector('.expand-window')).toBeNull();
-    expect(compiled.querySelector('.resize-corner')).toBeTruthy();
-    expect(compiled.querySelector('.drag-handle')).toBeNull();
-  });
-
-  describe('interazioni deterministiche della Scrivania', () => {
-    function eventoPointer(tipo: string, x: number, y: number, pointerId = 7): PointerEvent {
-      return new PointerEvent(tipo, { clientX: x, clientY: y, pointerId, button: 0, bubbles: true });
+  describe('integrazione GridStack della Scrivania', () => {
+    function preparaScrivania() {
+      const fixture = TestBed.createComponent(App); const app = fixture.componentInstance;
+      app.screen.set('scrivania'); fixture.detectChanges();
+      return { fixture, app, root: fixture.nativeElement as HTMLElement };
     }
-
-    function testataWidget(widget: HTMLElement): HTMLElement {
-      return widget.querySelector('.op-head') as HTMLElement;
-    }
-
-    it('non cambia layout, placeholder o persistenza al click e al pointerdown', () => {
-      const fixture = TestBed.createComponent(App);
-      const app = fixture.componentInstance;
-      app.screen.set('scrivania');
-      fixture.detectChanges();
-      const prima = JSON.stringify(app.activeWidgets());
-      const salvataggio = spyOn(app as any, 'salvaLayoutWidget');
-      const head = testataWidget((fixture.nativeElement as HTMLElement).querySelector('.op-widget')!);
-
-      head.dispatchEvent(eventoPointer('pointerdown', 20, 20));
-      app.terminaTrascinamentoWidget(eventoPointer('pointerup', 20, 20));
-
-      expect(JSON.stringify(app.activeWidgets())).toBe(prima);
-      expect(app.dragPlaceholder()).toBeNull();
-      expect(app.trascinamentoWidget()).toBeNull();
-      expect(salvataggio).not.toHaveBeenCalled();
+    it('inizializza il wrapper ufficiale con drag, resize, animazioni e collisioni native', () => {
+      const { app, root } = preparaScrivania();
+      expect(app.grigliaScrivania?.grid).toBeTruthy();
+      expect(app.opzioniGriglia).toEqual(jasmine.objectContaining({ column: 24, cellHeight: 46, margin: 8, animate: true, float: false }));
+      expect(app.opzioniGriglia.draggable).toEqual(jasmine.objectContaining({ handle: '.op-head' }));
+      expect(app.opzioniGriglia.resizable).toEqual(jasmine.objectContaining({ handles: 'se' }));
+      expect(root.querySelector('gridstack.grid-stack')).toBeTruthy();
+      expect(root.querySelectorAll('gridstack-item.grid-stack-item').length).toBe(app.activeWidgets().length);
     });
-
-    it('definisce la soglia a 8 pixel: non parte a 8 e parte oltre 8', () => {
-      const fixture = TestBed.createComponent(App);
-      const app = fixture.componentInstance;
-      app.screen.set('scrivania');
-      fixture.detectChanges();
-      const head = testataWidget((fixture.nativeElement as HTMLElement).querySelector('.op-widget')!);
-      head.dispatchEvent(eventoPointer('pointerdown', 20, 20));
-
-      app.aggiornaTrascinamentoWidget(eventoPointer('pointermove', 28, 20));
-      expect(app.trascinamentoWidget()?.attivo).toBeFalse();
-      expect(app.dragPlaceholder()).toBeNull();
-
-      app.aggiornaTrascinamentoWidget(eventoPointer('pointermove', 29, 20));
-      expect(app.trascinamentoWidget()?.attivo).toBeTrue();
+    it('applica coordinate zero-based e limiti specifici del widget', () => {
+      const app = TestBed.createComponent(App).componentInstance; const widget = app.activeWidgets()[0];
+      expect(app.opzioniWidget(widget)).toEqual(jasmine.objectContaining({ id: widget.key, x: widget.x - 1, y: widget.y - 1, w: widget.w, h: widget.h, minW: 6, minH: 5 }));
     });
-
-    it('cattura il pointer sulla testata e lo rilascia al termine del drag', () => {
-      const fixture = TestBed.createComponent(App);
-      const app = fixture.componentInstance;
-      app.screen.set('scrivania');
-      fixture.detectChanges();
-      const head = testataWidget((fixture.nativeElement as HTMLElement).querySelector('.op-widget')!);
-      const cattura = jasmine.createSpy('setPointerCapture');
-      const rilascio = jasmine.createSpy('releasePointerCapture');
-      (head as any).setPointerCapture = cattura;
-      (head as any).hasPointerCapture = () => true;
-      (head as any).releasePointerCapture = rilascio;
-
-      head.dispatchEvent(eventoPointer('pointerdown', 20, 20));
-      app.terminaTrascinamentoWidget(eventoPointer('pointerup', 20, 20));
-
-      expect(cattura).toHaveBeenCalledWith(7);
-      expect(rilascio).toHaveBeenCalledWith(7);
+    it('usa la testata senza grip ed esclude i controlli interattivi', () => {
+      const { app, root } = preparaScrivania();
+      expect(root.querySelector('.op-head')).toBeTruthy(); expect(root.querySelector('.drag-handle')).toBeNull(); expect(root.querySelector('.resize-corner')).toBeNull();
+      expect(String(app.opzioniGriglia.draggable?.cancel)).toContain('button'); expect(String(app.opzioniGriglia.draggable?.cancel)).toContain('input');
     });
-
-    it('esclude pulsanti, menu e contenuto dall avvio del drag', () => {
-      const fixture = TestBed.createComponent(App);
-      const app = fixture.componentInstance;
-      app.screen.set('scrivania');
-      fixture.detectChanges();
-      const root = fixture.nativeElement as HTMLElement;
-
-      (root.querySelector('.widget-actions-trigger') as HTMLButtonElement).dispatchEvent(eventoPointer('pointerdown', 10, 10));
-      expect(app.trascinamentoWidget()).toBeNull();
-      (root.querySelector('.widget-actions-trigger') as HTMLButtonElement).click();
-      fixture.detectChanges();
-      expect(app.menuWidgetAperto()).not.toBeNull();
-      expect(app.trascinamentoWidget()).toBeNull();
-      (root.querySelector('.op-widget b') as HTMLElement)?.click();
-      expect(app.trascinamentoWidget()).toBeNull();
+    it('aggiorna il modello su change senza salvare a ogni movimento', () => {
+      const app = TestBed.createComponent(App).componentInstance; const richiesta = spyOn((app as any).http, 'put').and.returnValue(of({})); const widget = app.activeWidgets()[0];
+      app.aggiornaModelloDaGridStack({ event: new Event('change'), nodes: [{ id: widget.key, x: 3, y: 4, w: 8, h: 6 } as any] });
+      expect(app.activeWidgets()[0]).toEqual(jasmine.objectContaining({ x: 4, y: 5, w: 8, h: 6 })); expect(richiesta).not.toHaveBeenCalled();
     });
-
-    it('calcola uno swap diretto atomico e lascia invariato il terzo widget', () => {
-      const app = TestBed.createComponent(App).componentInstance;
-      const base = app.activeWidgets().slice(0, 3).map((widget, indice) => ({
-        ...widget, x: 1 + indice * 4, y: 1, w: 3, h: 2
-      }));
-      app.activeWidgets.set(base);
-      (app as any).layoutPrimaDelTrascinamento = base.map((widget: any) => ({ ...widget }));
-      app.trascinamentoWidget.set({ key: base[1].key, pointerId: 7, origineX: 0, origineY: 0,
-        scartoX: 0, scartoY: 0, spostamentoX: 0, spostamentoY: 0, attivo: true });
-      app.dragPlaceholder.set({ x: base[0].x, y: base[0].y, w: 3, h: 2 });
-      app.targetScambio.set(base[0].key);
-      spyOn(app as any, 'salvaLayoutWidget');
-
-      app.terminaTrascinamentoWidget(eventoPointer('pointerup', 0, 0));
-
-      expect(app.activeWidgets()[1]).toEqual(jasmine.objectContaining({ x: base[0].x, y: base[0].y }));
-      expect(app.activeWidgets()[0]).toEqual(jasmine.objectContaining({ x: base[1].x, y: base[1].y }));
-      expect(app.activeWidgets()[2]).toEqual(base[2]);
-      expect((app as any).salvaLayoutWidget).toHaveBeenCalledTimes(1);
+    it('persiste soltanto al termine di drag e resize', () => {
+      const app = TestBed.createComponent(App).componentInstance; const preferenze: any = { themeMode: 'LIGHT', dashboardDensity: 'COMFORTABLE', personalAccentColor: '#0f766e', widgetLayout: '[]' };
+      app.dashboardPreference.set(preferenze); const richiesta = spyOn((app as any).http, 'put').and.returnValue(of(preferenze)); const elemento = document.createElement('div') as any;
+      elemento.gridstackNode = { id: app.activeWidgets()[0].key, x: 2, y: 2, w: 9, h: 7 };
+      app.terminaSpostamentoGridStack({ event: new Event('dragstop'), el: elemento }); app.terminaRidimensionamentoGridStack({ event: new Event('resizestop'), el: elemento });
+      expect(richiesta).toHaveBeenCalledTimes(2);
     });
-
-    it('attiva il target soltanto dal 55 percento di overlap', () => {
-      const app = TestBed.createComponent(App).componentInstance;
-      const target = { ...app.activeWidgets()[0], x: 1, y: 1, w: 4, h: 2 };
-      const altro = { ...app.activeWidgets()[1], x: 7, y: 1, w: 4, h: 2 };
-      expect((app as any).trovaTargetScambio({ x: 4, y: 1, w: 4, h: 2 }, altro.key, [target, altro])).toBeNull();
-      expect((app as any).trovaTargetScambio({ x: 2, y: 1, w: 4, h: 2 }, altro.key, [target, altro])?.key).toBe(target.key);
+    it('gestisce aggiunta, rimozione e dimensioni predefinite', () => {
+      const app = TestBed.createComponent(App).componentInstance; app.activeWidgets.set(app.activeWidgets().filter(widget => widget.key !== 'email')); app.aggiungiWidgetDaLibreria('email');
+      expect(app.activeWidgets().find(widget => widget.key === 'email')).toEqual(jasmine.objectContaining({ w: 7, h: 5 }));
+      app.rimuoviWidgetGridStack({ event: new Event('removed'), nodes: [{ id: 'email' } as any] }); expect(app.activeWidgets().some(widget => widget.key === 'email')).toBeFalse();
     });
-
-    it('rifiuta lo swap di dimensioni differenti se collide con un terzo widget', () => {
-      const app = TestBed.createComponent(App).componentInstance;
-      const [grande, piccolo, ostacolo] = app.activeWidgets().slice(0, 3).map(widget => ({ ...widget }));
-      Object.assign(grande, { x: 1, y: 1, w: 6, h: 3 });
-      Object.assign(piccolo, { x: 8, y: 1, w: 3, h: 2 });
-      Object.assign(ostacolo, { x: 2, y: 2, w: 3, h: 2 });
-      expect((app as any).scambioGeometricamenteValido(grande, piccolo, [grande, piccolo, ostacolo])).toBeFalse();
-      expect(ostacolo).toEqual(jasmine.objectContaining({ x: 2, y: 2 }));
-    });
-
-    it('ridimensiona con snap, limiti e rollback in collisione senza attivare il drag', () => {
-      const fixture = TestBed.createComponent(App);
-      const app = fixture.componentInstance;
-      app.screen.set('scrivania');
-      fixture.detectChanges();
-      const widget = app.activeWidgets()[1];
-      const angolo = (fixture.nativeElement as HTMLElement).querySelectorAll('.resize-corner')[1] as HTMLElement;
-      angolo.dispatchEvent(eventoPointer('pointerdown', 100, 100));
-      expect(app.ridimensionamentoWidget()?.key).toBe(widget.key);
-      expect(app.trascinamentoWidget()).toBeNull();
-
-      app.ridimensionamentoWidget.update(stato => stato && ({
-        ...stato, anteprima: { ...stato.anteprima, w: 12 }, valida: false
-      }));
-      const prima = { w: widget.w, h: widget.h };
-      app.terminaRidimensionamentoWidget(eventoPointer('pointerup', 400, 400));
-      expect(app.activeWidgets().find(item => item.key === widget.key)).toEqual(jasmine.objectContaining(prima));
-    });
-
-    it('azzera il resize al pointercancel e consente subito un nuovo drag', () => {
-      const fixture = TestBed.createComponent(App);
-      const app = fixture.componentInstance;
-      app.screen.set('scrivania');
-      fixture.detectChanges();
-      const widget = app.activeWidgets()[0];
-      const angolo = (fixture.nativeElement as HTMLElement).querySelector('.resize-corner') as HTMLElement;
-      angolo.dispatchEvent(eventoPointer('pointerdown', 100, 100));
-
-      app.annullaRidimensionamentoWidget(eventoPointer('pointercancel', 100, 100));
-      testataWidget((fixture.nativeElement as HTMLElement).querySelector('.op-widget')!).dispatchEvent(eventoPointer('pointerdown', 20, 20, 8));
-
-      expect(app.ridimensionamentoWidget()).toBeNull();
-      expect(app.trascinamentoWidget()?.key).toBe(widget.key);
-    });
-
-    it('mantiene superfici, cursori e livelli separati per testata e angolo', () => {
-      const fixture = TestBed.createComponent(App);
-      const app = fixture.componentInstance;
-      app.screen.set('scrivania');
-      fixture.detectChanges();
-      const root = fixture.nativeElement as HTMLElement;
-      const testata = root.querySelector('.op-head') as HTMLElement;
-      const angolo = root.querySelector('.resize-corner') as HTMLElement;
-      const card = root.querySelector('.op-widget') as HTMLElement;
-
-      expect(getComputedStyle(testata).cursor).toBe('grab');
-      expect(getComputedStyle(angolo).cursor).toBe('nwse-resize');
-      expect(angolo.offsetWidth).toBeLessThan(card.offsetWidth);
-      expect(angolo.offsetHeight).toBeLessThan(card.offsetHeight);
-      expect(angolo.textContent?.trim()).toBe('');
-    });
-
-    it('esegue in sequenza resize e drag tramite gli eventi degli elementi catturanti', () => {
-      const fixture = TestBed.createComponent(App);
-      const app = fixture.componentInstance;
-      app.screen.set('scrivania');
-      app.activeWidgets.set([{ ...app.activeWidgets()[0], x: 1, y: 1, w: 7, h: 5 }]);
-      fixture.detectChanges();
-      const root = fixture.nativeElement as HTMLElement;
-      const griglia = root.querySelector('.operational-grid') as HTMLElement;
-      spyOn(griglia, 'getBoundingClientRect').and.returnValue({
-        left: 0, top: 0, right: 1200, bottom: 800, width: 1200, height: 800, x: 0, y: 0, toJSON: () => ({})
-      });
-      const angolo = root.querySelector('.resize-corner') as HTMLElement;
-      angolo.dispatchEvent(eventoPointer('pointerdown', 100, 100));
-      angolo.dispatchEvent(eventoPointer('pointermove', 200, 154));
-      angolo.dispatchEvent(eventoPointer('pointerup', 200, 154));
-
-      expect(app.activeWidgets()[0]).toEqual(jasmine.objectContaining({ w: 9, h: 6 }));
-      expect(app.ridimensionamentoWidget()).toBeNull();
-
-      const testata = root.querySelector('.op-head') as HTMLElement;
-      testata.dispatchEvent(eventoPointer('pointerdown', 20, 20, 8));
-      testata.dispatchEvent(eventoPointer('pointermove', 420, 236, 8));
-      testata.dispatchEvent(eventoPointer('pointerup', 420, 236, 8));
-
-      expect(app.activeWidgets()[0]).toEqual(jasmine.objectContaining({ x: 9, w: 9, h: 6 }));
-      expect(app.activeWidgets()[0].y).not.toBe(1);
-      expect(app.trascinamentoWidget()).toBeNull();
-      expect(app.ridimensionamentoWidget()).toBeNull();
-    });
-
-    it('annulla gli stati su perdita focus e consente una nuova interazione', () => {
-      const fixture = TestBed.createComponent(App);
-      const app = fixture.componentInstance;
-      app.screen.set('scrivania');
-      fixture.detectChanges();
-      const root = fixture.nativeElement as HTMLElement;
-      const testata = root.querySelector('.op-head') as HTMLElement;
-
-      testata.dispatchEvent(eventoPointer('pointerdown', 20, 20));
-      window.dispatchEvent(new Event('blur'));
-      expect(app.trascinamentoWidget()).toBeNull();
-
-      (root.querySelector('.resize-corner') as HTMLElement).dispatchEvent(eventoPointer('pointerdown', 100, 100, 8));
-      expect(app.ridimensionamentoWidget()).not.toBeNull();
-    });
-  });
-
-  describe('densità e compatibilità della griglia widget', () => {
-    it('usa 24 colonne logiche e passi verticali da 54 pixel', () => {
-      const app = TestBed.createComponent(App).componentInstance;
-      const griglia = document.createElement('div');
-      spyOn(griglia, 'getBoundingClientRect').and.returnValue({
-        left: 0, top: 0, right: 1200, bottom: 800, width: 1200, height: 800, x: 0, y: 0, toJSON: () => ({})
-      });
-
-      expect((app as any).positionFromCoordinates(0, 0, griglia, 7)).toEqual({ x: 1, y: 1 });
-      expect((app as any).positionFromCoordinates(51, 54, griglia, 7)).toEqual({ x: 2, y: 2 });
-      expect((app as any).positionFromCoordinates(1200, 800, griglia, 7).x).toBe(18);
-    });
-
-    it('crea un nuovo widget nella dimensione predefinita centralizzata 7 per 5', () => {
-      const app = TestBed.createComponent(App).componentInstance;
-      const widget = (app as any).creaWidgetDaDefinizione('email', 2, 3);
-
-      expect(widget).toEqual(jasmine.objectContaining({ x: 2, y: 3, w: 7, h: 5 }));
-    });
-
-    it('converte una sola volta il layout storico 12 colonne preservandone le proporzioni', () => {
-      const app = TestBed.createComponent(App).componentInstance;
-      const chiave = app.activeWidgets()[0].key;
-
-      (app as any).ripristinaLayoutWidget(JSON.stringify([{ key: chiave, x: 4, y: 3, w: 3, h: 2 }]));
-
-      expect(app.activeWidgets()[0]).toEqual(jasmine.objectContaining({ x: 7, y: 5, w: 6, h: 4 }));
-    });
-
-    it('mantiene invariato un layout già salvato nella griglia fitta', () => {
-      const app = TestBed.createComponent(App).componentInstance;
-      const chiave = app.activeWidgets()[0].key;
-
-      (app as any).ripristinaLayoutWidget(JSON.stringify([
-        { key: chiave, x: 5, y: 4, w: 9, h: 7, versioneLayout: 2 }
-      ]));
-
-      expect(app.activeWidgets()[0]).toEqual(jasmine.objectContaining({ x: 5, y: 4, w: 9, h: 7 }));
+    it('ricarica layout GridStack e converte deterministicamente quello storico', () => {
+      const app = TestBed.createComponent(App).componentInstance; const chiave = app.activeWidgets()[0].key;
+      (app as any).ripristinaLayoutWidget(JSON.stringify([{ key: chiave, x: 5, y: 4, w: 9, h: 7, versioneLayout: 3 }])); expect(app.activeWidgets()[0]).toEqual(jasmine.objectContaining({ x: 5, y: 4, w: 9, h: 7 }));
+      (app as any).ripristinaLayoutWidget(JSON.stringify([{ key: chiave, x: 3, y: 2, w: 4, h: 3 }])); expect(app.activeWidgets()[0]).toEqual(jasmine.objectContaining({ x: 5, y: 3, w: 8, h: 6 }));
     });
   });
 

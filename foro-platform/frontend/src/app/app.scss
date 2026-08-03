@@ -389,74 +389,66 @@
 }
 
 .operational-grid {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(24, minmax(0, 1fr));
-  grid-auto-rows: 46px;
-  gap: 8px;
+  display: block;
   min-height: 720px;
   padding: 2px;
   background-image: none;
   border-radius: 26px;
 }
 
+:host ::ng-deep .operational-grid > .grid-stack-item > .grid-stack-item-content {
+  inset: 0;
+  overflow: visible;
+}
+
 .op-widget {
   position: relative;
+  width: 100%;
+  height: 100%;
   min-height: 0;
-  resize: none;
   cursor: default;
   background: rgba(255, 255, 255, .92);
   border: 1px solid rgba(148, 163, 184, .24);
   border-radius: 14px;
   box-shadow: 0 8px 24px rgba(15, 23, 42, .07);
   padding: 16px;
-  transition: transform .2s cubic-bezier(.2, .8, .2, 1), box-shadow .2s ease,
-    grid-column .2s cubic-bezier(.2, .8, .2, 1), grid-row .2s cubic-bezier(.2, .8, .2, 1);
-  will-change: transform;
+  transition: box-shadow .2s ease, border-color .2s ease;
   overflow: hidden;
-}
-
-.op-widget:active {
-  box-shadow: 0 18px 42px rgba(15, 23, 42, .14);
 }
 
 .op-head {
   position: relative;
   z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
   cursor: grab;
   user-select: none;
   touch-action: none;
 }
 
-.dashboard-shell {
-  position: relative;
-  z-index: 1;
+:host ::ng-deep .grid-stack-item.ui-draggable-dragging .op-head { cursor: grabbing; }
+:host ::ng-deep .grid-stack-item.ui-draggable-dragging .op-widget,
+:host ::ng-deep .grid-stack-item.ui-resizable-resizing .op-widget {
+  border-color: #315d7a;
+  box-shadow: 0 20px 48px rgba(15, 23, 42, .2);
 }
 
-.op-head:active {
-  cursor: grabbing;
+:host ::ng-deep .grid-stack-placeholder > .placeholder-content {
+  border: 1px dashed #315d7a;
+  border-radius: 14px;
+  background: rgba(49, 93, 122, .09);
+  box-shadow: inset 0 0 0 1px rgba(49, 93, 122, .08);
 }
 
-.window-actions button {
-  cursor: pointer;
-}
-
-.op-widget.drag-active {
-  z-index: 5;
-  opacity: .94;
-  border-color: #35546f;
-  box-shadow: 0 18px 44px rgba(15, 39, 64, .22);
-  transition: box-shadow .16s ease;
-}
-
-.op-widget.resizing {
-  z-index: 4;
-  box-shadow: 0 20px 48px rgba(15, 23, 42, .18);
-}
-
-.op-widget.drag-active,
-.op-widget.drag-active .op-head {
-  cursor: grabbing;
+:host ::ng-deep .grid-stack > .grid-stack-item > .ui-resizable-se {
+  right: 0;
+  bottom: 0;
+  width: 22px;
+  height: 22px;
+  cursor: nwse-resize;
+  background: none;
 }
 
 .op-head h3 {
@@ -533,49 +525,9 @@
 }
 
 
-.drop-placeholder {
-  z-index: 2;
-  border: 1px dashed #315d7a;
-  border-radius: 14px;
-  background: rgba(49, 93, 122, .09);
-  box-shadow: inset 0 0 0 1px rgba(49, 93, 122, .08);
-  transition: grid-column .16s cubic-bezier(.2, .8, .2, 1), grid-row .16s cubic-bezier(.2, .8, .2, 1);
-}
-
-.drop-placeholder.target-origin { border-style: solid; background: rgba(49, 93, 122, .04); }
-.op-widget.swap-target { border: 2px solid #315d7a; box-shadow: 0 0 0 3px rgba(49, 93, 122, .12); }
-.resize-corner {
-  position: absolute;
-  z-index: 3;
-  right: 0;
-  bottom: 0;
-  width: 22px;
-  height: 22px;
-  cursor: nwse-resize;
-  pointer-events: auto;
-  touch-action: none;
-  background: transparent;
-}
-.resize-corner:focus-visible { outline: 3px solid #315d7a; outline-offset: -4px; border-radius: 6px; }
-.op-widget.resizing { border: 2px solid #315d7a; opacity: .96; }
-.op-widget.resizing.drop-invalid { border-color: #a83232; }
-
-.operational-grid.drop-invalid,
-.op-widget.drop-invalid,
-.op-widget.drop-invalid .op-head {
-  cursor: not-allowed;
-}
-
-.op-widget.drop-invalid {
-  border-color: #a83232;
-}
 
 @media (prefers-reduced-motion: reduce) {
-  .op-widget,
-  .drop-placeholder {
-    transition: none;
-    animation: none;
-  }
+  .op-widget { transition: none; }
 }
 
 .agenda-preview {
@@ -1894,22 +1846,4 @@ textarea:focus-visible,
 .widget-source:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--foro-accent) 58%, #fff);
   outline-offset: 2px;
-}
-
-@media (max-width: 900px) {
-  .operational-grid {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-  }
-
-  .op-widget {
-    min-height: 220px;
-    transform: none !important;
-  }
-
-  .drop-placeholder {
-    min-height: 190px;
-  }
-
 }
