@@ -174,7 +174,7 @@ describe('App', () => {
     expect((app as any).overlaps(layout[0], layout[1])).toBeFalse();
   });
 
-  it('rende visibile il placeholder e usa l intera testata senza grip o resize', () => {
+  it('rende visibile il placeholder e usa la testata senza grip con angolo resize invisibile', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     app.screen.set('scrivania');
@@ -185,7 +185,8 @@ describe('App', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.drop-placeholder')).toBeTruthy();
     expect(compiled.querySelector('.op-head')).toBeTruthy();
-    expect(compiled.querySelector('.resize-corner')).toBeNull();
+    expect(compiled.querySelector('.resize-corner')).toBeTruthy();
+    expect(compiled.querySelector('.resize-corner')?.textContent?.trim()).toBe('');
     expect(compiled.querySelector('.drag-handle')).toBeNull();
     expect(compiled.querySelector('[aria-label="Aggiungi widget Anagrafiche"]')?.getAttribute('tabindex')).toBe('0');
   });
@@ -215,8 +216,127 @@ describe('App', () => {
     expect(compiled.querySelector('.widget-actions-menu')?.textContent).toContain('Apri vista completa');
     expect(compiled.querySelector('.widget-actions-menu')?.textContent).toContain('Rimuovi dalla scrivania');
     expect(compiled.querySelector('.expand-window')).toBeNull();
-    expect(compiled.querySelector('.resize-corner')).toBeNull();
+    expect(compiled.querySelector('.resize-corner')).toBeTruthy();
     expect(compiled.querySelector('.drag-handle')).toBeNull();
+  });
+
+  describe('interazioni deterministiche della Scrivania', () => {
+    function eventoPointer(tipo: string, x: number, y: number, pointerId = 7): PointerEvent {
+      return new PointerEvent(tipo, { clientX: x, clientY: y, pointerId, button: 0, bubbles: true });
+    }
+
+    function testataWidget(widget: HTMLElement): HTMLElement {
+      return widget.querySelector('.op-head') as HTMLElement;
+    }
+
+    it('non cambia layout, placeholder o persistenza al click e al pointerdown', () => {
+      const fixture = TestBed.createComponent(App);
+      const app = fixture.componentInstance;
+      app.screen.set('scrivania');
+      fixture.detectChanges();
+      const prima = JSON.stringify(app.activeWidgets());
+      const salvataggio = spyOn(app as any, 'salvaLayoutWidget');
+      const head = testataWidget((fixture.nativeElement as HTMLElement).querySelector('.op-widget')!);
+
+      head.dispatchEvent(eventoPointer('pointerdown', 20, 20));
+      app.terminaTrascinamentoWidget(eventoPointer('pointerup', 20, 20));
+
+      expect(JSON.stringify(app.activeWidgets())).toBe(prima);
+      expect(app.dragPlaceholder()).toBeNull();
+      expect(app.trascinamentoWidget()).toBeNull();
+      expect(salvataggio).not.toHaveBeenCalled();
+    });
+
+    it('definisce la soglia a 8 pixel: non parte a 8 e parte oltre 8', () => {
+      const fixture = TestBed.createComponent(App);
+      const app = fixture.componentInstance;
+      app.screen.set('scrivania');
+      fixture.detectChanges();
+      const head = testataWidget((fixture.nativeElement as HTMLElement).querySelector('.op-widget')!);
+      head.dispatchEvent(eventoPointer('pointerdown', 20, 20));
+
+      app.aggiornaTrascinamentoWidget(eventoPointer('pointermove', 28, 20));
+      expect(app.trascinamentoWidget()?.attivo).toBeFalse();
+      expect(app.dragPlaceholder()).toBeNull();
+
+      app.aggiornaTrascinamentoWidget(eventoPointer('pointermove', 29, 20));
+      expect(app.trascinamentoWidget()?.attivo).toBeTrue();
+    });
+
+    it('esclude pulsanti, menu e contenuto dall avvio del drag', () => {
+      const fixture = TestBed.createComponent(App);
+      const app = fixture.componentInstance;
+      app.screen.set('scrivania');
+      fixture.detectChanges();
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('.widget-actions-trigger') as HTMLButtonElement).dispatchEvent(eventoPointer('pointerdown', 10, 10));
+      expect(app.trascinamentoWidget()).toBeNull();
+      (root.querySelector('.widget-actions-trigger') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(app.menuWidgetAperto()).not.toBeNull();
+      expect(app.trascinamentoWidget()).toBeNull();
+      (root.querySelector('.op-widget b') as HTMLElement)?.click();
+      expect(app.trascinamentoWidget()).toBeNull();
+    });
+
+    it('calcola uno swap diretto atomico e lascia invariato il terzo widget', () => {
+      const app = TestBed.createComponent(App).componentInstance;
+      const base = app.activeWidgets().slice(0, 3).map((widget, indice) => ({
+        ...widget, x: 1 + indice * 4, y: 1, w: 3, h: 2
+      }));
+      app.activeWidgets.set(base);
+      (app as any).layoutPrimaDelTrascinamento = base.map((widget: any) => ({ ...widget }));
+      app.trascinamentoWidget.set({ key: base[1].key, pointerId: 7, origineX: 0, origineY: 0,
+        scartoX: 0, scartoY: 0, spostamentoX: 0, spostamentoY: 0, attivo: true });
+      app.dragPlaceholder.set({ x: base[0].x, y: base[0].y, w: 3, h: 2 });
+      app.targetScambio.set(base[0].key);
+      spyOn(app as any, 'salvaLayoutWidget');
+
+      app.terminaTrascinamentoWidget(eventoPointer('pointerup', 0, 0));
+
+      expect(app.activeWidgets()[1]).toEqual(jasmine.objectContaining({ x: base[0].x, y: base[0].y }));
+      expect(app.activeWidgets()[0]).toEqual(jasmine.objectContaining({ x: base[1].x, y: base[1].y }));
+      expect(app.activeWidgets()[2]).toEqual(base[2]);
+      expect((app as any).salvaLayoutWidget).toHaveBeenCalledTimes(1);
+    });
+
+    it('attiva il target soltanto dal 55 percento di overlap', () => {
+      const app = TestBed.createComponent(App).componentInstance;
+      const target = { ...app.activeWidgets()[0], x: 1, y: 1, w: 4, h: 2 };
+      const altro = { ...app.activeWidgets()[1], x: 7, y: 1, w: 4, h: 2 };
+      expect((app as any).trovaTargetScambio({ x: 4, y: 1, w: 4, h: 2 }, altro.key, [target, altro])).toBeNull();
+      expect((app as any).trovaTargetScambio({ x: 2, y: 1, w: 4, h: 2 }, altro.key, [target, altro])?.key).toBe(target.key);
+    });
+
+    it('rifiuta lo swap di dimensioni differenti se collide con un terzo widget', () => {
+      const app = TestBed.createComponent(App).componentInstance;
+      const [grande, piccolo, ostacolo] = app.activeWidgets().slice(0, 3).map(widget => ({ ...widget }));
+      Object.assign(grande, { x: 1, y: 1, w: 6, h: 3 });
+      Object.assign(piccolo, { x: 8, y: 1, w: 3, h: 2 });
+      Object.assign(ostacolo, { x: 4, y: 3, w: 3, h: 2 });
+      expect((app as any).scambioGeometricamenteValido(grande, piccolo, [grande, piccolo, ostacolo])).toBeFalse();
+      expect(ostacolo).toEqual(jasmine.objectContaining({ x: 4, y: 3 }));
+    });
+
+    it('ridimensiona con snap, limiti e rollback in collisione senza attivare il drag', () => {
+      const fixture = TestBed.createComponent(App);
+      const app = fixture.componentInstance;
+      app.screen.set('scrivania');
+      fixture.detectChanges();
+      const widget = app.activeWidgets()[1];
+      const angolo = (fixture.nativeElement as HTMLElement).querySelectorAll('.resize-corner')[1] as HTMLElement;
+      angolo.dispatchEvent(eventoPointer('pointerdown', 100, 100));
+      expect(app.ridimensionamentoWidget()?.key).toBe(widget.key);
+      expect(app.trascinamentoWidget()).toBeNull();
+
+      app.ridimensionamentoWidget.update(stato => stato && ({
+        ...stato, anteprima: { ...stato.anteprima, w: 12 }, valida: false
+      }));
+      const prima = { w: widget.w, h: widget.h };
+      app.terminaRidimensionamentoWidget(eventoPointer('pointerup', 400, 400));
+      expect(app.activeWidgets().find(item => item.key === widget.key)).toEqual(jasmine.objectContaining(prima));
+    });
   });
 
   it('persiste posizione e dimensione normalizzate dopo una modifica al layout', () => {

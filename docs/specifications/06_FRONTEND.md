@@ -284,3 +284,9 @@ Anagrafiche espone una scheda completa dedicata con Riepilogo, Dati generali, Re
 ## Estensione v3.5 — UX widget e generazione documenti
 
 La testata del widget è trascinabile per intero e non espone grip o resize handle. La vista Anagrafiche porta la scheda completa sopra il pannello dettaglio e mantiene accessibili Documenti e stampa. Nella scheda Documenti della Pratica il catalogo indica i template non configurati, impedisce la creazione di documenti vuoti e distingue visivamente origine `UPLOAD` e `GENERATO`.
+
+## Estensione v3.6 — Interazione della griglia
+
+La testata registra il puntatore senza cambiare stato di layout e attiva il drag soltanto oltre 8 pixel. Durante il movimento il modello persistito resta invariato: placeholder e bordo del target mostrano la preview, mentre il drop applica uno swap diretto atomico oltre il 55% di sovrapposizione oppure uno spostamento in una cella libera. Un drop invalido o `Esc` ripristina lo snapshot iniziale. Non viene eseguita compattazione globale.
+
+Il resize è disponibile da una zona trasparente di 22 pixel nell'angolo inferiore destro, distinta dalla testata e riconoscibile tramite cursore `nwse-resize`, focus e `aria-label`; non presenta simboli o pulsanti visibili. Dimensioni e posizione logiche vengono persistite soltanto dopo una conferma valida.

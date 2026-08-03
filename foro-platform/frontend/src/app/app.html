@@ -178,14 +178,22 @@
             *ngIf="dragPlaceholder() as placeholder"
             [style.grid-column]="placeholder.x + ' / span ' + placeholder.w"
             [style.grid-row]="placeholder.y + ' / span ' + placeholder.h"></div>
+          <div class="drop-placeholder target-origin" *ngIf="anteprimaTarget() as target"
+            [style.grid-column]="target.x + ' / span ' + target.w"
+            [style.grid-row]="target.y + ' / span ' + target.h"></div>
           <article class="op-widget"
             *ngFor="let widget of activeWidgets(); trackBy: identificaWidget"
             [class.dragging]="trascinamentoWidget()?.key === widget.key"
+            [class.drag-active]="trascinamentoWidget()?.key === widget.key && trascinamentoWidget()?.attivo"
+            [class.swap-target]="targetScambio() === widget.key"
+            [class.resizing]="ridimensionamentoWidget()?.key === widget.key"
             [class.drop-invalid]="destinazioneNonValida() && trascinamentoWidget()?.key === widget.key"
             [style.transform]="trasformazioneTrascinamento(widget)"
-            [style.grid-column]="widget.x + ' / span ' + widget.w"
-            [style.grid-row]="widget.y + ' / span ' + widget.h">
+            [style.grid-column]="dimensioneVisualeWidget(widget).x + ' / span ' + dimensioneVisualeWidget(widget).w"
+            [style.grid-row]="dimensioneVisualeWidget(widget).y + ' / span ' + dimensioneVisualeWidget(widget).h">
             <div class="op-head"
+              tabindex="0" [attr.aria-label]="'Sposta widget '+widget.title"
+              [attr.aria-grabbed]="trascinamentoWidget()?.key === widget.key && trascinamentoWidget()?.attivo"
               (pointerdown)="iniziaTrascinamentoWidget(widget,$event)">
               <h3><app-icona-foro [nome]="widget.icon"></app-icona-foro>{{ widget.title }}</h3>
               <div class="window-actions" (pointerdown)="$event.stopPropagation()">
@@ -222,6 +230,9 @@
             </div>
             </ng-template>
             </ng-template>
+            <div class="resize-corner" role="separator" tabindex="0"
+              [attr.aria-label]="'Ridimensiona widget '+widget.title"
+              (pointerdown)="iniziaRidimensionamentoWidget(widget,$event)"></div>
           </article>
         </div>
       </section>
