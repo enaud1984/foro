@@ -421,6 +421,8 @@
 }
 
 .op-head {
+  position: relative;
+  z-index: 2;
   cursor: grab;
   user-select: none;
   touch-action: none;
@@ -544,11 +546,13 @@
 .op-widget.swap-target { border: 2px solid #315d7a; box-shadow: 0 0 0 3px rgba(49, 93, 122, .12); }
 .resize-corner {
   position: absolute;
+  z-index: 3;
   right: 0;
   bottom: 0;
   width: 22px;
   height: 22px;
   cursor: nwse-resize;
+  pointer-events: auto;
   touch-action: none;
   background: transparent;
 }

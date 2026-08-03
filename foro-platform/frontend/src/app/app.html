@@ -194,7 +194,10 @@
             <div class="op-head"
               tabindex="0" [attr.aria-label]="'Sposta widget '+widget.title"
               [attr.aria-grabbed]="trascinamentoWidget()?.key === widget.key && trascinamentoWidget()?.attivo"
-              (pointerdown)="iniziaTrascinamentoWidget(widget,$event)">
+              (pointerdown)="iniziaTrascinamentoWidget(widget,$event)"
+              (pointermove)="aggiornaTrascinamentoWidget($event)"
+              (pointerup)="terminaTrascinamentoWidget($event)"
+              (pointercancel)="annullaTrascinamentoWidget($event)">
               <h3><app-icona-foro [nome]="widget.icon"></app-icona-foro>{{ widget.title }}</h3>
               <div class="window-actions" (pointerdown)="$event.stopPropagation()">
                 <button type="button" class="widget-actions-trigger" [attr.aria-expanded]="menuWidgetAperto()===widget.key"
@@ -232,7 +235,10 @@
             </ng-template>
             <div class="resize-corner" role="separator" tabindex="0"
               [attr.aria-label]="'Ridimensiona widget '+widget.title"
-              (pointerdown)="iniziaRidimensionamentoWidget(widget,$event)"></div>
+              (pointerdown)="iniziaRidimensionamentoWidget(widget,$event)"
+              (pointermove)="aggiornaRidimensionamentoWidget($event)"
+              (pointerup)="terminaRidimensionamentoWidget($event)"
+              (pointercancel)="annullaRidimensionamentoWidget($event)"></div>
           </article>
         </div>
       </section>

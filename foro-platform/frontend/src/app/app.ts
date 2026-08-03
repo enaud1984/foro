@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, computed, signal } from '@angular/core';
+import { Component, HostListener, OnDestroy, computed, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
@@ -159,7 +159,7 @@ interface EventoAgenda {
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
-export class App {
+export class App implements OnDestroy {
   private readonly oggi = new Date();
   readonly giornoSettimanaOggi = new Intl.DateTimeFormat('it-IT', { weekday: 'long' }).format(this.oggi);
   readonly giornoMeseOggi = new Intl.DateTimeFormat('it-IT', { day: '2-digit' }).format(this.oggi);
@@ -434,6 +434,10 @@ export class App {
     this.ricercaPratica.valueChanges.pipe(debounceTime(250),distinctUntilChanged()).subscribe(testo=>this.cercaPraticheAgenda(testo));
   }
 
+  ngOnDestroy(): void {
+    this.annullaInterazioneWidget();
+  }
+
   useDemoLogin(): void {
     this.loginForm.setValue({ email: 'admin@studioverdi-demo.it', password: 'DemoFORO2026!' });
   }
@@ -665,6 +669,11 @@ export class App {
     this.anteprimaTarget.set(null);
     this.destinazioneNonValida.set(false);
     if (pointerId !== undefined) this.rilasciaPointer(pointerId);
+  }
+
+  @HostListener('window:blur')
+  annullaInterazioneWidgetAllaPerditaFocus(): void {
+    if (this.trascinamentoWidget() || this.ridimensionamentoWidget()) this.annullaInterazioneWidget();
   }
 
   trasformazioneTrascinamento(widget: WidgetScrivania): string | null {

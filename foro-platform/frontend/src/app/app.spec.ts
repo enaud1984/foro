@@ -372,6 +372,69 @@ describe('App', () => {
       expect(app.ridimensionamentoWidget()).toBeNull();
       expect(app.trascinamentoWidget()?.key).toBe(widget.key);
     });
+
+    it('mantiene superfici, cursori e livelli separati per testata e angolo', () => {
+      const fixture = TestBed.createComponent(App);
+      const app = fixture.componentInstance;
+      app.screen.set('scrivania');
+      fixture.detectChanges();
+      const root = fixture.nativeElement as HTMLElement;
+      const testata = root.querySelector('.op-head') as HTMLElement;
+      const angolo = root.querySelector('.resize-corner') as HTMLElement;
+      const card = root.querySelector('.op-widget') as HTMLElement;
+
+      expect(getComputedStyle(testata).cursor).toBe('grab');
+      expect(getComputedStyle(angolo).cursor).toBe('nwse-resize');
+      expect(angolo.offsetWidth).toBeLessThan(card.offsetWidth);
+      expect(angolo.offsetHeight).toBeLessThan(card.offsetHeight);
+      expect(angolo.textContent?.trim()).toBe('');
+    });
+
+    it('esegue in sequenza resize e drag tramite gli eventi degli elementi catturanti', () => {
+      const fixture = TestBed.createComponent(App);
+      const app = fixture.componentInstance;
+      app.screen.set('scrivania');
+      app.activeWidgets.set([{ ...app.activeWidgets()[0], x: 1, y: 1, w: 7, h: 5 }]);
+      fixture.detectChanges();
+      const root = fixture.nativeElement as HTMLElement;
+      const griglia = root.querySelector('.operational-grid') as HTMLElement;
+      spyOn(griglia, 'getBoundingClientRect').and.returnValue({
+        left: 0, top: 0, right: 1200, bottom: 800, width: 1200, height: 800, x: 0, y: 0, toJSON: () => ({})
+      });
+      const angolo = root.querySelector('.resize-corner') as HTMLElement;
+      angolo.dispatchEvent(eventoPointer('pointerdown', 100, 100));
+      angolo.dispatchEvent(eventoPointer('pointermove', 200, 154));
+      angolo.dispatchEvent(eventoPointer('pointerup', 200, 154));
+
+      expect(app.activeWidgets()[0]).toEqual(jasmine.objectContaining({ w: 9, h: 6 }));
+      expect(app.ridimensionamentoWidget()).toBeNull();
+
+      const testata = root.querySelector('.op-head') as HTMLElement;
+      testata.dispatchEvent(eventoPointer('pointerdown', 20, 20, 8));
+      testata.dispatchEvent(eventoPointer('pointermove', 420, 236, 8));
+      testata.dispatchEvent(eventoPointer('pointerup', 420, 236, 8));
+
+      expect(app.activeWidgets()[0]).toEqual(jasmine.objectContaining({ x: 9, w: 9, h: 6 }));
+      expect(app.activeWidgets()[0].y).not.toBe(1);
+      expect(app.trascinamentoWidget()).toBeNull();
+      expect(app.ridimensionamentoWidget()).toBeNull();
+    });
+
+    it('annulla gli stati su perdita focus e consente una nuova interazione', () => {
+      const fixture = TestBed.createComponent(App);
+      const app = fixture.componentInstance;
+      app.screen.set('scrivania');
+      fixture.detectChanges();
+      const root = fixture.nativeElement as HTMLElement;
+      const testata = root.querySelector('.op-head') as HTMLElement;
+
+      testata.dispatchEvent(eventoPointer('pointerdown', 20, 20));
+      window.dispatchEvent(new Event('blur'));
+      expect(app.trascinamentoWidget()).toBeNull();
+
+      (root.querySelector('.resize-corner') as HTMLElement).dispatchEvent(eventoPointer('pointerdown', 100, 100, 8));
+      expect(app.ridimensionamentoWidget()).not.toBeNull();
+    });
   });
 
   describe('densità e compatibilità della griglia widget', () => {
