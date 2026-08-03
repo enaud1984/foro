@@ -40,6 +40,15 @@ type RidimensionamentoWidget = {
   anteprima: PosizioneGriglia;
   valida: boolean;
 };
+const CONFIGURAZIONE_GRIGLIA = {
+  colonne: 24,
+  altezzaRigaPixel: 46,
+  spazioPixel: 8,
+  versioneLayout: 2,
+  fattoreConversioneLayoutStorico: 2
+} as const;
+const DIMENSIONE_PREDEFINITA_WIDGET = { w: 7, h: 5 } as const;
+const LIMITI_WIDGET = { larghezzaMinima: 4, altezzaMinima: 4, altezzaMassima: 16 } as const;
 interface ProfiloStudio {
   name: string;
   addressLine: string | null;
@@ -288,6 +297,7 @@ export class App {
   private trascinamentoConfermato = false;
   private readonly sogliaTrascinamentoPixel = 8;
   private readonly sogliaSovrapposizioneTarget = .55;
+  private elementoPointerAttivo: HTMLElement | null = null;
 
   private creaWidgetIniziali(): WidgetScrivania[] {
     return [
@@ -295,8 +305,8 @@ export class App {
         ...this.widgetLibrary[0],
         x: 1,
         y: 1,
-        w: 6,
-        h: 3,
+        w: 12,
+        h: 6,
         metric: 'Nessun impegno oggi',
         preview: 'Nessun prossimo evento',
         details: [],
@@ -304,10 +314,9 @@ export class App {
       },
       {
         ...this.widgetLibrary[1],
-        x: 7,
+        x: 13,
         y: 1,
-        w: 3,
-        h: 2,
+        ...DIMENSIONE_PREDEFINITA_WIDGET,
         metric: '248 file',
         preview: 'Documenti recenti e da validare',
         details: ['Comparsa_costituzione_v3.pdf', 'Procura_firmata_demo.p7m', 'Verbale_udienza_10-07.docx'],
@@ -319,10 +328,9 @@ export class App {
       },
       {
         ...this.widgetLibrary[2],
-        x: 10,
-        y: 1,
-        w: 3,
-        h: 2,
+        x: 13,
+        y: 6,
+        ...DIMENSIONE_PREDEFINITA_WIDGET,
         metric: '37 non lette',
         preview: 'Messaggi da lavorare e associare',
         details: ['Tribunale di Milano — notifica provvedimento', 'cliente.demo@example.test — documenti integrativi', 'Cancelleria civile — ricevuta deposito'],
@@ -334,10 +342,9 @@ export class App {
       },
       {
         ...this.widgetLibrary[3],
-        x: 7,
-        y: 3,
-        w: 3,
-        h: 2,
+        x: 1,
+        y: 7,
+        ...DIMENSIONE_PREDEFINITA_WIDGET,
         metric: 'Anagrafiche',
         preview: 'Ricerca e gestisci persone e organizzazioni',
         details: [],
@@ -345,10 +352,9 @@ export class App {
       },
       {
         ...this.widgetLibrary[4],
-        x: 1,
-        y: 4,
-        w: 6,
-        h: 2,
+        x: 8,
+        y: 7,
+        ...DIMENSIONE_PREDEFINITA_WIDGET,
         metric: 'Pratiche',
         preview: 'Fascicoli, scadenze e attività dello Studio',
         details: [],
@@ -536,7 +542,8 @@ export class App {
   }
 
   iniziaTrascinamentoWidget(widget: WidgetScrivania, event: PointerEvent): void {
-    if (event.button !== 0) return;
+    if (event.button !== 0 || this.trascinamentoWidget() || this.ridimensionamentoWidget() || this.elementoInterattivo(event.target)) return;
+    const testata = event.currentTarget as HTMLElement;
     const card = (event.currentTarget as HTMLElement).closest('.op-widget') as HTMLElement | null;
     const rettangoloCard = card?.getBoundingClientRect();
     this.trascinamentoConfermato = false;
@@ -552,6 +559,7 @@ export class App {
       spostamentoY: 0,
       attivo: false
     });
+    this.catturaPointer(testata, event.pointerId);
   }
 
   @HostListener('window:pointermove', ['$event'])
@@ -644,6 +652,7 @@ export class App {
 
   @HostListener('window:keydown.escape')
   annullaInterazioneWidget(): void {
+    const pointerId = this.trascinamentoWidget()?.pointerId ?? this.ridimensionamentoWidget()?.pointerId;
     if (this.layoutPrimaDelTrascinamento) {
       this.activeWidgets.set(this.layoutPrimaDelTrascinamento.map(widget => ({ ...widget })));
     }
@@ -655,6 +664,7 @@ export class App {
     this.targetScambio.set(null);
     this.anteprimaTarget.set(null);
     this.destinazioneNonValida.set(false);
+    if (pointerId !== undefined) this.rilasciaPointer(pointerId);
   }
 
   trasformazioneTrascinamento(widget: WidgetScrivania): string | null {
@@ -1297,8 +1307,7 @@ export class App {
       ...definition,
       x,
       y,
-      w: 3,
-      h: 2,
+      ...DIMENSIONE_PREDEFINITA_WIDGET,
       metric: 'Nuovo',
       preview: 'Widget aggiunto alla scrivania.',
       details: ['Anteprima operativa', 'Azioni rapide', 'Vista estesa'],
@@ -1315,9 +1324,9 @@ export class App {
 
   private positionFromPointer(event: DragEvent): { x: number; y: number } | null {
     const element = event.currentTarget as HTMLElement;
-    const rowHeight = 110;
+    const rowHeight = CONFIGURAZIONE_GRIGLIA.altezzaRigaPixel + CONFIGURAZIONE_GRIGLIA.spazioPixel;
     const dragged = this.widgetTrascinato ? this.activeWidgets().find(widget => widget.key === this.widgetTrascinato) : null;
-    const width = dragged?.w ?? 3;
+    const width = dragged?.w ?? DIMENSIONE_PREDEFINITA_WIDGET.w;
     return this.positionFromCoordinates(event.clientX, event.clientY, element, width, rowHeight);
   }
 
@@ -1416,16 +1425,17 @@ export class App {
     clientY: number,
     element: HTMLElement,
     width: number,
-    rowHeight = 108
+    rowHeight = CONFIGURAZIONE_GRIGLIA.altezzaRigaPixel + CONFIGURAZIONE_GRIGLIA.spazioPixel
   ): { x: number; y: number } {
     const rect = element.getBoundingClientRect();
-    const colWidth = rect.width / 12;
-    const x = Math.min(13 - width, Math.max(1, Math.floor((clientX - rect.left) / colWidth) + 1));
+    const colWidth = (rect.width + CONFIGURAZIONE_GRIGLIA.spazioPixel) / CONFIGURAZIONE_GRIGLIA.colonne;
+    const x = Math.min(CONFIGURAZIONE_GRIGLIA.colonne + 1 - width, Math.max(1, Math.floor((clientX - rect.left) / colWidth) + 1));
     const y = Math.max(1, Math.floor((clientY - rect.top) / rowHeight) + 1);
     return { x, y };
   }
 
   private concludiTrascinamentoPointer(event: PointerEvent): void {
+    this.rilasciaPointer(event.pointerId);
     this.trascinamentoWidget.set(null);
     this.widgetTrascinato = null;
     this.layoutPrimaDelTrascinamento = null;
@@ -1436,7 +1446,7 @@ export class App {
   }
 
   iniziaRidimensionamentoWidget(widget: WidgetScrivania, event: PointerEvent): void {
-    if (event.button !== 0 || event.pointerType === 'touch') return;
+    if (event.button !== 0 || event.pointerType === 'touch' || this.trascinamentoWidget() || this.ridimensionamentoWidget()) return;
     event.preventDefault();
     event.stopPropagation();
     const posizioneOriginale = { x: widget.x, y: widget.y, w: widget.w, h: widget.h };
@@ -1445,6 +1455,7 @@ export class App {
       key: widget.key, pointerId: event.pointerId, origineX: event.clientX, origineY: event.clientY,
       posizioneOriginale, anteprima: posizioneOriginale, valida: true
     });
+    this.catturaPointer(event.currentTarget as HTMLElement, event.pointerId);
   }
 
   @HostListener('window:pointermove', ['$event'])
@@ -1456,12 +1467,11 @@ export class App {
     const layout = this.layoutPrimaDelTrascinamento;
     if (!griglia || !layout) return;
     const rettangolo = griglia.getBoundingClientRect();
-    const larghezzaColonna = (rettangolo.width - 11 * 16) / 12;
-    const larghezzaCella = larghezzaColonna + 16;
-    const altezzaCella = 108;
-    const w = Math.max(2, Math.min(12 - ridimensionamento.posizioneOriginale.x + 1,
+    const larghezzaCella = (rettangolo.width + CONFIGURAZIONE_GRIGLIA.spazioPixel) / CONFIGURAZIONE_GRIGLIA.colonne;
+    const altezzaCella = CONFIGURAZIONE_GRIGLIA.altezzaRigaPixel + CONFIGURAZIONE_GRIGLIA.spazioPixel;
+    const w = Math.max(LIMITI_WIDGET.larghezzaMinima, Math.min(CONFIGURAZIONE_GRIGLIA.colonne - ridimensionamento.posizioneOriginale.x + 1,
       Math.round(ridimensionamento.posizioneOriginale.w + (event.clientX - ridimensionamento.origineX) / larghezzaCella)));
-    const h = Math.max(2, Math.min(8,
+    const h = Math.max(LIMITI_WIDGET.altezzaMinima, Math.min(LIMITI_WIDGET.altezzaMassima,
       Math.round(ridimensionamento.posizioneOriginale.h + (event.clientY - ridimensionamento.origineY) / altezzaCella)));
     const anteprima = { ...ridimensionamento.posizioneOriginale, w, h };
     const valida = !layout.some(widget => widget.key !== ridimensionamento.key && this.overlaps(anteprima, widget));
@@ -1481,6 +1491,17 @@ export class App {
     this.ridimensionamentoWidget.set(null);
     this.layoutPrimaDelTrascinamento = null;
     this.destinazioneNonValida.set(false);
+    this.rilasciaPointer(event.pointerId);
+  }
+
+  @HostListener('window:pointercancel', ['$event'])
+  annullaRidimensionamentoWidget(event: PointerEvent): void {
+    const ridimensionamento = this.ridimensionamentoWidget();
+    if (!ridimensionamento || ridimensionamento.pointerId !== event.pointerId) return;
+    this.ridimensionamentoWidget.set(null);
+    this.layoutPrimaDelTrascinamento = null;
+    this.destinazioneNonValida.set(false);
+    this.rilasciaPointer(event.pointerId);
   }
 
   dimensioneVisualeWidget(widget: WidgetScrivania): PosizioneGriglia {
@@ -1505,7 +1526,7 @@ export class App {
   private scambioGeometricamenteValido(trascinato: WidgetScrivania, target: WidgetScrivania, layout: WidgetScrivania[]): boolean {
     const destinazioneTrascinato = { ...trascinato, x: target.x, y: target.y };
     const destinazioneTarget = { ...target, x: trascinato.x, y: trascinato.y };
-    if (destinazioneTrascinato.x + destinazioneTrascinato.w > 13 || destinazioneTarget.x + destinazioneTarget.w > 13) return false;
+    if (destinazioneTrascinato.x + destinazioneTrascinato.w > CONFIGURAZIONE_GRIGLIA.colonne + 1 || destinazioneTarget.x + destinazioneTarget.w > CONFIGURAZIONE_GRIGLIA.colonne + 1) return false;
     return !layout.some(widget => widget.key !== trascinato.key && widget.key !== target.key
       && (this.overlaps(destinazioneTrascinato, widget) || this.overlaps(destinazioneTarget, widget)));
   }
@@ -1544,19 +1565,19 @@ export class App {
   }
 
   private normalizzaWidget(widget: WidgetScrivania): WidgetScrivania {
-    const w = Math.max(2, Math.min(12, Number.isFinite(widget.w) ? Math.round(widget.w) : 3));
-    const h = Math.max(2, Math.min(8, Number.isFinite(widget.h) ? Math.round(widget.h) : 2));
+    const w = Math.max(LIMITI_WIDGET.larghezzaMinima, Math.min(CONFIGURAZIONE_GRIGLIA.colonne, Number.isFinite(widget.w) ? Math.round(widget.w) : DIMENSIONE_PREDEFINITA_WIDGET.w));
+    const h = Math.max(LIMITI_WIDGET.altezzaMinima, Math.min(LIMITI_WIDGET.altezzaMassima, Number.isFinite(widget.h) ? Math.round(widget.h) : DIMENSIONE_PREDEFINITA_WIDGET.h));
     return {
       ...widget,
       w,
       h,
-      x: Math.max(1, Math.min(13 - w, Number.isFinite(widget.x) ? Math.round(widget.x) : 1)),
+      x: Math.max(1, Math.min(CONFIGURAZIONE_GRIGLIA.colonne + 1 - w, Number.isFinite(widget.x) ? Math.round(widget.x) : 1)),
       y: Math.max(1, Number.isFinite(widget.y) ? Math.round(widget.y) : 1)
     };
   }
 
   private primaPosizioneLiberaSuccessiva(widget: WidgetScrivania, occupati: WidgetScrivania[], rigaMinima: number): WidgetScrivania {
-    const colonne = Array.from({ length: 13 - widget.w }, (_, indice) => indice + 1)
+    const colonne = Array.from({ length: CONFIGURAZIONE_GRIGLIA.colonne + 1 - widget.w }, (_, indice) => indice + 1)
       .sort((a, b) => Math.abs(a - widget.x) - Math.abs(b - widget.x) || a - b);
     for (let y = Math.max(1, rigaMinima); ; y++) {
       for (const x of colonne) {
@@ -1590,14 +1611,16 @@ export class App {
       const posizioni = JSON.parse(layoutSerializzato) as Array<Partial<PosizioneGriglia> & { key?: ChiaveWidget }>;
       if (!Array.isArray(posizioni)) return;
       const correnti = new Map(this.activeWidgets().map(widget => [widget.key, widget]));
+      const layoutStorico = !posizioni.some(posizione => posizione && (posizione as { versioneLayout?: number }).versioneLayout === CONFIGURAZIONE_GRIGLIA.versioneLayout);
+      const fattore = layoutStorico ? CONFIGURAZIONE_GRIGLIA.fattoreConversioneLayoutStorico : 1;
       const ripristinati = posizioni
         .filter(posizione => posizione?.key && correnti.has(posizione.key))
         .map(posizione => ({
           ...correnti.get(posizione.key!)!,
-          x: Number(posizione.x),
-          y: Number(posizione.y),
-          w: Number(posizione.w),
-          h: Number(posizione.h)
+          x: (Number(posizione.x) - 1) * fattore + 1,
+          y: (Number(posizione.y) - 1) * fattore + 1,
+          w: Number(posizione.w) * fattore,
+          h: Number(posizione.h) * fattore
         }));
       if (ripristinati.length) this.activeWidgets.set(this.risolviSovrapposizioniStoriche(ripristinati.map(widget => this.normalizzaWidget(widget))));
     } catch {
@@ -1609,7 +1632,7 @@ export class App {
   private salvaLayoutWidget(): void {
     const preferenze = this.dashboardPreference();
     if (!preferenze) return;
-    const widgetLayout = JSON.stringify(this.activeWidgets().map(({ key, x, y, w, h }) => ({ key, x, y, w, h })));
+    const widgetLayout = JSON.stringify(this.activeWidgets().map(({ key, x, y, w, h }) => ({ key, x, y, w, h, versioneLayout: CONFIGURAZIONE_GRIGLIA.versioneLayout })));
     this.http.put<PreferenzeScrivania>('/api/v1/workspace/preferences', { ...preferenze, widgetLayout }).subscribe({
       next: aggiornate => this.dashboardPreference.set(aggiornate),
       error: () => this.error.set('Layout della Scrivania non salvato. Riprova.')
@@ -1622,6 +1645,28 @@ export class App {
 
   private samePosition(a: PosizioneGriglia, b: PosizioneGriglia): boolean {
     return a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h;
+  }
+
+  private elementoInterattivo(target: EventTarget | null): boolean {
+    return target instanceof Element && !!target.closest('button, a, input, select, textarea, [role="button"], .resize-corner');
+  }
+
+  private catturaPointer(elemento: HTMLElement, pointerId: number): void {
+    this.elementoPointerAttivo = elemento;
+    try {
+      elemento.setPointerCapture?.(pointerId);
+    } catch {
+      // Gli eventi sintetici e i browser privi di un pointer attivo continuano a usare i listener window.
+    }
+  }
+
+  private rilasciaPointer(pointerId: number): void {
+    try {
+      if (this.elementoPointerAttivo?.hasPointerCapture?.(pointerId)) this.elementoPointerAttivo.releasePointerCapture(pointerId);
+    } catch {
+      // Il browser può avere già rilasciato automaticamente la cattura al pointercancel.
+    }
+    this.elementoPointerAttivo = null;
   }
 
   private readLogoFile(event: Event, onLoad: (logoUrl: string) => void): void {
