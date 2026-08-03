@@ -397,7 +397,6 @@
 }
 
 :host ::ng-deep .operational-grid > .grid-stack-item > .grid-stack-item-content {
-  inset: 0;
   overflow: visible;
 }
 
@@ -449,6 +448,8 @@
   height: 22px;
   cursor: nwse-resize;
   background: none;
+  opacity: .7;
+  z-index: 4;
 }
 
 .op-head h3 {

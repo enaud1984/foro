@@ -9,8 +9,13 @@ import { PraticheComponent } from './pratiche/pratiche.component';
 import { EventoPratica, Pratica, PraticaSintetica } from './pratiche/pratiche.modelli';
 import { PraticheService } from './pratiche/pratiche.service';
 import { IconaForoComponent } from './shared/icona-foro.component';
-import { GridStackNode, GridStackOptions, GridStackWidget } from 'gridstack';
+import { GridStackNode, GridStackWidget } from 'gridstack';
 import { GridstackComponent, GridstackItemComponent, elementCB, nodesCB } from 'gridstack/dist/angular';
+import {
+  CONFIGURAZIONE_GRIDSTACK,
+  DIMENSIONI_WIDGET,
+  VERSIONE_LAYOUT_GRIDSTACK
+} from './scrivania/configurazione-gridstack';
 
 type Schermata = 'login' | 'registrazione' | 'scrivania';
 type ModalitaTema = 'LIGHT' | 'DARK';
@@ -22,33 +27,6 @@ type PianoDemo = 'essential' | 'professional';
 type VistaCalendario = 'giorno' | 'settimana' | 'mese';
 type ChiaveCalendario = 'studio' | 'privato' | 'udienze' | 'scadenze' | string;
 type PosizioneGriglia = { x: number; y: number; w: number; h: number };
-const CONFIGURAZIONE_GRIDSTACK: GridStackOptions = {
-  column: 24,
-  cellHeight: 46,
-  margin: 8,
-  animate: true,
-  float: false,
-  draggable: { handle: '.op-head', cancel: 'button, a, input, select, textarea, [role="button"], .widget-actions-menu' },
-  resizable: { handles: 'se' },
-  minRow: 1,
-  columnOpts: {
-    breakpoints: [
-      { w: 768, c: 1, layout: 'list' },
-      { w: 1100, c: 12, layout: 'moveScale' }
-    ],
-    layout: 'moveScale'
-  }
-};
-const VERSIONE_LAYOUT_GRIDSTACK = 3;
-const FATTORE_CONVERSIONE_LAYOUT_12_COLONNE = 2;
-const DIMENSIONI_WIDGET: Record<ChiaveWidget, { w: number; h: number; minW: number; minH: number; maxW: number; maxH: number }> = {
-  calendario: { w: 12, h: 6, minW: 6, minH: 5, maxW: 24, maxH: 16 },
-  documenti: { w: 7, h: 5, minW: 4, minH: 4, maxW: 18, maxH: 14 },
-  email: { w: 7, h: 5, minW: 4, minH: 4, maxW: 18, maxH: 14 },
-  clienti: { w: 7, h: 5, minW: 5, minH: 4, maxW: 18, maxH: 14 },
-  pratiche: { w: 7, h: 5, minW: 5, minH: 4, maxW: 18, maxH: 14 },
-  collaboratori: { w: 7, h: 5, minW: 5, minH: 4, maxW: 18, maxH: 14 }
-};
 interface ProfiloStudio {
   name: string;
   addressLine: string | null;
@@ -288,6 +266,8 @@ export class App implements OnDestroy {
   readonly ricercaPratica;
   @ViewChild(GridstackComponent) grigliaScrivania?: GridstackComponent;
   readonly opzioniGriglia = CONFIGURAZIONE_GRIDSTACK;
+  private nodiLayoutPendenti: GridStackNode[] = [];
+  private readonly opzioniWidgetStabili = new Map<ChiaveWidget, GridStackWidget>();
 
   private creaWidgetIniziali(): WidgetScrivania[] {
     return [
@@ -295,7 +275,7 @@ export class App implements OnDestroy {
         ...this.widgetLibrary[0],
         x: 1,
         y: 1,
-        w: 12,
+        w: 5,
         h: 6,
         metric: 'Nessun impegno oggi',
         preview: 'Nessun prossimo evento',
@@ -304,7 +284,7 @@ export class App implements OnDestroy {
       },
       {
         ...this.widgetLibrary[1],
-        x: 13,
+        x: 6,
         y: 1,
         ...this.dimensioniPredefinite('documenti'),
         metric: '248 file',
@@ -318,8 +298,8 @@ export class App implements OnDestroy {
       },
       {
         ...this.widgetLibrary[2],
-        x: 13,
-        y: 6,
+        x: 1,
+        y: 7,
         ...this.dimensioniPredefinite('email'),
         metric: '37 non lette',
         preview: 'Messaggi da lavorare e associare',
@@ -332,7 +312,7 @@ export class App implements OnDestroy {
       },
       {
         ...this.widgetLibrary[3],
-        x: 1,
+        x: 5,
         y: 7,
         ...this.dimensioniPredefinite('clienti'),
         metric: 'Anagrafiche',
@@ -342,7 +322,7 @@ export class App implements OnDestroy {
       },
       {
         ...this.widgetLibrary[4],
-        x: 8,
+        x: 9,
         y: 7,
         ...this.dimensioniPredefinite('pratiche'),
         metric: 'Pratiche',
@@ -531,8 +511,10 @@ export class App implements OnDestroy {
   }
 
   opzioniWidget(widget: WidgetScrivania): GridStackWidget {
+    const esistenti = this.opzioniWidgetStabili.get(widget.key);
+    if (esistenti) return esistenti;
     const limiti = DIMENSIONI_WIDGET[widget.key];
-    return {
+    const opzioni = {
       id: widget.key,
       x: widget.x - 1,
       y: widget.y - 1,
@@ -543,19 +525,25 @@ export class App implements OnDestroy {
       maxW: limiti.maxW,
       maxH: limiti.maxH
     };
+    this.opzioniWidgetStabili.set(widget.key, opzioni);
+    return opzioni;
   }
 
   aggiornaModelloDaGridStack(evento: nodesCB): void {
-    this.applicaNodiGridStack(evento.nodes);
+    // GridStack resta autorevole durante l'interazione: non si aggiorna il signal,
+    // evitando che Angular riconfiguri gli item mentre collisioni e placeholder sono attivi.
+    this.nodiLayoutPendenti = evento.nodes.map(nodo => ({
+      id: nodo.id, x: nodo.x, y: nodo.y, w: nodo.w, h: nodo.h
+    }));
   }
 
   terminaSpostamentoGridStack(evento: elementCB): void {
-    if (evento.el.gridstackNode) this.applicaNodiGridStack([evento.el.gridstackNode]);
+    this.sincronizzaLayoutConcluso(evento.el.gridstackNode);
     this.salvaLayoutWidget();
   }
 
   terminaRidimensionamentoGridStack(evento: elementCB): void {
-    if (evento.el.gridstackNode) this.applicaNodiGridStack([evento.el.gridstackNode]);
+    this.sincronizzaLayoutConcluso(evento.el.gridstackNode);
     this.salvaLayoutWidget();
   }
 
@@ -1241,7 +1229,18 @@ export class App implements OnDestroy {
       .filter(nodo => nodo.id && nodo.x !== undefined && nodo.y !== undefined && nodo.w !== undefined && nodo.h !== undefined)
       .map(nodo => [nodo.id as ChiaveWidget, { x: nodo.x! + 1, y: nodo.y! + 1, w: nodo.w!, h: nodo.h! }]));
     if (!posizioni.size) return;
+    posizioni.forEach((posizione, key) => {
+      const opzioni = this.opzioniWidgetStabili.get(key);
+      if (opzioni) Object.assign(opzioni, { x: posizione.x - 1, y: posizione.y - 1, w: posizione.w, h: posizione.h });
+    });
     this.activeWidgets.update(widget => widget.map(elemento => ({ ...elemento, ...(posizioni.get(elemento.key) ?? {}) })));
+  }
+
+  private sincronizzaLayoutConcluso(nodo?: GridStackNode): void {
+    const layout = this.grigliaScrivania?.grid?.save(false) as GridStackNode[] | undefined;
+    const nodi = layout?.length ? layout : this.nodiLayoutPendenti.length ? this.nodiLayoutPendenti : nodo ? [nodo] : [];
+    this.applicaNodiGridStack(nodi);
+    this.nodiLayoutPendenti = [];
   }
 
   private dimensioniPredefinite(key: ChiaveWidget): { w: number; h: number } {
@@ -1255,20 +1254,24 @@ export class App implements OnDestroy {
       const posizioni = JSON.parse(layoutSerializzato) as Array<Partial<PosizioneGriglia> & { key?: ChiaveWidget; versioneLayout?: number }>;
       if (!Array.isArray(posizioni)) return;
       const correnti = new Map(this.activeWidgets().map(widget => [widget.key, widget]));
-      const layoutDodiciColonne = !posizioni.some(posizione => posizione?.versioneLayout && posizione.versioneLayout >= 2);
-      const fattore = layoutDodiciColonne ? FATTORE_CONVERSIONE_LAYOUT_12_COLONNE : 1;
+      const versione = Math.max(0, ...posizioni.map(posizione => Number(posizione.versioneLayout) || 0));
+      const fattore = versione > 0 && versione < VERSIONE_LAYOUT_GRIDSTACK ? 0.5 : 1;
       const ripristinati = posizioni
         .filter(posizione => posizione?.key && correnti.has(posizione.key) && [posizione.x, posizione.y, posizione.w, posizione.h].every(Number.isFinite))
         .map(posizione => ({
           ...correnti.get(posizione.key!)!,
-          x: (Number(posizione.x) - 1) * fattore + 1,
-          y: (Number(posizione.y) - 1) * fattore + 1,
-          w: Number(posizione.w) * fattore,
-          h: Number(posizione.h) * fattore
+          x: Math.max(1, Math.round((Number(posizione.x) - 1) * fattore) + 1),
+          y: Math.max(1, Math.round((Number(posizione.y) - 1) * (fattore === 0.5 ? 1 : fattore)) + 1),
+          w: Math.max(1, Math.round(Number(posizione.w) * fattore)),
+          h: Math.max(1, Math.round(Number(posizione.h) * (fattore === 0.5 ? 1 : fattore)))
         }));
       if (ripristinati.length) {
+        ripristinati.forEach(widget => {
+          const opzioni = this.opzioniWidgetStabili.get(widget.key);
+          if (opzioni) Object.assign(opzioni, { x: widget.x - 1, y: widget.y - 1, w: widget.w, h: widget.h });
+        });
         this.activeWidgets.set(ripristinati);
-        queueMicrotask(() => this.grigliaScrivania?.updateAll());
+        queueMicrotask(() => this.grigliaScrivania?.grid?.load(ripristinati.map(widget => this.opzioniWidget(widget))));
       }
     } catch {
       // Il layout applicativo resta invariato: GridStack compatterà soltanto coordinate valide.
