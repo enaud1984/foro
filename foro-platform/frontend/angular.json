@@ -33,6 +33,7 @@
               }
             ],
             "styles": [
+              "gridstack/dist/gridstack.min.css",
               "src/styles.scss"
             ]
           },
@@ -92,6 +93,7 @@
               }
             ],
             "styles": [
+              "gridstack/dist/gridstack.min.css",
               "src/styles.scss"
             ]
           }

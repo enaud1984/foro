@@ -31,7 +31,7 @@ Ogni widget dichiara:
 
 ## 3. Layout e interazione
 
-- Gridster governa posizione e dimensione.
+- GridStack governa posizione, dimensione, collisioni, placeholder e serializzazione del layout.
 - I widget si spostano dalla maniglia nell’header.
 - Il ridimensionamento usa una maniglia visibile e alternativa da tastiera.
 - Il catalogo “Widget disponibili” supporta drag & drop e aggiunta tramite pulsante.
@@ -288,7 +288,7 @@ Il widget Anagrafiche apre una scheda completa dedicata al Soggetto. La scheda c
 
 La testata intera del widget è la superficie di trascinamento e usa i cursori `grab`/`grabbing`; non sono mostrati grip separati né controlli di ridimensionamento. Il placeholder e lo stato di destinazione non valida devono restare leggibili. La scheda Documenti della Pratica distingue file caricati e documenti generati e rende esplicito lo stato dei template non configurati.
 
-## Estensione v3.6 — Scambio deterministico e ridimensionamento discreto
+## Estensione v3.6 — Scambio deterministico e ridimensionamento discreto (SUPERSEDED da DEC-024)
 
 Il trascinamento dalla testata inizia dopo una soglia di 8 pixel: `pointerdown`, click e movimenti fino alla soglia non modificano né persistono il layout. La Scrivania usa lo **swap diretto** della griglia libera: oltre il 55% di sovrapposizione, il widget trascinato e il solo target scambiano atomicamente le rispettive coordinate originarie al drop. Widget di dimensioni diverse vengono scambiati soltanto se entrambe le destinazioni sono libere; altrimenti il layout iniziale viene mantenuto senza ricerca globale o compattazione.
 

@@ -31,7 +31,7 @@ Ogni widget dichiara:
 
 ## 3. Layout e interazione
 
-- Gridster governa posizione e dimensione.
+- GridStack governa posizione, dimensione, collisioni, placeholder e serializzazione del layout.
 - I widget si spostano dalla maniglia nell’header.
 - Il ridimensionamento usa una maniglia visibile e alternativa da tastiera.
 - Il catalogo “Widget disponibili” supporta drag & drop e aggiunta tramite pulsante.

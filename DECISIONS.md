@@ -11,6 +11,15 @@ Le decisioni accettate prevalgono sugli altri documenti. Una decisione modificat
 
 ## Decisioni accettate
 
+### DEC-024 — GridStack come motore della Scrivania
+
+- **Stato:** ACCEPTED
+- **Data:** 2026-08-03
+- **Contesto:** il motore artigianale di drag, resize, collisioni e placeholder della Scrivania ha prodotto regressioni e duplicava responsabilità proprie di una libreria di layout.
+- **Decisione:** GridStack e il wrapper Angular ufficiale distribuito dal pacchetto `gridstack` sono l’unico motore di layout della Scrivania. Le coordinate applicative storiche a 24 colonne restano compatibili tramite mapping deterministico tra coordinate FORO 1-based e coordinate GridStack 0-based.
+- **Conseguenze:** GridStack governa trascinamento, ridimensionamento, touch, collisioni, compattazione, placeholder, responsive e snap. Il backend continua a persistere atomicamente `x`, `y`, `w`, `h` per utente; la logica interna dei widget non cambia. DEC-008 è modificata limitatamente al motore della Scrivania.
+- **Documenti interessati:** `DECISIONS.md`, specifiche Widget e Frontend.
+
 ### DEC-022 — Pratica come fascicolo operativo e integrazione Agenda
 
 - **Stato:** ACCEPTED

@@ -1,7 +1,7 @@
 # FORO — Frontend Specification
 
 **Versione:** 3.0  
-**Stack:** Angular 20, Angular Material, Gridster, TailwindCSS
+**Stack:** Angular 20, Angular Material, GridStack, TailwindCSS
 
 ## 1. Obiettivo
 

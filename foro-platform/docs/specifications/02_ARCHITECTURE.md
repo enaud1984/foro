@@ -7,7 +7,7 @@
 
 | Layer | Tecnologia |
 |---|---|
-| Frontend | Angular 20, Angular Material, Gridster, TailwindCSS |
+| Frontend | Angular 20, Angular Material, GridStack, TailwindCSS |
 | Backend | Spring Boot 3, Spring Security, JWT, REST API |
 | Database | PostgreSQL |
 | Object storage | Amazon S3 |

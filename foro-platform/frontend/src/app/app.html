@@ -150,10 +150,9 @@
           <h3>La tua scrivania</h3>
           <p>Scegli gli strumenti che vuoi avere sempre a portata di mano.</p>
         </div>
-        <article class="widget-source" *ngFor="let item of widgetDisponibili()" draggable="true" role="button" tabindex="0"
+        <article class="widget-source" *ngFor="let item of widgetDisponibili()" role="button" tabindex="0"
           [attr.aria-label]="'Aggiungi widget '+item.title" (click)="aggiungiWidgetDaLibreria(item.key)"
-          (keydown.enter)="aggiungiWidgetDaLibreria(item.key)" (keydown.space)="aggiungiWidgetDaLibreria(item.key);$event.preventDefault()"
-          (dragstart)="startWidgetDrag(item.key)">
+          (keydown.enter)="aggiungiWidgetDaLibreria(item.key)" (keydown.space)="aggiungiWidgetDaLibreria(item.key);$event.preventDefault()">
           <span><app-icona-foro [nome]="item.icon"></app-icona-foro></span>
           <div><strong>{{ item.title }}</strong><small>{{ item.description }}</small></div>
         </article>
@@ -173,33 +172,17 @@
           </div>
         </div>
 
-        <div class="operational-grid" [class.drop-invalid]="destinazioneNonValida()" (dragover)="updateDragPreview($event)" (drop)="dropWidget($event)">
-          <div class="drop-placeholder"
-            *ngIf="dragPlaceholder() as placeholder"
-            [style.grid-column]="placeholder.x + ' / span ' + placeholder.w"
-            [style.grid-row]="placeholder.y + ' / span ' + placeholder.h"></div>
-          <div class="drop-placeholder target-origin" *ngIf="anteprimaTarget() as target"
-            [style.grid-column]="target.x + ' / span ' + target.w"
-            [style.grid-row]="target.y + ' / span ' + target.h"></div>
-          <article class="op-widget"
-            *ngFor="let widget of activeWidgets(); trackBy: identificaWidget"
-            [class.dragging]="trascinamentoWidget()?.key === widget.key"
-            [class.drag-active]="trascinamentoWidget()?.key === widget.key && trascinamentoWidget()?.attivo"
-            [class.swap-target]="targetScambio() === widget.key"
-            [class.resizing]="ridimensionamentoWidget()?.key === widget.key"
-            [class.drop-invalid]="destinazioneNonValida() && trascinamentoWidget()?.key === widget.key"
-            [style.transform]="trasformazioneTrascinamento(widget)"
-            [style.grid-column]="dimensioneVisualeWidget(widget).x + ' / span ' + dimensioneVisualeWidget(widget).w"
-            [style.grid-row]="dimensioneVisualeWidget(widget).y + ' / span ' + dimensioneVisualeWidget(widget).h">
-            <div class="op-head"
-              tabindex="0" [attr.aria-label]="'Sposta widget '+widget.title"
-              [attr.aria-grabbed]="trascinamentoWidget()?.key === widget.key && trascinamentoWidget()?.attivo"
-              (pointerdown)="iniziaTrascinamentoWidget(widget,$event)"
-              (pointermove)="aggiornaTrascinamentoWidget($event)"
-              (pointerup)="terminaTrascinamentoWidget($event)"
-              (pointercancel)="annullaTrascinamentoWidget($event)">
+        <gridstack class="operational-grid" [options]="opzioniGriglia"
+          (changeCB)="aggiornaModelloDaGridStack($event)"
+          (dragStopCB)="terminaSpostamentoGridStack($event)"
+          (resizeStopCB)="terminaRidimensionamentoGridStack($event)"
+          (addedCB)="registraWidgetGridStack($event)"
+          (removedCB)="rimuoviWidgetGridStack($event)">
+          <gridstack-item *ngFor="let widget of activeWidgets(); trackBy: identificaWidget" [options]="opzioniWidget(widget)">
+          <article class="op-widget">
+            <div class="op-head" tabindex="0" [attr.aria-label]="'Sposta widget '+widget.title">
               <h3><app-icona-foro [nome]="widget.icon"></app-icona-foro>{{ widget.title }}</h3>
-              <div class="window-actions" (pointerdown)="$event.stopPropagation()">
+              <div class="window-actions">
                 <button type="button" class="widget-actions-trigger" [attr.aria-expanded]="menuWidgetAperto()===widget.key"
                   [attr.aria-label]="'Azioni widget '+widget.title" (click)="toggleMenuWidget(widget,$event)">
                   <app-icona-foro nome="azioni"></app-icona-foro>
@@ -233,14 +216,9 @@
             </div>
             </ng-template>
             </ng-template>
-            <div class="resize-corner" role="separator" tabindex="0"
-              [attr.aria-label]="'Ridimensiona widget '+widget.title"
-              (pointerdown)="iniziaRidimensionamentoWidget(widget,$event)"
-              (pointermove)="aggiornaRidimensionamentoWidget($event)"
-              (pointerup)="terminaRidimensionamentoWidget($event)"
-              (pointercancel)="annullaRidimensionamentoWidget($event)"></div>
           </article>
-        </div>
+          </gridstack-item>
+        </gridstack>
       </section>
     </div>
 
