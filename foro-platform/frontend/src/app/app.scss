@@ -439,7 +439,7 @@
   cursor: pointer;
 }
 
-.op-widget.dragging {
+.op-widget.drag-active {
   z-index: 5;
   opacity: .94;
   border-color: #35546f;
@@ -452,8 +452,8 @@
   box-shadow: 0 20px 48px rgba(15, 23, 42, .18);
 }
 
-.op-widget.dragging,
-.op-widget.dragging .op-head {
+.op-widget.drag-active,
+.op-widget.drag-active .op-head {
   cursor: grabbing;
 }
 
@@ -539,6 +539,22 @@
   box-shadow: inset 0 0 0 1px rgba(49, 93, 122, .08);
   transition: grid-column .16s cubic-bezier(.2, .8, .2, 1), grid-row .16s cubic-bezier(.2, .8, .2, 1);
 }
+
+.drop-placeholder.target-origin { border-style: solid; background: rgba(49, 93, 122, .04); }
+.op-widget.swap-target { border: 2px solid #315d7a; box-shadow: 0 0 0 3px rgba(49, 93, 122, .12); }
+.resize-corner {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 22px;
+  height: 22px;
+  cursor: nwse-resize;
+  touch-action: none;
+  background: transparent;
+}
+.resize-corner:focus-visible { outline: 3px solid #315d7a; outline-offset: -4px; border-radius: 6px; }
+.op-widget.resizing { border: 2px solid #315d7a; opacity: .96; }
+.op-widget.resizing.drop-invalid { border-color: #a83232; }
 
 .operational-grid.drop-invalid,
 .op-widget.drop-invalid,

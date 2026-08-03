@@ -287,3 +287,9 @@ Il widget Anagrafiche apre una scheda completa dedicata al Soggetto. La scheda c
 ## Estensione v3.5 — Interazioni widget e documenti Pratica
 
 La testata intera del widget è la superficie di trascinamento e usa i cursori `grab`/`grabbing`; non sono mostrati grip separati né controlli di ridimensionamento. Il placeholder e lo stato di destinazione non valida devono restare leggibili. La scheda Documenti della Pratica distingue file caricati e documenti generati e rende esplicito lo stato dei template non configurati.
+
+## Estensione v3.6 — Scambio deterministico e ridimensionamento discreto
+
+Il trascinamento dalla testata inizia dopo una soglia di 8 pixel: `pointerdown`, click e movimenti fino alla soglia non modificano né persistono il layout. La Scrivania usa lo **swap diretto** della griglia libera: oltre il 55% di sovrapposizione, il widget trascinato e il solo target scambiano atomicamente le rispettive coordinate originarie al drop. Widget di dimensioni diverse vengono scambiati soltanto se entrambe le destinazioni sono libere; altrimenti il layout iniziale viene mantenuto senza ricerca globale o compattazione.
+
+Ogni widget espone nell'angolo inferiore destro una zona di ridimensionamento trasparente, priva di icona o pulsante, con cursore `nwse-resize`. La preview è agganciata alla griglia, limitata tra 2 e 12 colonne e tra 2 e 8 righe e viene confermata soltanto in assenza di collisioni. Drag e resize hanno superfici ed eventi separati; `Esc` annulla l'interazione corrente.

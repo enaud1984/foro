@@ -29,6 +29,16 @@ type TrascinamentoWidget = {
   scartoY: number;
   spostamentoX: number;
   spostamentoY: number;
+  attivo: boolean;
+};
+type RidimensionamentoWidget = {
+  key: ChiaveWidget;
+  pointerId: number;
+  origineX: number;
+  origineY: number;
+  posizioneOriginale: PosizioneGriglia;
+  anteprima: PosizioneGriglia;
+  valida: boolean;
 };
 interface ProfiloStudio {
   name: string;
@@ -169,6 +179,9 @@ export class App {
   readonly dragPlaceholder = signal<PosizioneGriglia | null>(null);
   readonly trascinamentoWidget = signal<TrascinamentoWidget | null>(null);
   readonly destinazioneNonValida = signal(false);
+  readonly targetScambio = signal<ChiaveWidget | null>(null);
+  readonly anteprimaTarget = signal<PosizioneGriglia | null>(null);
+  readonly ridimensionamentoWidget = signal<RidimensionamentoWidget | null>(null);
   readonly menuWidgetAperto = signal<ChiaveWidget | null>(null);
   readonly vistaCalendario = signal<VistaCalendario>('settimana');
   readonly dataCalendario = signal(this.inizioGiorno(new Date()));
@@ -273,6 +286,8 @@ export class App {
   private widgetTrascinato: ChiaveWidget | null = null;
   private layoutPrimaDelTrascinamento: WidgetScrivania[] | null = null;
   private trascinamentoConfermato = false;
+  private readonly sogliaTrascinamentoPixel = 8;
+  private readonly sogliaSovrapposizioneTarget = .55;
 
   private creaWidgetIniziali(): WidgetScrivania[] {
     return [
@@ -522,13 +537,10 @@ export class App {
 
   iniziaTrascinamentoWidget(widget: WidgetScrivania, event: PointerEvent): void {
     if (event.button !== 0) return;
-    event.preventDefault();
     const card = (event.currentTarget as HTMLElement).closest('.op-widget') as HTMLElement | null;
     const rettangoloCard = card?.getBoundingClientRect();
-    this.widgetTrascinato = widget.key;
     this.trascinamentoConfermato = false;
     this.layoutPrimaDelTrascinamento = this.activeWidgets().map(item => ({ ...item }));
-    this.dragPlaceholder.set({ x: widget.x, y: widget.y, w: widget.w, h: widget.h });
     this.trascinamentoWidget.set({
       key: widget.key,
       pointerId: event.pointerId,
@@ -537,7 +549,8 @@ export class App {
       scartoX: rettangoloCard ? event.clientX - rettangoloCard.left : 0,
       scartoY: rettangoloCard ? event.clientY - rettangoloCard.top : 0,
       spostamentoX: 0,
-      spostamentoY: 0
+      spostamentoY: 0,
+      attivo: false
     });
   }
 
@@ -545,12 +558,19 @@ export class App {
   aggiornaTrascinamentoWidget(event: PointerEvent): void {
     const trascinamento = this.trascinamentoWidget();
     if (!trascinamento || trascinamento.pointerId !== event.pointerId) return;
-    event.preventDefault();
+    const spostamentoX = event.clientX - trascinamento.origineX;
+    const spostamentoY = event.clientY - trascinamento.origineY;
+    const attivo = trascinamento.attivo
+      || Math.hypot(spostamentoX, spostamentoY) > this.sogliaTrascinamentoPixel;
     this.trascinamentoWidget.set({
       ...trascinamento,
-      spostamentoX: event.clientX - trascinamento.origineX,
-      spostamentoY: event.clientY - trascinamento.origineY
+      spostamentoX,
+      spostamentoY,
+      attivo
     });
+    if (!attivo) return;
+    event.preventDefault();
+    this.widgetTrascinato = trascinamento.key;
 
     const griglia = document.querySelector('.operational-grid') as HTMLElement | null;
     const layoutBase = this.layoutPrimaDelTrascinamento;
@@ -559,9 +579,10 @@ export class App {
     if (!this.puntoDentroGriglia(event.clientX, event.clientY, griglia)) {
       this.destinazioneNonValida.set(true);
       this.dragPlaceholder.set(null);
+      this.targetScambio.set(null);
+      this.anteprimaTarget.set(null);
       return;
     }
-    this.destinazioneNonValida.set(false);
     const posizione = this.positionFromCoordinates(
       event.clientX - trascinamento.scartoX,
       event.clientY - trascinamento.scartoY,
@@ -569,32 +590,45 @@ export class App {
       widget.w
     );
     const nuovaPosizione = { x: posizione.x, y: posizione.y, w: widget.w, h: widget.h };
-    const posizioneCorrente = this.dragPlaceholder();
-    if (posizioneCorrente && this.samePosition(posizioneCorrente, nuovaPosizione)) return;
-
-    this.dragPlaceholder.set(nuovaPosizione);
-    const layoutProvvisorio = this.reorderWidgets(
-      layoutBase.map(item => item.key === widget.key ? { ...item, x: posizione.x, y: posizione.y } : item),
-      widget.key
-    );
-    const posizioniProvvisorie = new Map(layoutProvvisorio.map(item => [item.key, item]));
-    this.activeWidgets.set(layoutBase.map(item => {
-      const posizioneProvvisoria = posizioniProvvisorie.get(item.key) ?? item;
-      return item.key === widget.key
-        ? { ...posizioneProvvisoria, x: widget.x, y: widget.y }
-        : posizioneProvvisoria;
-    }));
+    const target = this.trovaTargetScambio(nuovaPosizione, widget.key, layoutBase);
+    const scambioValido = target ? this.scambioGeometricamenteValido(widget, target, layoutBase) : false;
+    const cellaLibera = !layoutBase.some(item => item.key !== widget.key && this.overlaps(nuovaPosizione, item));
+    this.targetScambio.set(target?.key ?? null);
+    this.anteprimaTarget.set(target && scambioValido
+      ? { x: widget.x, y: widget.y, w: target.w, h: target.h }
+      : null);
+    this.dragPlaceholder.set(target && scambioValido
+      ? { x: target.x, y: target.y, w: widget.w, h: widget.h }
+      : nuovaPosizione);
+    this.destinazioneNonValida.set(!!target ? !scambioValido : !cellaLibera);
   }
 
   @HostListener('window:pointerup', ['$event'])
   terminaTrascinamentoWidget(event: PointerEvent): void {
     const trascinamento = this.trascinamentoWidget();
     if (!trascinamento || trascinamento.pointerId !== event.pointerId) return;
+    if (!trascinamento.attivo) {
+      this.concludiTrascinamentoPointer(event);
+      return;
+    }
     const destinazione = this.dragPlaceholder();
     const layoutBase = this.layoutPrimaDelTrascinamento;
-    if (layoutBase) this.activeWidgets.set(layoutBase.map(widget => ({ ...widget })));
-    if (destinazione) this.moveOrAddWidget(trascinamento.key, destinazione.x, destinazione.y);
-    this.trascinamentoConfermato = true;
+    if (layoutBase && destinazione && !this.destinazioneNonValida()) {
+      const target = layoutBase.find(widget => widget.key === this.targetScambio());
+      const trascinato = layoutBase.find(widget => widget.key === trascinamento.key);
+      if (target && trascinato) {
+        this.activeWidgets.set(layoutBase.map(widget => widget.key === trascinato.key
+          ? { ...widget, x: target.x, y: target.y }
+          : widget.key === target.key ? { ...widget, x: trascinato.x, y: trascinato.y } : { ...widget }));
+      } else {
+        this.activeWidgets.set(layoutBase.map(widget => widget.key === trascinamento.key
+          ? { ...widget, x: destinazione.x, y: destinazione.y } : { ...widget }));
+      }
+      this.trascinamentoConfermato = true;
+      this.salvaLayoutWidget();
+    } else if (layoutBase) {
+      this.activeWidgets.set(layoutBase.map(widget => ({ ...widget })));
+    }
     this.concludiTrascinamentoPointer(event);
   }
 
@@ -608,9 +642,24 @@ export class App {
     this.concludiTrascinamentoPointer(event);
   }
 
+  @HostListener('window:keydown.escape')
+  annullaInterazioneWidget(): void {
+    if (this.layoutPrimaDelTrascinamento) {
+      this.activeWidgets.set(this.layoutPrimaDelTrascinamento.map(widget => ({ ...widget })));
+    }
+    this.trascinamentoWidget.set(null);
+    this.ridimensionamentoWidget.set(null);
+    this.widgetTrascinato = null;
+    this.layoutPrimaDelTrascinamento = null;
+    this.dragPlaceholder.set(null);
+    this.targetScambio.set(null);
+    this.anteprimaTarget.set(null);
+    this.destinazioneNonValida.set(false);
+  }
+
   trasformazioneTrascinamento(widget: WidgetScrivania): string | null {
     const trascinamento = this.trascinamentoWidget();
-    if (!trascinamento || trascinamento.key !== widget.key) return null;
+    if (!trascinamento?.attivo || trascinamento.key !== widget.key) return null;
     return `translate3d(${trascinamento.spostamentoX}px, ${trascinamento.spostamentoY}px, 0)`;
   }
 
@@ -1382,6 +1431,83 @@ export class App {
     this.layoutPrimaDelTrascinamento = null;
     this.dragPlaceholder.set(null);
     this.destinazioneNonValida.set(false);
+    this.targetScambio.set(null);
+    this.anteprimaTarget.set(null);
+  }
+
+  iniziaRidimensionamentoWidget(widget: WidgetScrivania, event: PointerEvent): void {
+    if (event.button !== 0 || event.pointerType === 'touch') return;
+    event.preventDefault();
+    event.stopPropagation();
+    const posizioneOriginale = { x: widget.x, y: widget.y, w: widget.w, h: widget.h };
+    this.layoutPrimaDelTrascinamento = this.activeWidgets().map(item => ({ ...item }));
+    this.ridimensionamentoWidget.set({
+      key: widget.key, pointerId: event.pointerId, origineX: event.clientX, origineY: event.clientY,
+      posizioneOriginale, anteprima: posizioneOriginale, valida: true
+    });
+  }
+
+  @HostListener('window:pointermove', ['$event'])
+  aggiornaRidimensionamentoWidget(event: PointerEvent): void {
+    const ridimensionamento = this.ridimensionamentoWidget();
+    if (!ridimensionamento || ridimensionamento.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    const griglia = document.querySelector('.operational-grid') as HTMLElement | null;
+    const layout = this.layoutPrimaDelTrascinamento;
+    if (!griglia || !layout) return;
+    const rettangolo = griglia.getBoundingClientRect();
+    const larghezzaColonna = (rettangolo.width - 11 * 16) / 12;
+    const larghezzaCella = larghezzaColonna + 16;
+    const altezzaCella = 108;
+    const w = Math.max(2, Math.min(12 - ridimensionamento.posizioneOriginale.x + 1,
+      Math.round(ridimensionamento.posizioneOriginale.w + (event.clientX - ridimensionamento.origineX) / larghezzaCella)));
+    const h = Math.max(2, Math.min(8,
+      Math.round(ridimensionamento.posizioneOriginale.h + (event.clientY - ridimensionamento.origineY) / altezzaCella)));
+    const anteprima = { ...ridimensionamento.posizioneOriginale, w, h };
+    const valida = !layout.some(widget => widget.key !== ridimensionamento.key && this.overlaps(anteprima, widget));
+    this.ridimensionamentoWidget.set({ ...ridimensionamento, anteprima, valida });
+    this.destinazioneNonValida.set(!valida);
+  }
+
+  @HostListener('window:pointerup', ['$event'])
+  terminaRidimensionamentoWidget(event: PointerEvent): void {
+    const ridimensionamento = this.ridimensionamentoWidget();
+    if (!ridimensionamento || ridimensionamento.pointerId !== event.pointerId) return;
+    if (ridimensionamento.valida && !this.samePosition(ridimensionamento.posizioneOriginale, ridimensionamento.anteprima)) {
+      this.activeWidgets.update(widgets => widgets.map(widget => widget.key === ridimensionamento.key
+        ? { ...widget, ...ridimensionamento.anteprima } : widget));
+      this.salvaLayoutWidget();
+    }
+    this.ridimensionamentoWidget.set(null);
+    this.layoutPrimaDelTrascinamento = null;
+    this.destinazioneNonValida.set(false);
+  }
+
+  dimensioneVisualeWidget(widget: WidgetScrivania): PosizioneGriglia {
+    const ridimensionamento = this.ridimensionamentoWidget();
+    return ridimensionamento?.key === widget.key ? ridimensionamento.anteprima : widget;
+  }
+
+  private trovaTargetScambio(posizione: PosizioneGriglia, chiave: ChiaveWidget, layout: WidgetScrivania[]): WidgetScrivania | null {
+    return layout
+      .filter(widget => widget.key !== chiave)
+      .map(widget => ({ widget, rapporto: this.rapportoSovrapposizione(posizione, widget) }))
+      .filter(candidato => candidato.rapporto >= this.sogliaSovrapposizioneTarget)
+      .sort((a, b) => b.rapporto - a.rapporto || a.widget.key.localeCompare(b.widget.key))[0]?.widget ?? null;
+  }
+
+  private rapportoSovrapposizione(a: PosizioneGriglia, b: PosizioneGriglia): number {
+    const larghezza = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
+    const altezza = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+    return (larghezza * altezza) / Math.min(a.w * a.h, b.w * b.h);
+  }
+
+  private scambioGeometricamenteValido(trascinato: WidgetScrivania, target: WidgetScrivania, layout: WidgetScrivania[]): boolean {
+    const destinazioneTrascinato = { ...trascinato, x: target.x, y: target.y };
+    const destinazioneTarget = { ...target, x: trascinato.x, y: trascinato.y };
+    if (destinazioneTrascinato.x + destinazioneTrascinato.w > 13 || destinazioneTarget.x + destinazioneTarget.w > 13) return false;
+    return !layout.some(widget => widget.key !== trascinato.key && widget.key !== target.key
+      && (this.overlaps(destinazioneTrascinato, widget) || this.overlaps(destinazioneTarget, widget)));
   }
 
   private reorderWidgets(widgets: WidgetScrivania[], activeKey: ChiaveWidget): WidgetScrivania[] {
