@@ -17,6 +17,19 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
+  it('configura FullCalendar in italiano con le quattro viste standard', () => {
+    const app = TestBed.createComponent(App).componentInstance;
+    expect(app.opzioniAgenda.initialView).toBe('dayGridMonth');
+    expect(app.opzioniAgenda.locale).toBe('it');
+    expect(app.opzioniAgenda.firstDay).toBe(1);
+    expect(app.opzioniAgenda.editable).toBeTrue();
+    expect(app.opzioniAgenda.selectable).toBeTrue();
+    expect(app.opzioniAgenda.plugins?.length).toBe(4);
+    expect(app.opzioniAgenda.headerToolbar).toEqual({
+      left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+    });
+  });
+
   it('espone Anagrafiche come nome visibile mantenendo la chiave tecnica clienti', () => {
     const app = TestBed.createComponent(App).componentInstance;
     const widget = app.widgetLibrary.find(elemento => elemento.key === 'clienti');
