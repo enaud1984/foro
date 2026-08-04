@@ -313,9 +313,8 @@
       <p class="error" role="alert" *ngIf="error()">{{ error() }}</p>
     </aside>
 
-    <div class="widget-modal-backdrop" *ngIf="expandedWidget()" (click)="closeExpandedWidget()"></div>
     <section class="widget-modal" *ngIf="expandedWidget() as widget" [class.calendar-modal]="widget.key === 'calendario'" [class.anagrafiche-modal]="widget.key === 'clienti'" [class.collaboratori-modal]="widget.key === 'collaboratori'" [class.pratiche-modal]="widget.key === 'pratiche'">
-      <button class="modal-close" type="button" aria-label="Chiudi vista completa" (click)="closeExpandedWidget()"><app-icona-foro nome="chiudi"></app-icona-foro></button>
+      <button class="torna-scrivania" type="button" (click)="closeExpandedWidget()">← Torna alla scrivania</button>
       <span class="eyebrow">VISTA INGRANDITA</span>
       <h2><app-icona-foro [nome]="widget.icon"></app-icona-foro>{{ widget.title }}</h2>
       <p>{{ widget.description }}</p>

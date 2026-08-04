@@ -32,8 +32,10 @@
     <p class="stato-ui" *ngIf="caricamento()">Caricamento Pratiche…</p>
     <p class="stato-ui errore" role="alert" *ngIf="errore()">{{errore()}}</p>
     <p class="degradato" *ngIf="avviso()">{{avviso()}}</p>
+    <ag-grid-angular *ngIf="!caricamento()&&!errore()" class="ag-theme-quartz griglia-foro" aria-label="Elenco Pratiche"
+      [rowData]="pratiche()" [columnDefs]="colonneGriglia" [gridOptions]="opzioniGriglia" (gridReady)="grigliaPronta($event)" (rowClicked)="rigaGriglia($event)"></ag-grid-angular>
     <div class="corpo" *ngIf="!caricamento()">
-      <aside class="elenco">
+      <aside class="elenco" hidden>
         <button type="button" *ngFor="let p of pratiche()" (click)="apri(p)" [class.selezionato]="selezionata()?.id===p.id">
           <span class="codice">{{p.codice}}</span><strong>{{p.titolo}}</strong>
           <small>{{p.clienti||'Nessun Cliente'}} · {{etichetta('stati',p.statoCodice)}}</small>

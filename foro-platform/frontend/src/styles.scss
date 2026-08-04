@@ -1,3 +1,11 @@
 @use '@angular/material' as mat;
 @include mat.core();
+:root {
+  --foro-primary:#092746;--foro-primary-hover:#123f68;--foro-primary-active:#061b31;--foro-on-primary:#fff;
+  --foro-secondary-surface:#eff6ff;--foro-on-secondary:#092746;--foro-surface:#fff;--foro-surface-muted:#f5f8fb;
+  --foro-text-primary:#172331;--foro-text-secondary:#586b7a;--foro-border:#c8d6e2;--foro-focus:#e8ad31;
+  --foro-danger:#a61b29;--foro-on-danger:#fff;--foro-success:#176447;--foro-warning:#8a5700;
+}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Aptos,"Segoe UI Variable Text","Segoe UI",Arial,sans-serif;font-weight:400;line-height:1.45;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}button,input,select,textarea{font:inherit}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--foro-focus);outline-offset:2px}
+.ag-theme-quartz{--ag-font-family:Aptos,"Segoe UI",sans-serif;--ag-foreground-color:var(--foro-text-primary);--ag-background-color:var(--foro-surface);--ag-header-background-color:var(--foro-secondary-surface);--ag-header-foreground-color:var(--foro-on-secondary);--ag-border-color:var(--foro-border);--ag-row-hover-color:var(--foro-secondary-surface);--ag-selected-row-background-color:#dbeafe;width:100%;height:min(62vh,680px)}

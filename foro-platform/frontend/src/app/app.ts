@@ -19,6 +19,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin, { EventResizeDoneArg } from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
 import { AgendaFullCalendarMapper, EventoAgendaDto } from './agenda/agenda-fullcalendar.mapper';
+import { Router } from '@angular/router';
 import {
   CONFIGURAZIONE_GRIDSTACK,
   DIMENSIONI_WIDGET,
@@ -368,7 +369,7 @@ export class App implements OnDestroy {
     ];
   }
 
-  constructor(private readonly fb: FormBuilder, private readonly http: HttpClient, private readonly servizioPratiche: PraticheService) {
+  constructor(private readonly fb: FormBuilder, private readonly http: HttpClient, private readonly servizioPratiche: PraticheService, private readonly router:Router) {
     this.ricercaPratica = this.fb.nonNullable.control('');
     this.loginForm = this.fb.nonNullable.group({
       email: ['', [Validators.required, Validators.email]],
@@ -632,6 +633,8 @@ export class App implements OnDestroy {
 
   openWidget(widget: WidgetScrivania): void {
     this.expandedWidget.set(widget);
+    const percorso:Partial<Record<ChiaveWidget,string>>={calendario:'/agenda',clienti:'/anagrafiche',pratiche:'/pratiche'};
+    if(percorso[widget.key])void this.router.navigateByUrl(percorso[widget.key]!);
     if (widget.key === 'calendario') this.allineaPlannerOraAttuale();
   }
 
@@ -699,6 +702,7 @@ export class App implements OnDestroy {
     this.rigaWidgetSelezionata.set(null);
     this.nuovoAppuntamentoAperto.set(false);
     this.chiudiGestioneCalendari();
+    void this.router.navigateByUrl('/scrivania');
   }
 
   cambiaVistaCalendario(vista: VistaCalendario): void {
