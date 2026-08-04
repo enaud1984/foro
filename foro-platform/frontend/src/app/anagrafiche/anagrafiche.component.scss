@@ -6,7 +6,18 @@
 .anagrafiche:not(.compatto) {
   --bordo: #d8e1ea;
   --testo-secondario: #5b6b7c;
+  display: flex;
+  flex-direction: column;
   min-height: 34rem;
+}
+
+.anagrafiche:not(.compatto) .griglia-foro {
+  display: block;
+  flex: 1 1 auto;
+  width: 100%;
+  height: clamp(20rem, calc(100vh - 24rem), 42.5rem);
+  min-height: 20rem;
+  overflow: visible;
 }
 
 .anagrafiche:not(.compatto) .comandi {
