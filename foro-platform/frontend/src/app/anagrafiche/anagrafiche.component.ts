@@ -7,7 +7,7 @@ import { CatalogoAnagrafica, PraticaCollegataAnagrafica, RichiestaSoggetto, Sogg
 import { AnagraficaSchedaCompletaComponent } from './anagrafica-scheda-completa.component';
 import { IconaForoComponent } from '../shared/icona-foro.component';
 import { AgGridAngular } from 'ag-grid-angular';
-import { ColDef, GridApi, GridReadyEvent, RowClickedEvent } from 'ag-grid-community';
+import { ColDef, GridApi, GridReadyEvent, GridSizeChangedEvent, RowClickedEvent } from 'ag-grid-community';
 import { opzioniGrigliaForo } from '../shared/configurazione-griglia-foro';
 
 @Component({
@@ -18,7 +18,7 @@ import { opzioniGrigliaForo } from '../shared/configurazione-griglia-foro';
   styleUrl: './anagrafiche.component.scss'
 })
 export class AnagraficheComponent implements OnInit, OnChanges {
-  readonly opzioniGriglia = opzioniGrigliaForo;
+  readonly opzioniGriglia = { ...opzioniGrigliaForo, domLayout: 'normal' as const };
   private apiGriglia?: GridApi<Soggetto>;
   private readonly fb = inject(FormBuilder);
   private readonly servizio = inject(AnagraficheService);
@@ -76,7 +76,8 @@ export class AnagraficheComponent implements OnInit, OnChanges {
     {headerName:'Ultima modifica',field:'aggiornatoIl',valueFormatter:p=>p.value?new Intl.DateTimeFormat('it-IT').format(new Date(p.value)):'—'},
     {headerName:'Azioni',sortable:false,filter:false,maxWidth:150,cellRenderer:()=>'<button class="azione-griglia" type="button">Apri / modifica</button>'},
   ];
-  grigliaPronta(evento:GridReadyEvent<Soggetto>):void{this.apiGriglia=evento.api;this.applicaFiltroGlobale(this.ricerca.value);}
+  grigliaPronta(evento:GridReadyEvent<Soggetto>):void{this.apiGriglia=evento.api;this.applicaFiltroGlobale(this.ricerca.value);evento.api.sizeColumnsToFit();}
+  dimensioneGrigliaCambiata(evento:GridSizeChangedEvent<Soggetto>):void{if(evento.clientWidth>0)evento.api.sizeColumnsToFit();}
   applicaFiltroGlobale(testo:string):void{this.apiGriglia?.setGridOption('quickFilterText',testo);sessionStorage.setItem('foro.anagrafiche.filtro',testo);}
   rigaGriglia(evento:RowClickedEvent<Soggetto>):void{if(evento.data)this.apri(evento.data);}
   ngOnInit(): void {
