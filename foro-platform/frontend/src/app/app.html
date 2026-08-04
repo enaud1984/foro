@@ -339,52 +339,19 @@
           </section>
         </aside>
 
-        <section class="calendar-main">
-          <div class="calendar-commandbar">
+        <section class="calendar-main agenda-fullcalendar" aria-label="Agenda completa">
+          <div class="calendar-commandbar agenda-actions">
             <button class="primary" type="button" (click)="apriNuovoAppuntamento()">Nuovo appuntamento</button>
-            <button type="button" (click)="vaiOggi()">Oggi</button>
-            <button type="button" aria-label="Periodo precedente" (click)="navigaCalendario(-1)">‹</button>
-            <button type="button" aria-label="Periodo successivo" (click)="navigaCalendario(1)">›</button>
-            <strong>{{ intestazioneCalendario() }}</strong>
-            <div class="view-switch">
-              <button type="button" [class.active]="vistaCalendario() === 'giorno'" (click)="cambiaVistaCalendario('giorno')">Giorno</button>
-              <button type="button" [class.active]="vistaCalendario() === 'settimana'" (click)="cambiaVistaCalendario('settimana')">Settimana</button>
-              <button type="button" [class.active]="vistaCalendario() === 'mese'" (click)="cambiaVistaCalendario('mese')">Mese</button>
-            </div>
+            <span *ngIf="calendarioCaricamento()" role="status" aria-live="polite">Caricamento appuntamenti…</span>
           </div>
+          <p class="appointment-error" role="alert" *ngIf="calendarioErrore()">{{ calendarioErrore() }}</p>
           <div class="calendar-opened-item" *ngIf="rigaWidgetSelezionata() as riga">
             <span>Oggetto aperto</span>
             <strong>{{ riga.titolo }}</strong>
             <small>{{ riga.descrizione }} · {{ riga.stato }}</small>
           </div>
 
-          <div class="month-calendar" *ngIf="vistaCalendario() === 'mese'; else vistaOre">
-            <div class="month-weekday" *ngFor="let nome of ['Lun','Mar','Mer','Gio','Ven','Sab','Dom']">{{ nome }}</div>
-            <button class="month-day" type="button" *ngFor="let giorno of celleMese()" [class.today]="giorno.oggi" [class.other-month]="!giorno.meseCorrente" (dblclick)="apriNuovoAppuntamentoDaCella(giorno.iso, 9)">
-              <b>{{ giorno.numero }}</b>
-              <span class="month-event" *ngFor="let evento of eventiDelGiorno(giorno.iso)" [style.background]="coloreEvento(evento)" (click)="apriDettaglioEvento(evento,$event)">{{ formattaOra(evento.ora,evento.minuti) }} {{ evento.titolo }}</span>
-            </button>
-          </div>
-
-          <ng-template #vistaOre>
-          <div class="week-calendar" [style.--numero-giorni]="giorniVisualizzati().length">
-            <div class="time-head"></div>
-            <div class="day-head" *ngFor="let giorno of giorniVisualizzati()" [class.today]="giorno.oggi">
-              <b>{{ giorno.numero }}</b><span>{{ giorno.nome }}</span>
-              <button *ngIf="giorno.oggi" type="button" (click)="apriNuovoAppuntamento()">＋</button>
-            </div>
-
-            <ng-container *ngFor="let slot of slotCalendario">
-              <div class="time-col">{{ slot.minuti === 0 ? ((slot.ora < 10 ? '0' + slot.ora : slot.ora) + ':00') : '' }}</div>
-              <div class="slot" *ngFor="let giorno of giorniVisualizzati()" [class.selected]="slotAttivo(giorno.iso,slot.ora,slot.minuti)" (click)="selezionaSlot(giorno.iso,slot.ora,slot.minuti)" (dblclick)="apriNuovoAppuntamentoDaCella(giorno.iso, slot.ora, slot.minuti)" title="Clic per selezionare, doppio clic per creare un appuntamento">
-                <div class="current-time" *ngIf="giorno.oggi && slot.ora === oraAttuale().getHours() && slot.minuti === (oraAttuale().getMinutes() < 30 ? 0 : 30)" [style.top.%]="(oraAttuale().getMinutes() % 30) / 30 * 100"><span>Ora attuale</span></div>
-                <button class="event" type="button" *ngFor="let evento of eventiNellaCella(giorno.iso, slot.ora, slot.minuti)" [style.--event-color]="coloreEvento(evento)" (click)="apriDettaglioEvento(evento,$event)" (dblclick)="$event.stopPropagation()">
-                  {{ evento.titolo }}<br *ngIf="evento.dettaglio"><small *ngIf="evento.dettaglio">{{ evento.dettaglio }}</small>
-                </button>
-              </div>
-            </ng-container>
-          </div>
-          </ng-template>
+          <full-calendar #agendaCompleta [options]="opzioniAgenda"></full-calendar>
         </section>
 
         <form class="appointment-panel" *ngIf="nuovoAppuntamentoAperto()" [formGroup]="appuntamentoForm" (ngSubmit)="salvaAppuntamento()">

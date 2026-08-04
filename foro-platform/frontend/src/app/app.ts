@@ -11,6 +11,14 @@ import { PraticheService } from './pratiche/pratiche.service';
 import { IconaForoComponent } from './shared/icona-foro.component';
 import { GridStackNode, GridStackWidget } from 'gridstack';
 import { GridstackComponent, GridstackItemComponent, elementCB, nodesCB } from 'gridstack/dist/angular';
+import { FullCalendarComponent, FullCalendarModule } from '@fullcalendar/angular';
+import { CalendarOptions, DateSelectArg, EventClickArg, EventDropArg } from '@fullcalendar/core';
+import itLocale from '@fullcalendar/core/locales/it';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin, { EventResizeDoneArg } from '@fullcalendar/interaction';
+import listPlugin from '@fullcalendar/list';
+import { AgendaFullCalendarMapper, EventoAgendaDto } from './agenda/agenda-fullcalendar.mapper';
 import {
   CONFIGURAZIONE_GRIDSTACK,
   DIMENSIONI_WIDGET,
@@ -103,7 +111,7 @@ interface CalendarioAgenda {
 interface CalendarioApi { id: string; nome: string; colore: string; condivisoTuttoStudio: boolean; condivisoCon: string[]; gestibile: boolean; }
 interface PersonaStudioApi { id: string; nome: string; }
 interface NotificaApi { id:string; tipo:string; titolo:string; descrizione:string; eventoId:string; letta:boolean; creataIl:string; }
-interface EventoApi { id: string; calendarioId: string; creatoreId: string; calendarioNome: string; colore: string; titolo: string; inizio: string; fine: string; note?: string; partecipanti?: string; statoDisponibilita: string; promemoriaMinuti?: number; categoria?: string; tuttoGiorno: boolean; serieId?: string; ricorrenza: string; fineRicorrenza?: string; praticaId?:string; praticaCodice?:string; praticaTitolo?:string; praticaStato?:string; }
+type EventoApi = EventoAgendaDto;
 interface CollaboratoreStudio { id: string; nome: string; cognome: string; email: string; ruolo: RuoloCollaboratore; stato: 'ATTIVO' | 'DISABILITATO' | 'PENDING'; }
 
 interface EventoAgenda {
@@ -133,11 +141,12 @@ interface EventoAgenda {
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, ReactiveFormsModule, AnagraficheComponent, PraticheComponent, IconaForoComponent, GridstackComponent, GridstackItemComponent],
+  imports: [CommonModule, ReactiveFormsModule, AnagraficheComponent, PraticheComponent, IconaForoComponent, GridstackComponent, GridstackItemComponent, FullCalendarModule],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
 export class App implements OnDestroy {
+  @ViewChild('agendaCompleta') agendaCompleta?: FullCalendarComponent;
   private readonly oggi = new Date();
   readonly giornoSettimanaOggi = new Intl.DateTimeFormat('it-IT', { weekday: 'long' }).format(this.oggi);
   readonly giornoMeseOggi = new Intl.DateTimeFormat('it-IT', { day: '2-digit' }).format(this.oggi);
@@ -187,6 +196,32 @@ export class App implements OnDestroy {
   readonly personeCondivisione = signal<{id:string;nome:string;selezionata:boolean}[]>([]);
   readonly personeInvitate = signal<{id:string;nome:string;selezionata:boolean}[]>([]);
   readonly eventiAgenda = signal<EventoAgenda[]>([]);
+  readonly calendarioCaricamento = signal(false);
+  readonly calendarioErrore = signal('');
+  readonly opzioniAgenda: CalendarOptions = {
+    plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin],
+    locales: [itLocale], locale: 'it', firstDay: 1, initialView: 'dayGridMonth',
+    headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek' },
+    buttonText: { today: 'Oggi', month: 'Mese', week: 'Settimana', day: 'Giorno', list: 'Elenco' },
+    editable: true, selectable: true, selectMirror: true, dayMaxEvents: true,
+    nowIndicator: true, eventResizableFromStart: true, slotDuration: '00:30:00',
+    height: 'auto', timeZone: 'local',
+    events: (intervallo, successo, fallimento) => {
+      this.calendarioCaricamento.set(true); this.calendarioErrore.set('');
+      this.http.get<EventoApi[]>('/api/v1/calendario/eventi', { params: { dal: intervallo.startStr.slice(0, 10), al: intervallo.endStr.slice(0, 10) } }).subscribe({
+        next: eventi => {
+          const calendariVisibili = new Set(this.calendariAgenda().filter(calendario => calendario.selezionato).map(calendario => String(calendario.chiave)));
+          successo(eventi.filter(evento => calendariVisibili.has(evento.calendarioId)).map(AgendaFullCalendarMapper.daDto));
+          this.calendarioCaricamento.set(false);
+        },
+        error: errore => { this.calendarioErrore.set('Impossibile caricare gli appuntamenti. Riprova.'); this.calendarioCaricamento.set(false); fallimento(errore); }
+      });
+    },
+    select: selezione => this.selezionaIntervalloAgenda(selezione),
+    eventClick: click => this.apriEventoFullCalendar(click),
+    eventDrop: modifica => this.persisteSpostamento(modifica),
+    eventResize: modifica => this.persisteRidimensionamento(modifica)
+  };
   readonly oreCalendario = Array.from({ length: 16 }, (_, indice) => indice + 7);
   readonly slotCalendario = Array.from({ length: 32 }, (_, indice) => ({ ora: 7 + Math.floor(indice / 2), minuti: indice % 2 ? 30 : 0 }));
   readonly giorniVisualizzati = computed(() => {
@@ -724,7 +759,34 @@ export class App implements OnDestroy {
   chiudiNuovoAppuntamento(): void {
     this.nuovoAppuntamentoAperto.set(false);
     this.eventoInModificaId.set(null);
+    this.agendaCompleta?.getApi().unselect();
   }
+
+  selezionaIntervalloAgenda(selezione: DateSelectArg): void {
+    const intervallo = AgendaFullCalendarMapper.intervalloSelezionato(selezione);
+    this.appuntamentoForm.patchValue({ titolo: 'Nuovo appuntamento', ...intervallo });
+    this.apriNuovoAppuntamento();
+  }
+
+  apriEventoFullCalendar(click: EventClickArg): void {
+    const dto = click.event.extendedProps['dto'] as EventoApi;
+    this.apriDettaglioEvento(this.daEventoApi(dto), click.jsEvent);
+  }
+
+  persisteSpostamento(modifica: EventDropArg): void { this.persisteModificaCalendario(modifica, 'spostare'); }
+  persisteRidimensionamento(modifica: EventResizeDoneArg): void { this.persisteModificaCalendario(modifica, 'ridimensionare'); }
+
+  private persisteModificaCalendario(modifica: EventDropArg | EventResizeDoneArg, azione: string): void {
+    let comando;
+    try { comando = AgendaFullCalendarMapper.daEvento(modifica.event); }
+    catch { modifica.revert(); this.calendarioErrore.set('Intervallo dell’appuntamento non valido.'); return; }
+    this.http.put<EventoApi>(`/api/v1/calendario/eventi/${modifica.event.id}`, comando).subscribe({
+      next: () => this.aggiornaAgendaCompleta(),
+      error: () => { modifica.revert(); this.calendarioErrore.set(`Non è stato possibile ${azione} l’appuntamento. La modifica è stata annullata.`); }
+    });
+  }
+
+  aggiornaAgendaCompleta(): void { this.agendaCompleta?.getApi().refetchEvents(); }
 
   salvaAppuntamento(): void {
     this.erroreAppuntamento.set('');
@@ -745,7 +807,7 @@ export class App implements OnDestroy {
     const idModifica=this.eventoInModificaId();
     const richiesta=idModifica?this.http.put<EventoApi>(`/api/v1/calendario/eventi/${idModifica}`,corpo):this.http.post<EventoApi>('/api/v1/calendario/eventi',corpo);
     richiesta.subscribe({
-      next: () => { this.caricaAgenda(); this.caricaNotifiche(); this.nuovoAppuntamentoAperto.set(false); this.loading.set(false); },
+      next: () => { this.caricaAgenda(); this.aggiornaAgendaCompleta(); this.caricaNotifiche(); this.nuovoAppuntamentoAperto.set(false); this.agendaCompleta?.getApi().unselect(); this.loading.set(false); },
       error: response => { this.erroreAppuntamento.set(response?.error?.message ?? 'Appuntamento non salvato. Riprova.'); this.loading.set(false); }
     });
   }
@@ -762,7 +824,7 @@ export class App implements OnDestroy {
   }
   eliminaEvento(evento:EventoAgenda):void {
     if(!evento.id||!confirm(`Eliminare l’evento “${evento.titolo}”?`))return;
-    this.http.delete<void>(`/api/v1/calendario/eventi/${evento.id}`).subscribe({next:()=>{this.eventoSelezionato.set(null);this.caricaAgenda();},error:()=>this.error.set('Evento non eliminato.')});
+    this.http.delete<void>(`/api/v1/calendario/eventi/${evento.id}`).subscribe({next:()=>{this.eventoSelezionato.set(null);this.caricaAgenda();this.aggiornaAgendaCompleta();},error:()=>this.error.set('Evento non eliminato.')});
   }
   coloreEvento(evento:EventoAgenda):string { const colori:Record<string,string>={studio:'#0b67b2',private:'#7c3aed',hearings:'#0f766e',deadlines:'#dc2626',shared:'#d97706'};return colori[evento.colore||'']||evento.colore||'#0b67b2'; }
   etichettaStato(stato?:string):string { return ({LIBERO:'Libero',PROVVISORIO:'Provvisorio',OCCUPATO:'Occupato',FUORI_SEDE:'Fuori sede'} as Record<string,string>)[stato||'']||'Occupato'; }
@@ -774,6 +836,7 @@ export class App implements OnDestroy {
       calendario.chiave === chiave ? { ...calendario, selezionato } : calendario
     ));
     this.aggiornaWidgetCalendario();
+    this.aggiornaAgendaCompleta();
   }
 
   cambiaVisibilitaPersona(nome: string, selezionata: boolean): void {

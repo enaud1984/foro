@@ -537,6 +537,34 @@
   gap: 8px;
 }
 
+.agenda-fullcalendar {
+  min-width: 0;
+  overflow: hidden;
+
+  full-calendar { display: block; min-width: 0; }
+  .agenda-actions { justify-content: flex-end; margin-bottom: .75rem; }
+
+  :is(.fc-button-primary) {
+    background: var(--primary, #0b4f76);
+    border-color: var(--primary, #0b4f76);
+    font-weight: 650;
+  }
+  .fc-button-primary:focus-visible,
+  .fc-event:focus-visible { outline: 3px solid #f59e0b; outline-offset: 2px; }
+  .fc-toolbar-title { color: var(--text, #172033); font-size: clamp(1.05rem, 2vw, 1.4rem); text-transform: capitalize; }
+  .fc-col-header-cell-cushion, .fc-daygrid-day-number { color: inherit; }
+  .fc-event { border-radius: 4px; cursor: pointer; padding: 1px 3px; }
+}
+
+@media (max-width: 700px) {
+  .outlook-calendar { grid-template-columns: 1fr; }
+  .calendar-sidebar { display: none; }
+  .agenda-fullcalendar .fc-header-toolbar { align-items: stretch; flex-direction: column; gap: .55rem; }
+  .agenda-fullcalendar .fc-toolbar-chunk { display: flex; justify-content: center; }
+  .agenda-fullcalendar .fc-toolbar-chunk:last-child { flex-wrap: wrap; }
+  .agenda-fullcalendar .fc-button { padding: .45rem .55rem; }
+}
+
 .agenda-preview div {
   display: grid;
   grid-template-columns: 56px 1fr;
