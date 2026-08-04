@@ -25,8 +25,10 @@
   <p class="stato-ui" *ngIf="caricamento()">Caricamento anagrafiche…</p>
   <p class="stato-ui errore" role="alert" *ngIf="errore()">{{errore()}}</p>
   <p class="stato-ui" *ngIf="!caricamento()&&!errore()&&!soggetti().length">Nessuna anagrafica trovata.</p>
+  <ag-grid-angular *ngIf="!compatto&&!caricamento()&&!errore()" class="ag-theme-quartz griglia-foro" aria-label="Elenco Anagrafiche"
+    [rowData]="soggetti()" [columnDefs]="colonneGriglia" [gridOptions]="opzioniGriglia" (gridReady)="grigliaPronta($event)" (rowClicked)="rigaGriglia($event)"></ag-grid-angular>
   <div class="corpo" *ngIf="!caricamento()&&soggetti().length">
-    <div class="lista" role="table" aria-label="Elenco anagrafiche">
+    <div class="lista" role="table" aria-label="Elenco anagrafiche" *ngIf="compatto">
       <div class="intestazione-lista" role="row" *ngIf="!compatto">
         <button type="button" (click)="cambiaOrdinamento('nome')">Soggetto</button>
         <button type="button" (click)="cambiaOrdinamento('tipo')">Tipologia</button>

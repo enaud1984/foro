@@ -9,17 +9,22 @@ import {
   MembroTeam, PersonaStudio, Pratica, PraticaSintetica, RelazioneSoggetto, RichiestaPratica
 } from './pratiche.modelli';
 import { PraticheService } from './pratiche.service';
+import { AgGridAngular } from 'ag-grid-angular';
+import { ColDef, GridApi, GridReadyEvent, RowClickedEvent } from 'ag-grid-community';
+import { opzioniGrigliaForo } from '../shared/configurazione-griglia-foro';
 
 type Scheda='riepilogo'|'soggetti'|'team'|'documenti'|'attivita'|'agenda'|'comunicazioni'|'giudiziari'|'economia'|'timeline';
 
 @Component({
   selector:'app-pratiche',
   standalone:true,
-  imports:[CommonModule,ReactiveFormsModule,AnagraficheComponent],
+  imports:[CommonModule,ReactiveFormsModule,AnagraficheComponent,AgGridAngular],
   templateUrl:'./pratiche.component.html',
   styleUrls:['./pratiche.component.scss','./pratiche-documenti.component.scss']
 })
 export class PraticheComponent implements OnInit,OnChanges {
+  readonly opzioniGriglia=opzioniGrigliaForo;
+  private apiGriglia?:GridApi<PraticaSintetica>;
   private readonly fb=inject(FormBuilder);
   private readonly servizio=inject(PraticheService);
   @Input() compatto=false;
@@ -84,11 +89,27 @@ export class PraticheComponent implements OnInit,OnChanges {
     accontiPagati:[0,[Validators.min(0)]],speseAnticipate:[0,[Validators.min(0)]],contributoUnificato:[0,[Validators.min(0)]],
     altreSpese:[0,[Validators.min(0)]],importoFatturato:[0,[Validators.min(0)]],importoIncassato:[0,[Validators.min(0)]],valuta:['EUR'],note:['']
   });
+  readonly colonneGriglia:ColDef<PraticaSintetica>[]=[
+    {headerName:'Codice pratica',field:'codice',minWidth:145},
+    {headerName:'Oggetto',field:'titolo',minWidth:220},
+    {headerName:'Cliente',field:'clienti',minWidth:170},
+    {headerName:'Controparte',field:'controparti',minWidth:170},
+    {headerName:'Tipologia',valueGetter:p=>p.data?this.etichetta('tipologie',p.data.tipologiaCodice):''},
+    {headerName:'Stato',valueGetter:p=>p.data?this.etichetta('stati',p.data.statoCodice):''},
+    {headerName:'Responsabile',field:'responsabileNome'},
+    {headerName:'Prossima scadenza',field:'prossimaScadenza'},
+    {headerName:'Ultima modifica',field:'aggiornatoIl'},
+    {headerName:'Azioni',sortable:false,filter:false,maxWidth:150,cellRenderer:()=>'<button class="azione-griglia" type="button">Apri / modifica</button>'},
+  ];
+  grigliaPronta(evento:GridReadyEvent<PraticaSintetica>):void{this.apiGriglia=evento.api;this.applicaFiltroGlobale(this.ricerca.value);}
+  applicaFiltroGlobale(testo:string):void{this.apiGriglia?.setGridOption('quickFilterText',testo);sessionStorage.setItem('foro.pratiche.filtro',testo);}
+  rigaGriglia(evento:RowClickedEvent<PraticaSintetica>):void{if(evento.data)this.apri(evento.data);}
 
   ngOnInit():void {
+    if(!this.compatto)this.ricerca.setValue(sessionStorage.getItem('foro.pratiche.filtro')??'',{emitEvent:false});
     this.servizio.cataloghi().subscribe({next:c=>{this.cataloghi.set(c);this.impostaCataloghiPredefiniti();},error:()=>this.errore.set('Cataloghi Pratiche non disponibili.')});
     this.servizio.personeStudio().subscribe({next:p=>{this.persone.set(p);if(!this.form.controls.responsabileId.value&&p[0])this.form.controls.responsabileId.setValue(p[0].id);},error:()=>this.avviso.set('Elenco collaboratori temporaneamente non disponibile.')});
-    this.ricerca.valueChanges.pipe(debounceTime(250),distinctUntilChanged()).subscribe(()=>{this.pagina.set(0);this.carica();});
+    this.ricerca.valueChanges.pipe(debounceTime(250),distinctUntilChanged()).subscribe(testo=>{this.pagina.set(0);this.applicaFiltroGlobale(testo);this.carica();});
     this.filtroStato.valueChanges.subscribe(()=>{this.pagina.set(0);this.carica();});
     this.filtroMateria.valueChanges.subscribe(()=>{this.pagina.set(0);this.carica();});
     this.filtroPriorita.valueChanges.subscribe(()=>{this.pagina.set(0);this.carica();});
