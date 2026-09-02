@@ -5,12 +5,7 @@
       <span class="icona-sezione"><app-icona-foro nome="anagrafiche"></app-icona-foro></span>
       <div><h3>Anagrafiche</h3><p>Persone, società, enti e soggetti collegati allo Studio</p></div>
     </div>
-    <div class="kpi-anagrafiche" aria-label="Indicatori Anagrafiche">
-      <article><small>Totale</small><strong>{{totale()}}</strong></article>
-      <article><small>Persone</small><strong>{{persone()}}</strong></article>
-      <article><small>Organizzazioni</small><strong>{{organizzazioni()}}</strong></article>
-      <article><small>Attive</small><strong>{{attive()}}</strong></article>
-    </div>
+    <p class="conteggio-anagrafiche">{{totale()}} soggetti</p>
   </header>
   <div class="comandi">
     <label><span class="sr-only">Cerca anagrafiche</span><input [formControl]="ricerca" placeholder="Cerca anagrafiche…"></label>
@@ -92,10 +87,11 @@
     <form [formGroup]="form" (ngSubmit)="salva()">
       <header><h3>{{form.controls.id.value?'Modifica':'Nuova'}} anagrafica</h3><button type="button" class="pulsante-icona" aria-label="Chiudi form anagrafica" (click)="chiudiForm()"><app-icona-foro nome="chiudi"></app-icona-foro></button></header>
       <label>Tipologia<select formControlName="tipoCodice" (change)="applicaValidazioniTipo()"><option *ngFor="let tipo of tipi()" [value]="tipo.codice">{{tipo.descrizione}}</option></select></label>
+      <h4>Dati principali</h4>
       <div class="due" *ngIf="personaFisica(); else organizzazione"><label>Nome<input formControlName="nome"></label><label>Cognome<input formControlName="cognome"></label><label>Data di nascita<input type="date" formControlName="dataNascita"></label><label>Luogo di nascita<input formControlName="luogoNascita"></label><label>Provincia di nascita<input maxlength="2" formControlName="provinciaNascita"></label><label>Stato di nascita<input formControlName="statoNascita"></label></div>
       <ng-template #organizzazione><div class="due"><label>Denominazione<input formControlName="denominazione"></label><label>Forma giuridica<input formControlName="formaGiuridica"></label></div></ng-template>
-      <div class="due"><label>Codice fiscale<input formControlName="codiceFiscale"></label><label>Partita IVA<input formControlName="partitaIva"></label><label>Email<input type="email" formControlName="email"></label><label>PEC<input type="email" formControlName="pec"></label><label>Telefono<input formControlName="telefono"></label><label>Cellulare<input formControlName="cellulare"></label><label>Indirizzo<input formControlName="indirizzo"></label><label>Civico<input formControlName="civico"></label><label>CAP<input formControlName="cap"></label><label>Comune<input formControlName="comune"></label><label>Provincia<input maxlength="2" formControlName="provincia"></label><label>Stato<input formControlName="statoIndirizzo"></label></div>
-      <label>Note<textarea formControlName="note" rows="3"></textarea></label>
+      <details class="sezione-form"><summary>Dati fiscali e contatti</summary><div class="due"><label>Codice fiscale<input formControlName="codiceFiscale"></label><label>Partita IVA<input formControlName="partitaIva"></label><label>Email<input type="email" formControlName="email"></label><label>PEC<input type="email" formControlName="pec"></label><label>Telefono<input formControlName="telefono"></label><label>Cellulare<input formControlName="cellulare"></label></div></details>
+      <details class="sezione-form"><summary>Indirizzo e altre informazioni</summary><div class="due"><label>Indirizzo<input formControlName="indirizzo"></label><label>Civico<input formControlName="civico"></label><label>CAP<input formControlName="cap"></label><label>Comune<input formControlName="comune"></label><label>Provincia<input maxlength="2" formControlName="provincia"></label><label>Stato<input formControlName="statoIndirizzo"></label></div><label>Note<textarea formControlName="note" rows="3"></textarea></label></details>
       <p class="errore" *ngIf="form.invalid&&form.touched">Controlla i campi obbligatori e i formati indicati.</p>
       <footer class="azioni-form"><button type="button" (click)="chiudiForm()">Annulla</button><button class="primario" type="submit">Salva anagrafica</button></footer>
     </form>

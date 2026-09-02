@@ -603,6 +603,19 @@ export class App implements OnDestroy {
     this.openWidget(widget);
   }
 
+  apriModulo(chiave: ChiaveWidget): void {
+    let widget = this.activeWidgets().find(elemento => elemento.key === chiave);
+    if (!widget) {
+      widget = this.creaWidgetDaDefinizione(chiave, 1, 1) ?? undefined;
+    }
+    if (widget) this.openWidget(widget);
+  }
+
+  tornaScrivania(): void {
+    this.expandedWidget.set(null);
+    void this.router.navigateByUrl('/scrivania');
+  }
+
   toggleMenuWidget(widget: WidgetScrivania, event: Event): void {
     event.preventDefault();
     event.stopPropagation();

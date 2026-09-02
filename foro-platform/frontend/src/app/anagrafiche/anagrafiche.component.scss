@@ -678,3 +678,8 @@
     height: 100vh;
   }
 }
+
+.conteggio-anagrafiche { margin: 0; color: var(--foro-text-secondary); font-size: 13px; }
+.sezione-form { border-top: 1px solid var(--foro-border); padding-top: 12px; }
+.sezione-form summary { padding: 8px 0; color: var(--foro-primary); font-weight: 600; cursor: pointer; }
+.sezione-form[open] summary { margin-bottom: 12px; }

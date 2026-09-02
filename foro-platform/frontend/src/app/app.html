@@ -119,6 +119,12 @@
           <small>{{ studioFullAddress() }}</small>
         </div>
       </div>
+      <label class="ricerca-globale">
+        <app-icona-foro nome="ricerca"></app-icona-foro>
+        <span class="sr-only">Ricerca globale</span>
+        <input type="search" placeholder="Cerca in FORO" aria-label="Ricerca globale">
+        <kbd>Ctrl K</kbd>
+      </label>
       <div class="top-actions">
         <button class="icon-action" type="button" aria-label="Notifiche" (click)="toggleNotifications()"><app-icona-foro nome="notifiche"></app-icona-foro><span>5</span></button>
         <button class="icon-action" type="button" aria-label="Impostazioni" (click)="toggleSettings()"><app-icona-foro nome="impostazioni"></app-icona-foro></button>
@@ -146,16 +152,29 @@
     <div class="dashboard-shell">
       <aside class="widget-sidebar">
         <div class="sidebar-intro">
-          <span class="eyebrow">PERSONALIZZA</span>
-          <h3>La tua scrivania</h3>
-          <p>Scegli gli strumenti che vuoi avere sempre a portata di mano.</p>
+          <span class="eyebrow">NAVIGAZIONE</span>
+          <h3>Studio</h3>
         </div>
-        <article class="widget-source" *ngFor="let item of widgetDisponibili()" role="button" tabindex="0"
-          [attr.aria-label]="'Aggiungi widget '+item.title" (click)="aggiungiWidgetDaLibreria(item.key)"
-          (keydown.enter)="aggiungiWidgetDaLibreria(item.key)" (keydown.space)="aggiungiWidgetDaLibreria(item.key);$event.preventDefault()">
+        <nav class="navigazione-principale" aria-label="Navigazione principale">
+          <button type="button" class="voce-navigazione attiva" (click)="tornaScrivania()">
+            <span><app-icona-foro nome="scrivania"></app-icona-foro></span><strong>Scrivania</strong>
+          </button>
+          <button type="button" class="voce-navigazione" *ngFor="let item of widgetDisponibili()"
+            (click)="apriModulo(item.key)">
           <span><app-icona-foro [nome]="item.icon"></app-icona-foro></span>
-          <div><strong>{{ item.title }}</strong><small>{{ item.description }}</small></div>
-        </article>
+            <strong>{{ item.title === 'Calendario' ? 'Agenda' : item.title }}</strong>
+          </button>
+        </nav>
+        <details class="personalizza-widget">
+          <summary>Personalizza Scrivania</summary>
+          <p>Aggiungi gli strumenti rimossi dalla tua area di lavoro.</p>
+          <button type="button" *ngFor="let item of widgetDisponibili()" (click)="aggiungiWidgetDaLibreria(item.key)">
+            <app-icona-foro [nome]="item.icon"></app-icona-foro>{{ item.title }}
+          </button>
+        </details>
+        <button type="button" class="impostazioni-sidebar" (click)="toggleSettings()">
+          <app-icona-foro nome="impostazioni"></app-icona-foro>Impostazioni
+        </button>
       </aside>
 
       <section class="dashboard-content">

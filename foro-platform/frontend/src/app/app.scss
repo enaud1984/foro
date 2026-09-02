@@ -1884,3 +1884,156 @@ textarea:focus-visible,
 .widget-modal,.widget-modal.calendar-modal,.widget-modal.anagrafiche-modal,.widget-modal.pratiche-modal{position:fixed;inset:76px 0 0;transform:none;width:100%;height:calc(100vh - 76px);max-height:none;border-radius:0;box-shadow:none;padding:24px 32px;overflow:auto;background:var(--foro-surface-muted)}
 .widget-modal.calendar-modal .outlook-calendar{min-height:calc(100vh - 150px)}
 @media(max-width:760px){.widget-modal,.widget-modal.calendar-modal,.widget-modal.anagrafiche-modal,.widget-modal.pratiche-modal{inset:64px 0 0;height:calc(100vh - 64px);padding:16px}.outlook-calendar{grid-template-columns:1fr}.calendar-sidebar{max-height:240px}.ag-theme-quartz{height:58vh}}
+
+/* Redesign 2026 — shell calma, gerarchia netta e disclosure progressiva. */
+.shell-dashboard {
+  grid-template-rows: 64px 1fr;
+  background: var(--foro-surface-muted);
+}
+
+.topbar {
+  height: 64px !important;
+  padding: 0 var(--foro-space-6) !important;
+  background: var(--foro-surface) !important;
+  border-bottom: 1px solid var(--foro-border);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.brand.compact { width: 238px; gap: var(--foro-space-3); }
+.brand.compact .mark,
+.brand.compact .compact-logo {
+  width: 36px;
+  height: 36px;
+  padding: 2px;
+  border-radius: var(--foro-radius-sm);
+  box-shadow: none;
+}
+.brand.compact strong { color: var(--foro-primary); font-size: 15px; font-weight: 600; letter-spacing: 0; }
+.brand.compact small { display: none; }
+
+.ricerca-globale {
+  width: min(480px, 42vw);
+  height: var(--foro-control-height);
+  display: flex;
+  align-items: center;
+  gap: var(--foro-space-2);
+  padding: 0 var(--foro-space-3);
+  color: var(--foro-text-secondary);
+  background: var(--foro-surface-muted);
+  border: 1px solid transparent;
+  border-radius: var(--foro-radius-md);
+}
+.ricerca-globale:focus-within { border-color: var(--foro-focus); background: var(--foro-surface); }
+.ricerca-globale input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: var(--foro-text-primary); }
+.ricerca-globale kbd { color: var(--foro-text-tertiary); font: 500 11px/1 inherit; }
+.top-actions { margin-left: auto; }
+.workspace .topbar .top-actions .icon-action {
+  width: 38px; height: 38px; border: 0; border-radius: var(--foro-radius-md);
+  box-shadow: none; background: transparent; color: var(--foro-text-secondary);
+}
+.workspace .topbar .top-actions .icon-action:hover { background: var(--foro-secondary-surface); color: var(--foro-primary); }
+
+.dashboard-shell { grid-template-columns: 240px minmax(0, 1fr); }
+.widget-sidebar {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: var(--foro-space-6) var(--foro-space-3) var(--foro-space-4);
+  background: var(--foro-surface);
+  border-right: 1px solid var(--foro-border);
+  backdrop-filter: none;
+}
+.sidebar-intro { margin: 0 var(--foro-space-3) var(--foro-space-3); padding: 0; border: 0; }
+.sidebar-intro .eyebrow { color: var(--foro-text-tertiary); font-size: 10px; font-weight: 600; letter-spacing: .08em; }
+.sidebar-intro h3 { margin: var(--foro-space-1) 0 0; font-size: 13px; font-weight: 500; color: var(--foro-text-secondary); }
+.navigazione-principale { display: grid; gap: 2px; }
+.voce-navigazione,
+.impostazioni-sidebar,
+.personalizza-widget button {
+  width: 100%; min-height: 42px; display: flex; align-items: center; gap: var(--foro-space-3);
+  padding: 0 var(--foro-space-3); border: 0; border-radius: var(--foro-radius-md);
+  background: transparent; color: var(--foro-text-secondary); text-align: left; cursor: pointer;
+  transition: color var(--foro-motion-fast), background var(--foro-motion-fast);
+}
+.voce-navigazione span { display: grid; place-items: center; font-size: 18px; }
+.voce-navigazione strong { font-size: 14px; font-weight: 500; }
+.voce-navigazione:hover, .impostazioni-sidebar:hover { color: var(--foro-primary); background: var(--foro-secondary-surface); }
+.voce-navigazione.attiva { color: var(--foro-primary); background: #edf3f8; }
+.voce-navigazione.attiva strong { font-weight: 600; }
+.personalizza-widget { margin-top: var(--foro-space-6); padding-top: var(--foro-space-4); border-top: 1px solid var(--foro-border); }
+.personalizza-widget summary { padding: var(--foro-space-2) var(--foro-space-3); color: var(--foro-text-secondary); font-size: 12px; cursor: pointer; }
+.personalizza-widget p { padding: 0 var(--foro-space-3); font-size: 11px; }
+.personalizza-widget button { min-height: 36px; font-size: 12px; }
+.impostazioni-sidebar { margin-top: auto; font-size: 13px; }
+
+.dashboard-content { padding: var(--foro-space-8); }
+.dash-head {
+  min-height: auto; margin: 0 0 var(--foro-space-8); padding: 0;
+  border: 0; border-radius: 0; background: transparent; box-shadow: none;
+}
+.dash-head::before, .dash-head::after { display: none; }
+.today-status { color: var(--foro-text-secondary); font-weight: 500; letter-spacing: .06em; }
+.today-status i { box-shadow: none; }
+.dash-head .welcome-copy h1 { margin: var(--foro-space-2) 0 var(--foro-space-1); color: var(--foro-text-primary); font-size: var(--foro-font-page); font-weight: 600; letter-spacing: -.02em; }
+.dash-head p { color: var(--foro-text-secondary); font-size: var(--foro-font-body); }
+.today-summary { padding: 0; border: 0; background: transparent; box-shadow: none; }
+
+.operational-grid { min-height: 700px; padding: 0; background: transparent; border-radius: 0; }
+.grid-stack > .grid-stack-item > .grid-stack-item-content { overflow: visible; }
+.op-widget {
+  height: 100%; min-height: 0; padding: var(--foro-space-6);
+  border: 1px solid var(--foro-border); border-radius: var(--foro-radius-lg);
+  background: var(--foro-surface); box-shadow: var(--foro-shadow-card);
+  transition: border-color var(--foro-motion-fast), box-shadow var(--foro-motion-fast);
+}
+.op-widget:hover { transform: none; border-color: var(--foro-border-strong); box-shadow: 0 4px 14px rgba(16,42,67,.06); }
+.op-head { margin-bottom: var(--foro-space-3); }
+.op-head h3 { gap: var(--foro-space-2); color: var(--foro-text-primary); font-size: var(--foro-font-section); font-weight: 600; }
+.op-widget > b { margin: var(--foro-space-2) 0; color: var(--foro-text-primary); font-size: var(--foro-font-kpi); font-weight: 600; }
+.op-widget p { margin: var(--foro-space-1) 0 var(--foro-space-3); color: var(--foro-text-secondary); font-size: 13px; }
+.window-actions button { border: 0; background: transparent; color: var(--foro-text-tertiary); }
+.window-actions button:hover { background: var(--foro-secondary-surface); }
+.widget-preview-list button { min-height: 42px; border-color: var(--foro-border) !important; }
+.dashboard-footer { display: none; }
+
+.notifications-panel { top: 56px; right: var(--foro-space-6); border: 1px solid var(--foro-border); border-radius: var(--foro-radius-lg); background: var(--foro-surface); box-shadow: var(--foro-shadow-overlay); }
+.notifications-panel::before { display: none; }
+.notification-card { border: 0; border-radius: var(--foro-radius-md); box-shadow: none; }
+.notification-card:hover { transform: none; background: var(--foro-surface-muted); box-shadow: none; }
+
+.widget-modal, .widget-modal.calendar-modal, .widget-modal.anagrafiche-modal, .widget-modal.pratiche-modal {
+  inset: 64px 0 0 240px; width: auto; height: calc(100vh - 64px); padding: var(--foro-space-8);
+  background: var(--foro-surface-muted);
+}
+.widget-modal > h2 { color: var(--foro-text-primary); font-size: var(--foro-font-page); font-weight: 600; }
+.modal-close { top: var(--foro-space-6); right: var(--foro-space-8); border: 0; background: transparent; font-size: 0; }
+.modal-close app-icona-foro { font-size: 20px; }
+.calendar-layout, .outlook-calendar, .scheda, .dettaglio { box-shadow: none !important; }
+
+@media (max-width: 1024px) {
+  .dashboard-shell { grid-template-columns: 72px minmax(0, 1fr); }
+  .widget-sidebar { display: flex; padding-inline: var(--foro-space-2); }
+  .sidebar-intro, .voce-navigazione strong, .personalizza-widget, .impostazioni-sidebar { font-size: 0; }
+  .voce-navigazione { justify-content: center; padding: 0; }
+  .impostazioni-sidebar { justify-content: center; }
+  .widget-modal, .widget-modal.calendar-modal, .widget-modal.anagrafiche-modal, .widget-modal.pratiche-modal { left: 72px; }
+  .dashboard-content { padding: var(--foro-space-6); }
+}
+
+@media (max-width: 700px) {
+  .shell-dashboard { grid-template-rows: 56px 1fr; }
+  .topbar { height: 56px !important; padding: 0 var(--foro-space-3) !important; }
+  .brand.compact { width: auto; }
+  .brand.compact > div { display: none; }
+  .ricerca-globale { width: auto; flex: 1; margin-inline: var(--foro-space-2); }
+  .ricerca-globale kbd, .top-actions .icon-action:last-child { display: none; }
+  .dashboard-shell { display: block; }
+  .widget-sidebar { position: fixed; z-index: 15; inset: auto 0 0; height: 62px; flex-direction: row; padding: var(--foro-space-2); border: 0; border-top: 1px solid var(--foro-border); overflow-x: auto; }
+  .navigazione-principale { display: flex; min-width: max-content; gap: var(--foro-space-1); }
+  .voce-navigazione { width: 48px; min-height: 46px; }
+  .impostazioni-sidebar { display: none; }
+  .dashboard-content { padding: var(--foro-space-6) var(--foro-space-4) 80px; }
+  .today-summary { display: none; }
+  .widget-modal, .widget-modal.calendar-modal, .widget-modal.anagrafiche-modal, .widget-modal.pratiche-modal { inset: 56px 0 62px; height: auto; padding: var(--foro-space-4); }
+}
