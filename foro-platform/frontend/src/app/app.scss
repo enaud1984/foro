@@ -1966,11 +1966,14 @@ textarea:focus-visible,
 .personalizza-widget p { padding: 0 var(--foro-space-3); font-size: 11px; }
 .personalizza-widget button { min-height: 36px; font-size: 12px; }
 .impostazioni-sidebar { margin-top: auto; font-size: 13px; }
+.widget-sidebar > .personalizza-widget { margin-top: 0; padding: 0 0 var(--foro-space-4); border-top: 0; border-bottom: 1px solid var(--foro-border); }
+.navigazione-intro { margin-top: var(--foro-space-4); }
+.errore-campo { color: var(--foro-danger); font-size: 12px; font-weight: 500; }
 
 .dashboard-content { padding: var(--foro-space-8); }
 .dash-head {
-  min-height: auto; margin: 0 0 var(--foro-space-8); padding: 0;
-  border: 0; border-radius: 0; background: transparent; box-shadow: none;
+  min-height: auto; margin: calc(var(--foro-space-8) * -1) calc(var(--foro-space-8) * -1) var(--foro-space-8); padding: var(--foro-space-6) var(--foro-space-8);
+  border: 0; border-bottom: 1px solid var(--foro-border); border-radius: 0; background: var(--foro-surface); box-shadow: none;
 }
 .dash-head::before, .dash-head::after { display: none; }
 .today-status { color: var(--foro-text-secondary); font-weight: 500; letter-spacing: .06em; }
@@ -2003,10 +2006,13 @@ textarea:focus-visible,
 .notification-card:hover { transform: none; background: var(--foro-surface-muted); box-shadow: none; }
 
 .widget-modal, .widget-modal.calendar-modal, .widget-modal.anagrafiche-modal, .widget-modal.pratiche-modal {
-  inset: 64px 0 0 240px; width: auto; height: calc(100vh - 64px); padding: var(--foro-space-8);
+  inset: 64px 0 0 0; width: auto; height: calc(100vh - 64px); padding: var(--foro-space-8);
   background: var(--foro-surface-muted);
 }
 .widget-modal > h2 { color: var(--foro-text-primary); font-size: var(--foro-font-page); font-weight: 600; }
+.widget-modal.pratiche-modal > .eyebrow,
+.widget-modal.pratiche-modal > h2,
+.widget-modal.pratiche-modal > p { display: none; }
 .modal-close { top: var(--foro-space-6); right: var(--foro-space-8); border: 0; background: transparent; font-size: 0; }
 .modal-close app-icona-foro { font-size: 20px; }
 .calendar-layout, .outlook-calendar, .scheda, .dettaglio { box-shadow: none !important; }
@@ -2017,9 +2023,16 @@ textarea:focus-visible,
   .sidebar-intro, .voce-navigazione strong, .personalizza-widget, .impostazioni-sidebar { font-size: 0; }
   .voce-navigazione { justify-content: center; padding: 0; }
   .impostazioni-sidebar { justify-content: center; }
-  .widget-modal, .widget-modal.calendar-modal, .widget-modal.anagrafiche-modal, .widget-modal.pratiche-modal { left: 72px; }
+  .widget-modal, .widget-modal.calendar-modal, .widget-modal.anagrafiche-modal, .widget-modal.pratiche-modal { left: 0; }
   .dashboard-content { padding: var(--foro-space-6); }
 }
+
+.window-actions button,
+.mini-days button,
+.mini-month header button,
+.pulsante-icona,
+.icon-action,
+.azione-griglia { min-height: 32px; }
 
 @media (max-width: 700px) {
   .shell-dashboard { grid-template-rows: 56px 1fr; }

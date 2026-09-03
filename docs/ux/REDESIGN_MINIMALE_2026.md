@@ -15,8 +15,8 @@ di Anagrafiche dedicava troppo spazio a quattro indicatori non necessari alla co
   menu contestuale già esistente.
 - **Superfici calme:** bianco, grigi freddi e navy; bordi da un pixel, ombra quasi assente e
   nessun gradiente nella shell operativa.
-- **Navigazione stabile:** sidebar primaria con Scrivania, Agenda, Pratiche, Anagrafiche,
-  Documenti, Email e Collaboratori; personalizzazione e impostazioni restano secondarie.
+- **Navigazione dalla Scrivania:** le viste complete si aprono dai widget; la sidebar non
+  duplica i widget con collegamenti diretti e resta dedicata alla personalizzazione.
 
 ## Design system
 
@@ -26,13 +26,18 @@ tipografia, focus e durate di movimento. Il navy `#102a43` è il colore istituzi
 icone sulle superfici primarie sono bianchi. I colori successo, warning, errore e informazione
 non hanno uso decorativo.
 
+Tutti i pulsanti applicativi condividono la stessa famiglia tipografica Aptos/Segoe UI, corpo
+`14px`, peso `600` e altezza di riferimento `40px`; i pulsanti a sola icona mantengono una
+superficie quadrata accessibile senza introdurre una seconda scala tipografica.
+
 La tipografia usa la stack di sistema Aptos/Segoe UI, pesi 400–600, titoli pagina fluidi tra
 24 e 28 px, sezioni a 17 px, corpo a 14 px, testo secondario a 12 px e KPI a 28 px.
 
 ## Superfici riviste
 
 - **Shell:** header da 64 px, ricerca globale, notifiche e impostazioni essenziali.
-- **Sidebar:** diventa navigazione coerente; il catalogo per aggiungere widget è collassato.
+- **Sidebar:** contiene soltanto la personalizzazione della Scrivania e le impostazioni; il
+  catalogo resta espandibile per ridurre il rumore dopo la configurazione iniziale.
 - **Scrivania:** perde sfondi decorativi e griglia visibile; GridStack continua a governare
   drag, resize e persistenza. I widget sono anteprime leggere con azioni nel menu `…`.
 - **Agenda:** resta FullCalendar ed è presentata come pagina a piena larghezza; filtri e

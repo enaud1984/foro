@@ -152,20 +152,10 @@
     <div class="dashboard-shell">
       <aside class="widget-sidebar">
         <div class="sidebar-intro">
-          <span class="eyebrow">NAVIGAZIONE</span>
-          <h3>Studio</h3>
+          <span class="eyebrow">SCRIVANIA</span>
+          <h3>Personalizza il tuo spazio</h3>
         </div>
-        <nav class="navigazione-principale" aria-label="Navigazione principale">
-          <button type="button" class="voce-navigazione attiva" (click)="tornaScrivania()">
-            <span><app-icona-foro nome="scrivania"></app-icona-foro></span><strong>Scrivania</strong>
-          </button>
-          <button type="button" class="voce-navigazione" *ngFor="let item of widgetDisponibili()"
-            (click)="apriModulo(item.key)">
-          <span><app-icona-foro [nome]="item.icon"></app-icona-foro></span>
-            <strong>{{ item.title === 'Calendario' ? 'Agenda' : item.title }}</strong>
-          </button>
-        </nav>
-        <details class="personalizza-widget">
+        <details class="personalizza-widget" open>
           <summary>Personalizza Scrivania</summary>
           <p>Aggiungi gli strumenti rimossi dalla tua area di lavoro.</p>
           <button type="button" *ngFor="let item of widgetDisponibili()" (click)="aggiungiWidgetDaLibreria(item.key)">
@@ -178,7 +168,7 @@
       </aside>
 
       <section class="dashboard-content">
-        <div class="dash-head">
+        <div class="dash-head testata-buongiorno">
           <div class="welcome-copy">
             <span class="today-status"><i aria-hidden="true"></i> Oggi in studio</span>
             <h1>Buongiorno, {{ userName() }}</h1>
@@ -478,8 +468,8 @@
           <span class="eyebrow">NUOVO ACCESSO</span>
           <h3>Aggiungi un collaboratore</h3>
           <p class="drawer-note">Crea un accesso personale e assegna il ruolo operativo corretto.</p>
-          <div class="two-cols"><label>Nome<input formControlName="nome"></label><label>Cognome<input formControlName="cognome"></label></div>
-          <label>Email<input type="email" formControlName="email" placeholder="collaboratore@studio.it"></label>
+          <div class="two-cols"><label>Nome<input formControlName="nome" required><small class="errore-campo" *ngIf="collaboratoreForm.controls.nome.touched&&collaboratoreForm.controls.nome.invalid">Il nome è obbligatorio.</small></label><label>Cognome<input formControlName="cognome" required><small class="errore-campo" *ngIf="collaboratoreForm.controls.cognome.touched&&collaboratoreForm.controls.cognome.invalid">Il cognome è obbligatorio.</small></label></div>
+          <label>Email<input type="email" formControlName="email" placeholder="collaboratore@studio.it" required><small class="errore-campo" *ngIf="collaboratoreForm.controls.email.touched&&collaboratoreForm.controls.email.hasError('required')">L’email è obbligatoria.</small><small class="errore-campo" *ngIf="collaboratoreForm.controls.email.touched&&collaboratoreForm.controls.email.hasError('email')">Inserisci un indirizzo email valido.</small></label>
           <label>Ruolo e permessi<select formControlName="ruolo"><option value="AVVOCATO">Avvocato — accesso operativo</option><option value="SEGRETERIA">Segreteria — supporto operativo</option><option value="STUDIO_ADMIN">Altro titolare / Admin</option></select></label>
           <p class="collaborator-security-note">La password temporanea sarà inviata via email e dovrà essere modificata al primo accesso.</p>
           <button class="primary" type="submit" [disabled]="loading()">Aggiungi e invia accesso</button>

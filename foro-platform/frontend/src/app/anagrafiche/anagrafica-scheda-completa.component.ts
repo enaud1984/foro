@@ -67,7 +67,7 @@ export class AnagraficaSchedaCompletaComponent implements OnInit,OnDestroy {
   ngOnDestroy():void{this.revocaAnteprima();}
   @HostListener('document:keydown.escape') gestisciEscape():void{
     if(this.anteprima()){this.chiudiAnteprima();return;}if(this.schedaStampabile()){this.chiudiSchedaStampabile();return;}
-    if(this.uploadAperto()){this.annullaUpload();return;}if(this.stampaAperta()){this.stampaAperta.set(false);return;}
+    if(this.uploadAperto()){this.annullaUpload();return;}if(this.stampaAperta()){this.annullaStampa();return;}
     if(this.generaAperto()){this.generaAperto.set(false);return;}if(this.menuDocumenti()){this.menuDocumenti.set(false);return;}
   }
   caricaTutto():void{
@@ -112,6 +112,7 @@ export class AnagraficaSchedaCompletaComponent implements OnInit,OnDestroy {
     });
   }
   annullaUpload():void{if((this.uploadForm.dirty||this.file())&&!confirm('Annullare il caricamento e perdere i dati inseriti?'))return;this.uploadAperto.set(false);}
+  annullaStampa():void{this.stampaAperta.set(false);if(this.azioneIniziale==='stampa')this.chiudi.emit();}
   modificaMetadati(d:DocumentoAnagrafica):void{
     if(d.praticaId)return;
     const titolo=prompt('Titolo documento',d.titolo);if(!titolo)return;

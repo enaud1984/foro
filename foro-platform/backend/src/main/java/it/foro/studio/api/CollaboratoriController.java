@@ -57,7 +57,7 @@ public class CollaboratoriController {
       @NotBlank @Size(max = 80) String nome,
       @NotBlank @Size(max = 80) String cognome,
       @Email @NotBlank String email,
-      @Pattern(regexp = "AVVOCATO|SEGRETERIA|STUDIO_ADMIN") String ruolo) {}
+      @NotBlank @Pattern(regexp = "AVVOCATO|SEGRETERIA|STUDIO_ADMIN") String ruolo) {}
 
   public record RichiestaCambioPassword(
       @NotBlank String passwordAttuale,

@@ -1,11 +1,11 @@
 import {
-  ClientSideRowModelModule, ColDef, ColumnAutoSizeModule, GridOptions, ModuleRegistry,
-  PaginationModule, QuickFilterModule, TextFilterModule, ValidationModule,
+  ClientSideRowModelModule, ColDef, ColumnAutoSizeModule, GridOptions, LocaleModule, ModuleRegistry,
+  PaginationModule, QuickFilterModule, RowStyleModule, TextFilterModule, ValidationModule,
 } from 'ag-grid-community';
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule, ColumnAutoSizeModule, PaginationModule, QuickFilterModule,
-  TextFilterModule, ValidationModule,
+  TextFilterModule, LocaleModule, RowStyleModule, ValidationModule,
 ]);
 
 /** Configurazione Community condivisa: nessun modulo Enterprise viene registrato. */

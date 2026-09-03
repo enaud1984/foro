@@ -30,14 +30,27 @@ describe('AnagraficaSchedaCompletaComponent',()=>{
     expect(testo).toContain('Recapiti e indirizzo');expect(testo).toContain('Pratiche collegate');expect(testo).toContain('Documenti');expect(testo).toContain('Timeline');
   });
   it('maschera il codice fiscale nel riepilogo',()=>{const f=crea();expect(f.nativeElement.textContent).toContain('••••••••••••219X');});
-  it('espone tutte le azioni del menu documenti',()=>{
-    const f=crea();f.componentInstance.menuDocumenti.set(true);f.detectChanges();const testo=f.nativeElement.textContent;
-    expect(testo).toContain('Carica documento anagrafico');expect(testo).toContain('Documenti delle Pratiche');
-    expect(testo).toContain('Genera documento');expect(testo).toContain('Stampa scheda anagrafica');
+  it('mantiene Modifica accanto al nome e sposta Genera documento nel tab Documenti',()=>{
+    const f=crea();f.componentInstance.sezione.set('documenti');f.detectChanges();
+    const testata=f.nativeElement.querySelector('.scheda-header');
+    expect(testata.textContent).toContain('Giulia Ferrari');expect(testata.textContent).toContain('Modifica');
+    expect(testata.textContent).not.toContain('Stampa scheda');expect(testata.textContent).not.toContain('Documenti');
+    const testo=f.nativeElement.querySelector('.documenti header').textContent;
+    expect(testo).toContain('Genera documento');expect(testo).toContain('Carica documento');
   });
   it('esclude note ed elenco documenti dalle opzioni di stampa predefinite',()=>{
     const f=crea();expect(f.componentInstance.opzioni().noteInterne).toBeFalse();expect(f.componentInstance.opzioni().elencoDocumenti).toBeFalse();
     expect(f.componentInstance.opzioni().datiGenerali).toBeTrue();expect(f.componentInstance.opzioni().pratiche).toBeTrue();
+  });
+  it('annullando una stampa aperta dalla tabella torna all’elenco anagrafiche',()=>{
+    const f=TestBed.createComponent(AnagraficaSchedaCompletaComponent);
+    f.componentRef.setInput('soggetto',soggetto);f.componentRef.setInput('azioneIniziale','stampa');
+    const chiusura=spyOn(f.componentInstance.chiudi,'emit');f.detectChanges();
+    http.expectOne('/api/v1/anagrafiche/s1/pratiche').flush([]);
+    http.expectOne('/api/v1/anagrafiche/cataloghi/categorie-documenti').flush([]);
+    http.expectOne('/api/v1/anagrafiche/s1/timeline').flush([]);
+    http.match(r=>r.url==='/api/v1/anagrafiche/s1/documenti').forEach(r=>r.flush({content:[],totalElements:0,totalPages:0,number:0,size:100}));
+    f.componentInstance.annullaStampa();expect(chiusura).toHaveBeenCalled();
   });
   it('genera anteprima della scheda con dati letti dal backend',()=>{
     const f=crea();f.componentInstance.generaScheda();

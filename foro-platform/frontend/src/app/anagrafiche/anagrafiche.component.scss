@@ -683,3 +683,13 @@
 .sezione-form { border-top: 1px solid var(--foro-border); padding-top: 12px; }
 .sezione-form summary { padding: 8px 0; color: var(--foro-primary); font-weight: 600; cursor: pointer; }
 .sezione-form[open] summary { margin-bottom: 12px; }
+
+:host ::ng-deep .ag-row.riga-disattivata,
+:host ::ng-deep .ag-row.riga-disattivata .ag-cell { background: #fff7cc !important; }
+:host ::ng-deep .ag-row.riga-disattivata:hover,
+:host ::ng-deep .ag-row.riga-disattivata:hover .ag-cell { background: #ffef9f !important; }
+:host ::ng-deep .azioni-griglia { height: 100%; display: flex; align-items: center; gap: 6px; }
+:host ::ng-deep .azioni-griglia .azione-griglia { width: 32px; min-width: 32px; min-height: 32px; padding: 0; border: 1px solid var(--foro-border-strong); border-radius: var(--foro-radius-sm); background: var(--foro-surface); color: var(--foro-primary); cursor: pointer; }
+:host ::ng-deep .azioni-griglia .azione-griglia:hover { background: var(--foro-secondary-surface); }
+:host ::ng-deep .azioni-griglia .pericolo { color: var(--foro-danger); }
+:host ::ng-deep .azioni-griglia svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; vertical-align: middle; }

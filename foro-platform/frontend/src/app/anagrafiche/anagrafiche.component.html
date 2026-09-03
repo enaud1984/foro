@@ -22,7 +22,7 @@
   <p class="stato-ui" *ngIf="!caricamento()&&!errore()&&!soggetti().length">Nessuna anagrafica trovata.</p>
   <ag-grid-angular *ngIf="!compatto&&!caricamento()&&!errore()" class="ag-theme-quartz griglia-foro" aria-label="Elenco Anagrafiche"
     [rowData]="soggetti()" [columnDefs]="colonneGriglia" [gridOptions]="opzioniGriglia" (gridReady)="grigliaPronta($event)"
-    (gridSizeChanged)="dimensioneGrigliaCambiata($event)" (rowClicked)="rigaGriglia($event)"></ag-grid-angular>
+    (gridSizeChanged)="dimensioneGrigliaCambiata($event)" (rowClicked)="rigaGriglia($event)" (cellClicked)="azioneGriglia($event)"></ag-grid-angular>
   <div class="corpo" *ngIf="!caricamento()&&soggetti().length">
     <div class="lista" role="table" aria-label="Elenco anagrafiche" *ngIf="compatto">
       <div class="intestazione-lista" role="row" *ngIf="!compatto">
@@ -53,31 +53,6 @@
         </div>
       </div>
     </div>
-    <article class="dettaglio" *ngIf="!compatto && !schedaCompleta() && selezionato() as s">
-      <header><div><small>{{etichettaTipo(s.tipoCodice)}}</small><h3>{{nome(s)}}</h3></div><button type="button" class="pulsante-icona" (click)="selezionato.set(null)" aria-label="Chiudi dettaglio"><app-icona-foro nome="chiudi"></app-icona-foro></button></header>
-      <dl>
-        <ng-container *ngIf="s.tipoCodice==='PERSONA_FISICA'"><dt>Data e luogo di nascita</dt><dd>{{s.dataNascita||'—'}} · {{s.luogoNascita||'—'}}</dd></ng-container>
-        <ng-container *ngIf="s.formaGiuridica"><dt>Forma giuridica</dt><dd>{{s.formaGiuridica}}</dd></ng-container>
-        <dt>Codice fiscale</dt><dd>{{s.codiceFiscale||'—'}}</dd><dt>Partita IVA</dt><dd>{{s.partitaIva||'—'}}</dd>
-        <dt>Email / PEC</dt><dd>{{s.email||'—'}}<br>{{s.pec||''}}</dd><dt>Telefono</dt><dd>{{s.telefono||s.cellulare||'—'}}</dd>
-        <dt>Indirizzo</dt><dd>{{indirizzoCompleto(s)||'—'}}</dd><dt>Note</dt><dd>{{s.note||'—'}}</dd>
-        <dt>Creata</dt><dd>{{s.creatoIl|date:'dd/MM/yyyy HH:mm'}}</dd><dt>Ultima modifica</dt><dd>{{s.aggiornatoIl|date:'dd/MM/yyyy HH:mm'}}</dd>
-      </dl>
-      <section class="pratiche-collegate"><h4>Pratiche collegate</h4><button type="button" *ngFor="let p of praticheCollegate()" (click)="praticaAperta.emit(p.id)"><strong>{{p.codice}} · {{p.titolo}}</strong><small>{{p.ruoloCodice.replaceAll('_',' ')}} · {{p.statoCodice.replaceAll('_',' ')}}</small></button><p *ngIf="!praticheCollegate().length">Nessuna Pratica visibile collegata.</p></section>
-      <nav class="azioni-dettaglio">
-        <button type="button" class="primario" (click)="apriSchedaCompleta(s)">Apri scheda completa</button>
-        <details class="menu-documenti">
-          <summary>Documenti</summary>
-          <div>
-            <button type="button" (click)="apriSchedaCompleta(s,'anagrafica')">Documenti dell’Anagrafica</button>
-            <button type="button" (click)="apriSchedaCompleta(s,'pratiche')">Documenti delle Pratiche</button>
-            <button type="button" (click)="apriSchedaCompleta(s,'genera')">Genera documento</button>
-            <button type="button" (click)="apriSchedaCompleta(s,'stampa')">Stampa scheda anagrafica</button>
-          </div>
-        </details>
-        <button type="button" (click)="modifica(s)">Modifica</button><button type="button" (click)="cambiaStato(s)">{{s.stato==='ATTIVO'?'Disattiva':'Riattiva'}}</button><button type="button" class="pericolo" (click)="elimina(s)">Elimina</button>
-      </nav>
-    </article>
   </div>
   <app-anagrafica-scheda-completa *ngIf="!compatto&&schedaCompleta()&&selezionato() as s" [soggetto]="s" [tipi]="tipi()" [azioneIniziale]="azioneScheda()"
     (chiudi)="schedaCompleta.set(false);azioneScheda.set(null)" (modifica)="modificaDaScheda($event)" (apriPratica)="praticaAperta.emit($event)"></app-anagrafica-scheda-completa>

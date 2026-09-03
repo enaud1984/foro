@@ -7,7 +7,7 @@ import { CatalogoAnagrafica, PraticaCollegataAnagrafica, RichiestaSoggetto, Sogg
 import { AnagraficaSchedaCompletaComponent } from './anagrafica-scheda-completa.component';
 import { IconaForoComponent } from '../shared/icona-foro.component';
 import { AgGridAngular } from 'ag-grid-angular';
-import { ColDef, GridApi, GridReadyEvent, GridSizeChangedEvent, RowClickedEvent } from 'ag-grid-community';
+import { CellClickedEvent, ColDef, GridApi, GridReadyEvent, GridSizeChangedEvent, ICellRendererParams, RowClickedEvent } from 'ag-grid-community';
 import { opzioniGrigliaForo } from '../shared/configurazione-griglia-foro';
 
 @Component({
@@ -18,7 +18,7 @@ import { opzioniGrigliaForo } from '../shared/configurazione-griglia-foro';
   styleUrl: './anagrafiche.component.scss'
 })
 export class AnagraficheComponent implements OnInit, OnChanges {
-  readonly opzioniGriglia = { ...opzioniGrigliaForo, domLayout: 'normal' as const };
+  readonly opzioniGriglia = { ...opzioniGrigliaForo, domLayout: 'normal' as const, getRowClass: (parametri:{data?:Soggetto}) => parametri.data?.stato === 'DISATTIVATO' ? 'riga-disattivata' : undefined };
   private apiGriglia?: GridApi<Soggetto>;
   private readonly fb = inject(FormBuilder);
   private readonly servizio = inject(AnagraficheService);
@@ -74,12 +74,28 @@ export class AnagraficheComponent implements OnInit, OnChanges {
     {headerName:'Telefono',field:'telefono'},
     {headerName:'Stato',field:'stato',maxWidth:130},
     {headerName:'Ultima modifica',field:'aggiornatoIl',valueFormatter:p=>p.value?new Intl.DateTimeFormat('it-IT').format(new Date(p.value)):'—'},
-    {headerName:'Azioni',sortable:false,filter:false,maxWidth:150,cellRenderer:()=>'<button class="azione-griglia" type="button">Apri / modifica</button>'},
+    {headerName:'Azioni',sortable:false,filter:false,minWidth:190,maxWidth:210,cellRenderer:(parametri:ICellRendererParams<Soggetto>)=>{
+      const disattivato=parametri.data?.stato==='DISATTIVATO';
+      return `<div class="azioni-griglia">
+        <button class="azione-griglia" data-azione="apri" type="button" title="Apri scheda completa" aria-label="Apri scheda completa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12s3-6 8-6 8 6 8 6-3 6-8 6-8-6-8-6Z"/><circle cx="12" cy="12" r="2.5"/></svg></button>
+        <button class="azione-griglia" data-azione="stampa" type="button" title="Stampa scheda" aria-label="Stampa scheda"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M7 14h10v7H7z"/></svg></button>
+        <button class="azione-griglia pericolo" data-azione="elimina" type="button" title="Elimina anagrafica" aria-label="Elimina anagrafica"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6M14 11v6"/></svg></button>
+        <button class="azione-griglia" data-azione="stato" type="button" title="${disattivato?'Riattiva':'Disabilita'} anagrafica" aria-label="${disattivato?'Riattiva':'Disabilita'} anagrafica"><svg viewBox="0 0 24 24" aria-hidden="true">${disattivato?'<path d="M20 7v5h-5M4 17v-5h5M6 9a7 7 0 0 1 12-2l2 5M4 12l2 5a7 7 0 0 0 12-2"/>':'<circle cx="12" cy="12" r="9"/><path d="m6 6 12 12"/>'}</svg></button>
+      </div>`;
+    }},
   ];
   grigliaPronta(evento:GridReadyEvent<Soggetto>):void{this.apiGriglia=evento.api;this.applicaFiltroGlobale(this.ricerca.value);evento.api.sizeColumnsToFit();}
   dimensioneGrigliaCambiata(evento:GridSizeChangedEvent<Soggetto>):void{if(evento.clientWidth>0)evento.api.sizeColumnsToFit();}
   applicaFiltroGlobale(testo:string):void{this.apiGriglia?.setGridOption('quickFilterText',testo);sessionStorage.setItem('foro.anagrafiche.filtro',testo);}
-  rigaGriglia(evento:RowClickedEvent<Soggetto>):void{if(evento.data)this.apri(evento.data);}
+  rigaGriglia(evento:RowClickedEvent<Soggetto>):void{if(evento.data&&!(evento.event?.target as HTMLElement)?.closest('[data-azione]'))this.apriSchedaCompleta(evento.data);}
+  azioneGriglia(evento:CellClickedEvent<Soggetto>):void{
+    const azione=(evento.event?.target as HTMLElement)?.closest<HTMLButtonElement>('[data-azione]')?.dataset['azione'];
+    const soggetto=evento.data;if(!azione||!soggetto)return;
+    if(azione==='apri')this.apriSchedaCompleta(soggetto);
+    if(azione==='stampa')this.apriSchedaCompleta(soggetto,'stampa');
+    if(azione==='elimina')this.elimina(soggetto);
+    if(azione==='stato')this.cambiaStato(soggetto);
+  }
   ngOnInit(): void {
     if(!this.compatto)this.ricerca.setValue(sessionStorage.getItem('foro.anagrafiche.filtro')??'',{emitEvent:false});
     if(this.compatto)this.filtroStato.setValue('ATTIVO',{emitEvent:false});
@@ -115,7 +131,7 @@ export class AnagraficheComponent implements OnInit, OnChanges {
   apri(s:Soggetto):void {
     this.menuRigaAperto.set(null);
     this.selezionato.set(s);this.soggettoSelezionato.emit(s);
-    if(!this.compatto)this.caricaPratiche(s.id);
+    if(!this.compatto)this.apriSchedaCompleta(s);
     if(this.compatto)this.richiediEspansione.emit(s);
   }
   apriDettaglio(id:string,completa=false):void{this.servizio.dettaglio(id).subscribe({next:s=>{this.selezionato.set(s);this.caricaPratiche(id);this.schedaCompleta.set(completa);},error:()=>this.errore.set('Anagrafica non trovata.')});}

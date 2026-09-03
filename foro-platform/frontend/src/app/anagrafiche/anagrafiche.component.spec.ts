@@ -14,18 +14,25 @@ describe('AnagraficheComponent', () => {
     http.expectOne('/api/v1/anagrafiche/cataloghi/tipi-soggetto').flush([{codice:'PERSONA_FISICA',descrizione:'Persona fisica',ordine:1},{codice:'PERSONA_GIURIDICA',descrizione:'Persona giuridica',ordine:2}]);
     const richiesta=http.expectOne(r=>r.url==='/api/v1/anagrafiche');richiesta.flush({content:contenuto,totalElements:contenuto.length,totalPages:1,number:0,size:20});
   }
+  function rispondiScheda(id='1'):void{
+    http.expectOne(`/api/v1/anagrafiche/${id}/pratiche`).flush([]);
+    http.expectOne('/api/v1/anagrafiche/cataloghi/categorie-documenti').flush([]);
+    http.expectOne(`/api/v1/anagrafiche/${id}/timeline`).flush([]);
+    http.match(r=>r.url===`/api/v1/anagrafiche/${id}/documenti`).forEach(r=>r.flush({content:[],totalElements:0,totalPages:0,number:0,size:100}));
+  }
   it('mostra stato vuoto e pulsante di creazione',()=>{
     const fixture=TestBed.createComponent(AnagraficheComponent);fixture.detectChanges();rispondiIniziale();fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Nessuna anagrafica trovata');
     expect(fixture.nativeElement.textContent).toContain('Nuova anagrafica');
   });
-  it('visualizza dati provenienti dalle API e apre il dettaglio',()=>{
+  it('visualizza dati provenienti dalle API e apre direttamente la scheda completa',()=>{
     const soggetto={id:'1',tipoCodice:'PERSONA_FISICA',nome:'Giulia',cognome:'Ferrari',denominazione:null,email:'giulia@example.test',pec:null,telefono:null,cellulare:null,partitaIva:null,stato:'ATTIVO',version:0,creatoIl:'2026-07-29T08:00:00Z',aggiornatoIl:'2026-07-29T08:00:00Z'};
     const fixture=TestBed.createComponent(AnagraficheComponent);fixture.detectChanges();rispondiIniziale([soggetto]);fixture.detectChanges();
     expect(fixture.componentInstance.soggetti()).toEqual([soggetto] as any);
-    fixture.componentInstance.rigaGriglia({data:soggetto} as any);fixture.detectChanges();
-    http.expectOne('/api/v1/anagrafiche/1/pratiche').flush([]);
+    fixture.componentInstance.rigaGriglia({data:soggetto} as any);fixture.detectChanges();rispondiScheda();
     expect(fixture.componentInstance.selezionato()?.id).toBe('1');
+    expect(fixture.nativeElement.querySelector('app-anagrafica-scheda-completa')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.dettaglio')).toBeNull();
   });
   it('limita il widget compatto a cinque risultati tramite la richiesta API',()=>{
     const fixture=TestBed.createComponent(AnagraficheComponent);fixture.componentRef.setInput('compatto',true);fixture.detectChanges();
@@ -33,16 +40,13 @@ describe('AnagraficheComponent', () => {
     const richiesta=http.expectOne(r=>r.url==='/api/v1/anagrafiche');
     expect(richiesta.request.params.get('dimensione')).toBe('5');richiesta.flush({content:[],totalElements:0,totalPages:0,number:0,size:5});
   });
-  it('mostra il pulsante per aprire la scheda completa',()=>{
+  it('elimina il pannello intermedio e apre la scheda completa con un solo passaggio',()=>{
     const soggetto={id:'1',tipoCodice:'PERSONA_FISICA',nome:'Giulia',cognome:'Ferrari',denominazione:null,email:null,pec:null,telefono:null,cellulare:null,partitaIva:null,stato:'ATTIVO',version:0,creatoIl:'2026-07-29T08:00:00Z',aggiornatoIl:'2026-07-29T08:00:00Z'};
     const fixture=TestBed.createComponent(AnagraficheComponent);fixture.detectChanges();rispondiIniziale([soggetto]);fixture.detectChanges();
-    fixture.componentInstance.apri(soggetto as any);fixture.detectChanges();
-    http.expectOne('/api/v1/anagrafiche/1/pratiche').flush([]);fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Apri scheda completa');
+    fixture.componentInstance.apri(soggetto as any);fixture.detectChanges();rispondiScheda();fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-anagrafica-scheda-completa')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.dettaglio')).toBeNull();
     expect(fixture.nativeElement.querySelector('ag-grid-angular')).toBeTruthy();
-    expect(fixture.nativeElement.textContent).toContain('Documenti dell’Anagrafica');
-    expect(fixture.nativeElement.textContent).toContain('Documenti delle Pratiche');
-    expect(fixture.nativeElement.textContent).toContain('Stampa scheda anagrafica');
   });
   it('apre realmente la scheda completa e porta ai documenti delle Pratiche',()=>{
     const soggetto={id:'1',tipoCodice:'PERSONA_FISICA',nome:'Giulia',cognome:'Ferrari',denominazione:null,email:null,pec:null,telefono:null,cellulare:null,partitaIva:null,stato:'ATTIVO',version:0,creatoIl:'2026-07-29T08:00:00Z',aggiornatoIl:'2026-07-29T08:00:00Z'};
@@ -67,7 +71,7 @@ describe('AnagraficheComponent', () => {
     expect(componente.colonneGriglia.map(colonna=>colonna.headerName)).toContain('Soggetto');
     expect(componente.opzioniGriglia.domLayout).toBe('normal');
     expect(griglia).toBeTruthy();
-    expect(griglia?.classList).toContain('ag-theme-quartz');
+    expect(griglia?.classList).toContain('griglia-foro');
     expect(getComputedStyle(griglia!).height).not.toBe('0px');
     expect(getComputedStyle(griglia!).minHeight).toBe('320px');
     expect(getComputedStyle(griglia!).overflow).not.toBe('hidden');
