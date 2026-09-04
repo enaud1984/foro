@@ -149,7 +149,7 @@
       </section>
     </header>
 
-    <div class="dashboard-shell">
+    <div class="dashboard-shell" [class.vista-widget-aperta]="expandedWidget()">
       <aside class="widget-sidebar">
         <div class="sidebar-intro">
           <span class="eyebrow">SCRIVANIA</span>
@@ -228,6 +228,187 @@
           </article>
           </gridstack-item>
         </gridstack>
+      </section>
+      <section class="widget-modal" *ngIf="expandedWidget() as widget" [class.calendar-modal]="widget.key === 'calendario'" [class.anagrafiche-modal]="widget.key === 'clienti'" [class.collaboratori-modal]="widget.key === 'collaboratori'" [class.pratiche-modal]="widget.key === 'pratiche'">
+        <button class="torna-scrivania" type="button" (click)="closeExpandedWidget()">← Torna alla scrivania</button>
+        <span class="eyebrow">VISTA INGRANDITA</span>
+        <h2><app-icona-foro [nome]="widget.icon"></app-icona-foro>{{ widget.title }}</h2>
+        <p>{{ widget.description }}</p>
+
+        <div class="outlook-calendar" *ngIf="widget.key === 'calendario'">
+          <aside class="calendar-sidebar">
+            <div class="mini-month">
+              <header><button type="button" aria-label="Mese precedente" (click)="navigaMiniCalendario(-1)">‹</button><strong>{{ intestazioneMiniCalendario() }}</strong><button type="button" aria-label="Mese successivo" (click)="navigaMiniCalendario(1)">›</button></header>
+              <div class="mini-week"><span>L</span><span>M</span><span>M</span><span>G</span><span>V</span><span>S</span><span>D</span></div>
+              <div class="mini-days"><button type="button" *ngFor="let giorno of celleMese()" [class.today]="giorno.oggi" [class.selected]="giorno.iso === dataIsoLocale(dataCalendario())" [class.other-month]="!giorno.meseCorrente" (click)="selezionaGiornoMiniCalendario(giorno.iso)">{{ giorno.numero }}</button></div>
+            </div>
+            <button class="calendar-add" type="button" (click)="apriNuovoAppuntamento()">＋ Nuovo appuntamento</button>
+            <section class="calendar-list">
+              <h4>Calendari</h4>
+              <label *ngFor="let calendario of calendariAgenda()">
+                <input type="checkbox" [checked]="calendario.selezionato" (change)="cambiaVisibilitaCalendario(calendario.chiave, $any($event.target).checked)">
+                <span class="dot" [ngClass]="calendario.classeColore" [style.background]="calendario.classeColore.startsWith('#') ? calendario.classeColore : null"></span>
+                <span>{{ calendario.nome }}<small *ngIf="calendario.condivisoConTuttoLoStudio">Tutto lo Studio</small></span>
+              </label>
+              <button class="calendar-share-add" type="button" (click)="apriGestioneCalendari()"><app-icona-foro nome="impostazioni"></app-icona-foro>Gestione calendari</button>
+            </section>
+          </aside>
+
+          <section class="calendar-main agenda-fullcalendar" aria-label="Agenda completa">
+            <div class="calendar-commandbar agenda-actions">
+              <button class="primary" type="button" (click)="apriNuovoAppuntamento()">Nuovo appuntamento</button>
+              <span *ngIf="calendarioCaricamento()" role="status" aria-live="polite">Caricamento appuntamenti…</span>
+            </div>
+            <p class="appointment-error" role="alert" *ngIf="calendarioErrore()">{{ calendarioErrore() }}</p>
+            <div class="calendar-opened-item" *ngIf="rigaWidgetSelezionata() as riga">
+              <span>Oggetto aperto</span>
+              <strong>{{ riga.titolo }}</strong>
+              <small>{{ riga.descrizione }} · {{ riga.stato }}</small>
+            </div>
+
+            <full-calendar #agendaCompleta [options]="opzioniAgenda"></full-calendar>
+          </section>
+
+          <form class="appointment-panel" *ngIf="nuovoAppuntamentoAperto()" [formGroup]="appuntamentoForm" (ngSubmit)="salvaAppuntamento()">
+            <header><strong>{{eventoInModificaId()?'Modifica appuntamento':'Nuovo appuntamento'}}</strong><button class="panel-close" type="button" aria-label="Chiudi appuntamento" title="Chiudi" (click)="chiudiNuovoAppuntamento()">×</button></header>
+            <p class="appointment-error" *ngIf="erroreAppuntamento()">{{ erroreAppuntamento() }}</p>
+            <label>Titolo<input formControlName="titolo"></label>
+            <label>Calendario<select formControlName="calendario"><option *ngFor="let calendario of calendariAgenda()" [value]="calendario.chiave">{{ calendario.nome }}</option></select></label>
+            <label>Pratica collegata
+              <input [formControl]="ricercaPratica" placeholder="Nessuna pratica · cerca codice, titolo, Cliente o Controparte">
+              <button type="button" class="calendar-share-add" *ngIf="appuntamentoForm.controls.praticaId.value" (click)="selezionaPraticaAgenda(null)">Rimuovi collegamento</button>
+            </label>
+            <div class="practice-autocomplete" *ngIf="praticheAgenda().length">
+              <button type="button" *ngFor="let pratica of praticheAgenda()" (click)="selezionaPraticaAgenda(pratica)">
+                <strong>{{pratica.codice}}</strong><span>{{pratica.titolo}}</span><small>{{pratica.statoCodice}}</small>
+              </button>
+            </div>
+            <div class="appointment-options-grid">
+              <label>Stato<select formControlName="statoDisponibilita"><option value="LIBERO">Libero</option><option value="PROVVISORIO">Provvisorio</option><option value="OCCUPATO">Occupato</option><option value="FUORI_SEDE">Fuori sede</option></select></label>
+              <label>Promemoria<select formControlName="promemoriaMinuti"><option [ngValue]="0">Nessuno</option><option [ngValue]="5">5 minuti prima</option><option [ngValue]="15">15 minuti prima</option><option [ngValue]="30">30 minuti prima</option><option [ngValue]="60">1 ora prima</option><option [ngValue]="1440">1 giorno prima</option></select></label>
+              <label>Categoria<select formControlName="categoria"><option value="GENERALE">Generale</option><option value="UDIENZA">Udienza</option><option value="CLIENTE">Cliente</option><option value="SCADENZA">Scadenza</option><option value="RIUNIONE">Riunione</option></select></label>
+            </div>
+            <label>Invita avvocati dello Studio
+              <select multiple class="invite-select" aria-label="Invita avvocati dello Studio" (change)="aggiornaInvitati($event)">
+                <option *ngFor="let persona of personeInvitate()" [value]="persona.id" [selected]="persona.selezionata">{{ persona.nome }}</option>
+              </select>
+              <small class="field-hint">Seleziona uno o più collaboratori con Ctrl + clic.</small>
+            </label>
+            <div class="three-cols">
+              <label>Data<input type="date" formControlName="data"></label>
+              <label>Inizio<input type="time" formControlName="inizio"></label>
+              <label>Fine<input type="time" formControlName="fine"></label>
+            </div>
+            <label class="compact-check"><input type="checkbox" formControlName="tuttoGiorno"> Giornata intera</label>
+            <div class="two-cols">
+              <label>Serie<select formControlName="ricorrenza"><option value="NESSUNA">Non si ripete</option><option value="GIORNALIERA">Ogni giorno</option><option value="SETTIMANALE">Ogni settimana</option><option value="MENSILE">Ogni mese</option></select></label>
+              <label *ngIf="appuntamentoForm.controls.ricorrenza.value !== 'NESSUNA'">Fine serie<input type="date" formControlName="fineRicorrenza"></label>
+            </div>
+            <label>Note<textarea formControlName="note"></textarea></label>
+            <button class="primary" type="submit" [disabled]="loading()">{{ loading() ? 'Salvataggio…' : (eventoInModificaId()?'Salva modifiche':'Salva appuntamento') }}</button>
+          </form>
+
+          <section class="appointment-panel event-detail-panel" *ngIf="eventoSelezionato() as evento">
+            <header><strong>Dettagli appuntamento</strong><button class="panel-close" type="button" aria-label="Chiudi dettagli appuntamento" (click)="chiudiDettaglioEvento()">×</button></header>
+            <div class="event-detail-color" [style.background]="coloreEvento(evento)"></div>
+            <h3>{{ evento.titolo }}</h3>
+            <dl>
+              <div><dt>Data e ora</dt><dd>{{ evento.data | date:'dd/MM/yyyy' }} · {{ formattaOra(evento.ora,evento.minuti) }}–{{ evento.fine }}</dd></div>
+              <div><dt>Organizzato da</dt><dd>{{ evento.persona }}</dd></div>
+              <div><dt>Calendario</dt><dd>{{ nomeCalendario(evento.calendario) }}</dd></div>
+              <div><dt>Invitati</dt><dd>{{ evento.partecipanti || 'Nessun invitato' }}</dd></div>
+              <div><dt>Stato</dt><dd>{{ etichettaStato(evento.statoDisponibilita) }}</dd></div>
+              <div><dt>Categoria</dt><dd>{{ evento.categoria || 'Generale' }}</dd></div>
+              <div><dt>Promemoria</dt><dd>{{ evento.promemoriaMinuti ? evento.promemoriaMinuti + ' minuti prima' : 'Nessuno' }}</dd></div>
+              <div *ngIf="evento.ricorrenza && evento.ricorrenza !== 'NESSUNA'"><dt>Serie</dt><dd>{{ evento.ricorrenza }}</dd></div>
+              <div *ngIf="evento.praticaId"><dt>Pratica</dt><dd>{{evento.praticaCodice}} · {{evento.praticaTitolo}} · {{evento.praticaStato}}</dd></div>
+            </dl>
+            <section class="event-notes"><strong>Note</strong><p>{{ evento.note || 'Nessuna nota' }}</p></section>
+            <nav class="event-detail-actions"><button type="button" (click)="modificaEvento(evento)">Modifica evento</button><button type="button" class="calendar-delete" (click)="eliminaEvento(evento)">Elimina evento</button><button type="button" *ngIf="evento.praticaId" (click)="apriPraticaDaEvento(evento)">Apri pratica</button></nav>
+          </section>
+
+          <section class="appointment-panel calendar-management-panel" *ngIf="gestioneCalendariAperta()">
+            <header><strong>Gestione calendari</strong><button class="panel-close" type="button" aria-label="Chiudi gestione calendari" title="Chiudi" (click)="chiudiGestioneCalendari()">×</button></header>
+            <div class="calendar-management-intro">
+              <div><span class="eyebrow">CALENDARI DELLO STUDIO</span><p>Crea calendari, aggiorna nome e condivisioni oppure elimina quelli non più necessari.</p></div>
+              <button class="primary calendar-create" type="button" (click)="apriNuovoCalendario()">＋ Nuovo calendario</button>
+            </div>
+
+            <div class="calendar-management-list" *ngIf="calendariAgenda().length; else nessunCalendario">
+              <article *ngFor="let calendario of calendariAgenda()">
+                <span class="calendar-management-color" [style.background]="calendario.classeColore"></span>
+                <div>
+                  <strong>{{ calendario.nome }}</strong>
+                  <small *ngIf="calendario.condivisoConTuttoLoStudio; else condivisioneSingola">Condiviso con tutto lo Studio</small>
+                  <ng-template #condivisioneSingola><small>{{ calendario.condivisoCon.length ? 'Condiviso con ' + calendario.condivisoCon.join(', ') : 'Calendario personale' }}</small></ng-template>
+                  <em *ngIf="!calendario.gestibile">Condiviso con te</em>
+                </div>
+                <nav *ngIf="calendario.gestibile">
+                  <button type="button" (click)="modificaCalendario(calendario)">Modifica</button>
+                  <button class="calendar-delete" type="button" (click)="richiediEliminazioneCalendario(calendario.chiave)">Elimina</button>
+                </nav>
+                <div class="calendar-delete-confirm" *ngIf="calendarioDaEliminare() === calendario.chiave">
+                  <p>Eliminare “{{ calendario.nome }}”? Gli appuntamenti associati non saranno più visibili.</p>
+                  <button type="button" (click)="annullaEliminazioneCalendario()">Annulla</button>
+                  <button class="confirm-delete" type="button" [disabled]="loading()" (click)="eliminaCalendario(calendario.chiave)">Conferma eliminazione</button>
+                </div>
+              </article>
+            </div>
+            <ng-template #nessunCalendario><p class="calendar-empty">Non ci sono ancora calendari.</p></ng-template>
+
+            <form class="calendar-editor shared-calendar-panel" *ngIf="nuovoCalendarioAperto()" [formGroup]="calendarioCondivisoForm" (ngSubmit)="salvaCalendarioCondiviso()">
+              <div class="calendar-editor-head"><strong>{{ calendarioInModifica() ? 'Modifica calendario' : 'Nuovo calendario' }}</strong><button type="button" (click)="annullaModificaCalendario()">Annulla</button></div>
+              <label>Nome calendario<input formControlName="nome" placeholder="Es. Team contenzioso"></label>
+              <label>Colore calendario<input type="color" formControlName="colore"></label>
+              <fieldset>
+                <legend>Condividi con</legend>
+                <label *ngFor="let persona of personeCondivisione()"><input type="checkbox" [checked]="persona.selezionata" (change)="cambiaCondivisionePersona(persona.nome, $any($event.target).checked)">{{ persona.nome }}</label>
+              </fieldset>
+              <button class="primary" type="submit" [disabled]="loading()">{{ loading() ? 'Salvataggio…' : (calendarioInModifica() ? 'Salva modifiche' : 'Crea calendario') }}</button>
+            </form>
+            <p class="error" role="alert" *ngIf="error()">{{ error() }}</p>
+          </section>
+        </div>
+
+        <section class="collaboratori-widget" *ngIf="widget.key === 'collaboratori'">
+          <form [formGroup]="collaboratoreForm" (ngSubmit)="creaCollaboratore()" class="drawer-form collaborator-form">
+            <span class="eyebrow">NUOVO ACCESSO</span>
+            <h3>Aggiungi un collaboratore</h3>
+            <p class="drawer-note">Crea un accesso personale e assegna il ruolo operativo corretto.</p>
+            <div class="two-cols"><label>Nome<input formControlName="nome" required><small class="errore-campo" *ngIf="collaboratoreForm.controls.nome.touched&&collaboratoreForm.controls.nome.invalid">Il nome è obbligatorio.</small></label><label>Cognome<input formControlName="cognome" required><small class="errore-campo" *ngIf="collaboratoreForm.controls.cognome.touched&&collaboratoreForm.controls.cognome.invalid">Il cognome è obbligatorio.</small></label></div>
+            <label>Email<input type="email" formControlName="email" placeholder="collaboratore@studio.it" required><small class="errore-campo" *ngIf="collaboratoreForm.controls.email.touched&&collaboratoreForm.controls.email.hasError('required')">L’email è obbligatoria.</small><small class="errore-campo" *ngIf="collaboratoreForm.controls.email.touched&&collaboratoreForm.controls.email.hasError('email')">Inserisci un indirizzo email valido.</small></label>
+            <label>Ruolo e permessi<select formControlName="ruolo"><option value="AVVOCATO">Avvocato — accesso operativo</option><option value="SEGRETERIA">Segreteria — supporto operativo</option><option value="STUDIO_ADMIN">Altro titolare / Admin</option></select></label>
+            <p class="collaborator-security-note">La password temporanea sarà inviata via email e dovrà essere modificata al primo accesso.</p>
+            <button class="primary" type="submit" [disabled]="loading()">Aggiungi e invia accesso</button>
+            <p class="success" *ngIf="collaboratorMessage()">{{ collaboratorMessage() }}</p>
+          </form>
+          <section class="collaborator-directory">
+            <header><div><span class="eyebrow">PERSONE DELLO STUDIO</span><h3>Collaboratori</h3></div><span class="collaborator-count">{{ collaboratoriStudio().length }}</span></header>
+            <div class="members-preview" *ngIf="collaboratoriStudio().length; else nessunCollaboratore">
+              <article *ngFor="let collaboratore of collaboratoriStudio()">
+                <span class="collaborator-avatar" aria-hidden="true">{{ inizialiCollaboratore(collaboratore) }}</span>
+                <div><strong>{{ collaboratore.nome }} {{ collaboratore.cognome }}</strong><small>{{ collaboratore.email }}</small></div>
+                <span class="collaborator-role">{{ etichettaRuoloCollaboratore(collaboratore.ruolo) }}</span>
+                <span class="collaborator-state">{{ collaboratore.stato }}</span>
+              </article>
+            </div>
+            <ng-template #nessunCollaboratore><p class="collaborator-empty">Nessun collaboratore associato allo Studio.</p></ng-template>
+          </section>
+        </section>
+
+        <app-anagrafiche *ngIf="widget.key === 'clienti'" [soggettoInizialeId]="anagraficaSelezionataId()" [nuovoIniziale]="nuovaAnagraficaRichiesta()" (praticaAperta)="apriPraticaDaAnagrafica($event)"></app-anagrafiche>
+        <app-pratiche *ngIf="widget.key === 'pratiche'" [praticaInizialeId]="praticaSelezionataId()" [nuovaIniziale]="nuovaPraticaRichiesta()"
+          (apriAnagrafica)="apriAnagraficaDaPratica($event)" (apriEventoAgenda)="apriEventoDaPratica($event)" (creaEventoAgenda)="creaEventoDaPratica($event)"></app-pratiche>
+        <ng-container *ngIf="widget.key !== 'calendario' && widget.key !== 'collaboratori' && widget.key !== 'clienti' && widget.key !== 'pratiche'" [ngTemplateOutlet]="widgetStandard"></ng-container>
+
+        <ng-template #widgetStandard>
+          <div class="expanded-list" aria-label="Riepilogo {{ widget.title }}">
+            <article *ngFor="let riga of widget.righeAnteprima">
+              <strong>{{ riga.titolo }}</strong>
+              <small>{{ riga.descrizione }} · {{ riga.stato }}</small>
+            </article>
+          </div>
+        </ng-template>
       </section>
     </div>
 
@@ -322,186 +503,6 @@
       <p class="error" role="alert" *ngIf="error()">{{ error() }}</p>
     </aside>
 
-    <section class="widget-modal" *ngIf="expandedWidget() as widget" [class.calendar-modal]="widget.key === 'calendario'" [class.anagrafiche-modal]="widget.key === 'clienti'" [class.collaboratori-modal]="widget.key === 'collaboratori'" [class.pratiche-modal]="widget.key === 'pratiche'">
-      <button class="torna-scrivania" type="button" (click)="closeExpandedWidget()">← Torna alla scrivania</button>
-      <span class="eyebrow">VISTA INGRANDITA</span>
-      <h2><app-icona-foro [nome]="widget.icon"></app-icona-foro>{{ widget.title }}</h2>
-      <p>{{ widget.description }}</p>
 
-      <div class="outlook-calendar" *ngIf="widget.key === 'calendario'">
-        <aside class="calendar-sidebar">
-          <div class="mini-month">
-            <header><button type="button" aria-label="Mese precedente" (click)="navigaMiniCalendario(-1)">‹</button><strong>{{ intestazioneMiniCalendario() }}</strong><button type="button" aria-label="Mese successivo" (click)="navigaMiniCalendario(1)">›</button></header>
-            <div class="mini-week"><span>L</span><span>M</span><span>M</span><span>G</span><span>V</span><span>S</span><span>D</span></div>
-            <div class="mini-days"><button type="button" *ngFor="let giorno of celleMese()" [class.today]="giorno.oggi" [class.selected]="giorno.iso === dataIsoLocale(dataCalendario())" [class.other-month]="!giorno.meseCorrente" (click)="selezionaGiornoMiniCalendario(giorno.iso)">{{ giorno.numero }}</button></div>
-          </div>
-          <button class="calendar-add" type="button" (click)="apriNuovoAppuntamento()">＋ Nuovo appuntamento</button>
-          <section class="calendar-list">
-            <h4>Calendari</h4>
-            <label *ngFor="let calendario of calendariAgenda()">
-              <input type="checkbox" [checked]="calendario.selezionato" (change)="cambiaVisibilitaCalendario(calendario.chiave, $any($event.target).checked)">
-              <span class="dot" [ngClass]="calendario.classeColore" [style.background]="calendario.classeColore.startsWith('#') ? calendario.classeColore : null"></span>
-              <span>{{ calendario.nome }}<small *ngIf="calendario.condivisoConTuttoLoStudio">Tutto lo Studio</small></span>
-            </label>
-            <button class="calendar-share-add" type="button" (click)="apriGestioneCalendari()"><app-icona-foro nome="impostazioni"></app-icona-foro>Gestione calendari</button>
-          </section>
-        </aside>
-
-        <section class="calendar-main agenda-fullcalendar" aria-label="Agenda completa">
-          <div class="calendar-commandbar agenda-actions">
-            <button class="primary" type="button" (click)="apriNuovoAppuntamento()">Nuovo appuntamento</button>
-            <span *ngIf="calendarioCaricamento()" role="status" aria-live="polite">Caricamento appuntamenti…</span>
-          </div>
-          <p class="appointment-error" role="alert" *ngIf="calendarioErrore()">{{ calendarioErrore() }}</p>
-          <div class="calendar-opened-item" *ngIf="rigaWidgetSelezionata() as riga">
-            <span>Oggetto aperto</span>
-            <strong>{{ riga.titolo }}</strong>
-            <small>{{ riga.descrizione }} · {{ riga.stato }}</small>
-          </div>
-
-          <full-calendar #agendaCompleta [options]="opzioniAgenda"></full-calendar>
-        </section>
-
-        <form class="appointment-panel" *ngIf="nuovoAppuntamentoAperto()" [formGroup]="appuntamentoForm" (ngSubmit)="salvaAppuntamento()">
-          <header><strong>{{eventoInModificaId()?'Modifica appuntamento':'Nuovo appuntamento'}}</strong><button class="panel-close" type="button" aria-label="Chiudi appuntamento" title="Chiudi" (click)="chiudiNuovoAppuntamento()">×</button></header>
-          <p class="appointment-error" *ngIf="erroreAppuntamento()">{{ erroreAppuntamento() }}</p>
-          <label>Titolo<input formControlName="titolo"></label>
-          <label>Calendario<select formControlName="calendario"><option *ngFor="let calendario of calendariAgenda()" [value]="calendario.chiave">{{ calendario.nome }}</option></select></label>
-          <label>Pratica collegata
-            <input [formControl]="ricercaPratica" placeholder="Nessuna pratica · cerca codice, titolo, Cliente o Controparte">
-            <button type="button" class="calendar-share-add" *ngIf="appuntamentoForm.controls.praticaId.value" (click)="selezionaPraticaAgenda(null)">Rimuovi collegamento</button>
-          </label>
-          <div class="practice-autocomplete" *ngIf="praticheAgenda().length">
-            <button type="button" *ngFor="let pratica of praticheAgenda()" (click)="selezionaPraticaAgenda(pratica)">
-              <strong>{{pratica.codice}}</strong><span>{{pratica.titolo}}</span><small>{{pratica.statoCodice}}</small>
-            </button>
-          </div>
-          <div class="appointment-options-grid">
-            <label>Stato<select formControlName="statoDisponibilita"><option value="LIBERO">Libero</option><option value="PROVVISORIO">Provvisorio</option><option value="OCCUPATO">Occupato</option><option value="FUORI_SEDE">Fuori sede</option></select></label>
-            <label>Promemoria<select formControlName="promemoriaMinuti"><option [ngValue]="0">Nessuno</option><option [ngValue]="5">5 minuti prima</option><option [ngValue]="15">15 minuti prima</option><option [ngValue]="30">30 minuti prima</option><option [ngValue]="60">1 ora prima</option><option [ngValue]="1440">1 giorno prima</option></select></label>
-            <label>Categoria<select formControlName="categoria"><option value="GENERALE">Generale</option><option value="UDIENZA">Udienza</option><option value="CLIENTE">Cliente</option><option value="SCADENZA">Scadenza</option><option value="RIUNIONE">Riunione</option></select></label>
-          </div>
-          <label>Invita avvocati dello Studio
-            <select multiple class="invite-select" aria-label="Invita avvocati dello Studio" (change)="aggiornaInvitati($event)">
-              <option *ngFor="let persona of personeInvitate()" [value]="persona.id" [selected]="persona.selezionata">{{ persona.nome }}</option>
-            </select>
-            <small class="field-hint">Seleziona uno o più collaboratori con Ctrl + clic.</small>
-          </label>
-          <div class="three-cols">
-            <label>Data<input type="date" formControlName="data"></label>
-            <label>Inizio<input type="time" formControlName="inizio"></label>
-            <label>Fine<input type="time" formControlName="fine"></label>
-          </div>
-          <label class="compact-check"><input type="checkbox" formControlName="tuttoGiorno"> Giornata intera</label>
-          <div class="two-cols">
-            <label>Serie<select formControlName="ricorrenza"><option value="NESSUNA">Non si ripete</option><option value="GIORNALIERA">Ogni giorno</option><option value="SETTIMANALE">Ogni settimana</option><option value="MENSILE">Ogni mese</option></select></label>
-            <label *ngIf="appuntamentoForm.controls.ricorrenza.value !== 'NESSUNA'">Fine serie<input type="date" formControlName="fineRicorrenza"></label>
-          </div>
-          <label>Note<textarea formControlName="note"></textarea></label>
-          <button class="primary" type="submit" [disabled]="loading()">{{ loading() ? 'Salvataggio…' : (eventoInModificaId()?'Salva modifiche':'Salva appuntamento') }}</button>
-        </form>
-
-        <section class="appointment-panel event-detail-panel" *ngIf="eventoSelezionato() as evento">
-          <header><strong>Dettagli appuntamento</strong><button class="panel-close" type="button" aria-label="Chiudi dettagli appuntamento" (click)="chiudiDettaglioEvento()">×</button></header>
-          <div class="event-detail-color" [style.background]="coloreEvento(evento)"></div>
-          <h3>{{ evento.titolo }}</h3>
-          <dl>
-            <div><dt>Data e ora</dt><dd>{{ evento.data | date:'dd/MM/yyyy' }} · {{ formattaOra(evento.ora,evento.minuti) }}–{{ evento.fine }}</dd></div>
-            <div><dt>Organizzato da</dt><dd>{{ evento.persona }}</dd></div>
-            <div><dt>Calendario</dt><dd>{{ nomeCalendario(evento.calendario) }}</dd></div>
-            <div><dt>Invitati</dt><dd>{{ evento.partecipanti || 'Nessun invitato' }}</dd></div>
-            <div><dt>Stato</dt><dd>{{ etichettaStato(evento.statoDisponibilita) }}</dd></div>
-            <div><dt>Categoria</dt><dd>{{ evento.categoria || 'Generale' }}</dd></div>
-            <div><dt>Promemoria</dt><dd>{{ evento.promemoriaMinuti ? evento.promemoriaMinuti + ' minuti prima' : 'Nessuno' }}</dd></div>
-            <div *ngIf="evento.ricorrenza && evento.ricorrenza !== 'NESSUNA'"><dt>Serie</dt><dd>{{ evento.ricorrenza }}</dd></div>
-            <div *ngIf="evento.praticaId"><dt>Pratica</dt><dd>{{evento.praticaCodice}} · {{evento.praticaTitolo}} · {{evento.praticaStato}}</dd></div>
-          </dl>
-          <section class="event-notes"><strong>Note</strong><p>{{ evento.note || 'Nessuna nota' }}</p></section>
-          <nav class="event-detail-actions"><button type="button" (click)="modificaEvento(evento)">Modifica evento</button><button type="button" class="calendar-delete" (click)="eliminaEvento(evento)">Elimina evento</button><button type="button" *ngIf="evento.praticaId" (click)="apriPraticaDaEvento(evento)">Apri pratica</button></nav>
-        </section>
-
-        <section class="appointment-panel calendar-management-panel" *ngIf="gestioneCalendariAperta()">
-          <header><strong>Gestione calendari</strong><button class="panel-close" type="button" aria-label="Chiudi gestione calendari" title="Chiudi" (click)="chiudiGestioneCalendari()">×</button></header>
-          <div class="calendar-management-intro">
-            <div><span class="eyebrow">CALENDARI DELLO STUDIO</span><p>Crea calendari, aggiorna nome e condivisioni oppure elimina quelli non più necessari.</p></div>
-            <button class="primary calendar-create" type="button" (click)="apriNuovoCalendario()">＋ Nuovo calendario</button>
-          </div>
-
-          <div class="calendar-management-list" *ngIf="calendariAgenda().length; else nessunCalendario">
-            <article *ngFor="let calendario of calendariAgenda()">
-              <span class="calendar-management-color" [style.background]="calendario.classeColore"></span>
-              <div>
-                <strong>{{ calendario.nome }}</strong>
-                <small *ngIf="calendario.condivisoConTuttoLoStudio; else condivisioneSingola">Condiviso con tutto lo Studio</small>
-                <ng-template #condivisioneSingola><small>{{ calendario.condivisoCon.length ? 'Condiviso con ' + calendario.condivisoCon.join(', ') : 'Calendario personale' }}</small></ng-template>
-                <em *ngIf="!calendario.gestibile">Condiviso con te</em>
-              </div>
-              <nav *ngIf="calendario.gestibile">
-                <button type="button" (click)="modificaCalendario(calendario)">Modifica</button>
-                <button class="calendar-delete" type="button" (click)="richiediEliminazioneCalendario(calendario.chiave)">Elimina</button>
-              </nav>
-              <div class="calendar-delete-confirm" *ngIf="calendarioDaEliminare() === calendario.chiave">
-                <p>Eliminare “{{ calendario.nome }}”? Gli appuntamenti associati non saranno più visibili.</p>
-                <button type="button" (click)="annullaEliminazioneCalendario()">Annulla</button>
-                <button class="confirm-delete" type="button" [disabled]="loading()" (click)="eliminaCalendario(calendario.chiave)">Conferma eliminazione</button>
-              </div>
-            </article>
-          </div>
-          <ng-template #nessunCalendario><p class="calendar-empty">Non ci sono ancora calendari.</p></ng-template>
-
-          <form class="calendar-editor shared-calendar-panel" *ngIf="nuovoCalendarioAperto()" [formGroup]="calendarioCondivisoForm" (ngSubmit)="salvaCalendarioCondiviso()">
-            <div class="calendar-editor-head"><strong>{{ calendarioInModifica() ? 'Modifica calendario' : 'Nuovo calendario' }}</strong><button type="button" (click)="annullaModificaCalendario()">Annulla</button></div>
-            <label>Nome calendario<input formControlName="nome" placeholder="Es. Team contenzioso"></label>
-            <label>Colore calendario<input type="color" formControlName="colore"></label>
-            <fieldset>
-              <legend>Condividi con</legend>
-              <label *ngFor="let persona of personeCondivisione()"><input type="checkbox" [checked]="persona.selezionata" (change)="cambiaCondivisionePersona(persona.nome, $any($event.target).checked)">{{ persona.nome }}</label>
-            </fieldset>
-            <button class="primary" type="submit" [disabled]="loading()">{{ loading() ? 'Salvataggio…' : (calendarioInModifica() ? 'Salva modifiche' : 'Crea calendario') }}</button>
-          </form>
-          <p class="error" role="alert" *ngIf="error()">{{ error() }}</p>
-        </section>
-      </div>
-
-      <section class="collaboratori-widget" *ngIf="widget.key === 'collaboratori'">
-        <form [formGroup]="collaboratoreForm" (ngSubmit)="creaCollaboratore()" class="drawer-form collaborator-form">
-          <span class="eyebrow">NUOVO ACCESSO</span>
-          <h3>Aggiungi un collaboratore</h3>
-          <p class="drawer-note">Crea un accesso personale e assegna il ruolo operativo corretto.</p>
-          <div class="two-cols"><label>Nome<input formControlName="nome" required><small class="errore-campo" *ngIf="collaboratoreForm.controls.nome.touched&&collaboratoreForm.controls.nome.invalid">Il nome è obbligatorio.</small></label><label>Cognome<input formControlName="cognome" required><small class="errore-campo" *ngIf="collaboratoreForm.controls.cognome.touched&&collaboratoreForm.controls.cognome.invalid">Il cognome è obbligatorio.</small></label></div>
-          <label>Email<input type="email" formControlName="email" placeholder="collaboratore@studio.it" required><small class="errore-campo" *ngIf="collaboratoreForm.controls.email.touched&&collaboratoreForm.controls.email.hasError('required')">L’email è obbligatoria.</small><small class="errore-campo" *ngIf="collaboratoreForm.controls.email.touched&&collaboratoreForm.controls.email.hasError('email')">Inserisci un indirizzo email valido.</small></label>
-          <label>Ruolo e permessi<select formControlName="ruolo"><option value="AVVOCATO">Avvocato — accesso operativo</option><option value="SEGRETERIA">Segreteria — supporto operativo</option><option value="STUDIO_ADMIN">Altro titolare / Admin</option></select></label>
-          <p class="collaborator-security-note">La password temporanea sarà inviata via email e dovrà essere modificata al primo accesso.</p>
-          <button class="primary" type="submit" [disabled]="loading()">Aggiungi e invia accesso</button>
-          <p class="success" *ngIf="collaboratorMessage()">{{ collaboratorMessage() }}</p>
-        </form>
-        <section class="collaborator-directory">
-          <header><div><span class="eyebrow">PERSONE DELLO STUDIO</span><h3>Collaboratori</h3></div><span class="collaborator-count">{{ collaboratoriStudio().length }}</span></header>
-          <div class="members-preview" *ngIf="collaboratoriStudio().length; else nessunCollaboratore">
-            <article *ngFor="let collaboratore of collaboratoriStudio()">
-              <span class="collaborator-avatar" aria-hidden="true">{{ inizialiCollaboratore(collaboratore) }}</span>
-              <div><strong>{{ collaboratore.nome }} {{ collaboratore.cognome }}</strong><small>{{ collaboratore.email }}</small></div>
-              <span class="collaborator-role">{{ etichettaRuoloCollaboratore(collaboratore.ruolo) }}</span>
-              <span class="collaborator-state">{{ collaboratore.stato }}</span>
-            </article>
-          </div>
-          <ng-template #nessunCollaboratore><p class="collaborator-empty">Nessun collaboratore associato allo Studio.</p></ng-template>
-        </section>
-      </section>
-
-      <app-anagrafiche *ngIf="widget.key === 'clienti'" [soggettoInizialeId]="anagraficaSelezionataId()" [nuovoIniziale]="nuovaAnagraficaRichiesta()" (praticaAperta)="apriPraticaDaAnagrafica($event)"></app-anagrafiche>
-      <app-pratiche *ngIf="widget.key === 'pratiche'" [praticaInizialeId]="praticaSelezionataId()" [nuovaIniziale]="nuovaPraticaRichiesta()"
-        (apriAnagrafica)="apriAnagraficaDaPratica($event)" (apriEventoAgenda)="apriEventoDaPratica($event)" (creaEventoAgenda)="creaEventoDaPratica($event)"></app-pratiche>
-      <ng-container *ngIf="widget.key !== 'calendario' && widget.key !== 'collaboratori' && widget.key !== 'clienti' && widget.key !== 'pratiche'" [ngTemplateOutlet]="widgetStandard"></ng-container>
-
-      <ng-template #widgetStandard>
-        <div class="expanded-list" aria-label="Riepilogo {{ widget.title }}">
-          <article *ngFor="let riga of widget.righeAnteprima">
-            <strong>{{ riga.titolo }}</strong>
-            <small>{{ riga.descrizione }} · {{ riga.stato }}</small>
-          </article>
-        </div>
-      </ng-template>
-    </section>
   </main>
 </ng-template>
