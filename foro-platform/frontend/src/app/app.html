@@ -243,7 +243,7 @@
               <div class="mini-week"><span>L</span><span>M</span><span>M</span><span>G</span><span>V</span><span>S</span><span>D</span></div>
               <div class="mini-days"><button type="button" *ngFor="let giorno of celleMese()" [class.today]="giorno.oggi" [class.selected]="giorno.iso === dataIsoLocale(dataCalendario())" [class.other-month]="!giorno.meseCorrente" (click)="selezionaGiornoMiniCalendario(giorno.iso)">{{ giorno.numero }}</button></div>
             </div>
-            <button class="calendar-add" type="button" (click)="apriNuovoAppuntamento()">＋ Nuovo appuntamento</button>
+            <button class="calendar-add" type="button" (click)="apriNuovoAppuntamento()"><app-icona-foro nome="aggiungi"></app-icona-foro>Nuovo appuntamento</button>
             <section class="calendar-list">
               <h4>Calendari</h4>
               <label *ngFor="let calendario of calendariAgenda()">
@@ -257,7 +257,6 @@
 
           <section class="calendar-main agenda-fullcalendar" aria-label="Agenda completa">
             <div class="calendar-commandbar agenda-actions">
-              <button class="primary" type="button" (click)="apriNuovoAppuntamento()">Nuovo appuntamento</button>
               <span *ngIf="calendarioCaricamento()" role="status" aria-live="polite">Caricamento appuntamenti…</span>
             </div>
             <p class="appointment-error" role="alert" *ngIf="calendarioErrore()">{{ calendarioErrore() }}</p>
@@ -489,8 +488,15 @@
       <form [formGroup]="dashboardForm" (ngSubmit)="saveDashboardPreferences()" class="drawer-form personal-form">
         <h3>Aspetto della mia dashboard</h3>
         <label>Modalità<select formControlName="themeMode"><option value="LIGHT">Chiara</option><option value="DARK">Scura</option></select></label>
-        <label>Colore titoli sezioni e widget<input type="color" formControlName="personalAccentColor"></label>
-        <button class="secondary" type="submit" [disabled]="loading()">Salva aspetto personale</button>
+        <div class="preferenza-colore">
+          <input id="colore-titoli" type="color" formControlName="personalAccentColor" title="{{dashboardForm.controls.personalAccentColor.value}}">
+          <label for="colore-titoli"><strong>Colore titoli sezioni e widget</strong><small>{{dashboardForm.controls.personalAccentColor.value}}</small></label>
+        </div>
+        <div class="preferenza-colore">
+          <input id="colore-pulsanti" type="color" formControlName="colorePulsanti" title="{{dashboardForm.controls.colorePulsanti.value}}">
+          <label for="colore-pulsanti"><strong>Colore di sfondo dei pulsanti</strong><small>{{dashboardForm.controls.colorePulsanti.value}}</small></label>
+        </div>
+        <button class="primary" type="submit" [disabled]="loading()">Salva aspetto personale</button>
       </form>
       <section class="settings-account" aria-label="Gestione account">
         <div>

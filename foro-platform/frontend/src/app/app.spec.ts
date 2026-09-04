@@ -162,10 +162,35 @@ describe('App', () => {
     expect(compiled.querySelector('.dash-head')?.textContent).not.toContain('Dashboard operativa');
     expect(compiled.querySelector('.widget-sidebar')?.textContent).not.toContain('La griglia evita le sovrapposizioni');
     expect(compiled.querySelector('.today-summary')?.textContent?.trim()).toBeTruthy();
-    expect(compiled.querySelector('.today-period b')?.textContent?.trim()).toBeTruthy();
-    expect(compiled.querySelector('.today-period small')?.textContent?.trim()).toMatch(/^\d{4}$/);
+    expect(compiled.querySelector('.today-date')?.textContent?.trim()).toBeTruthy();
+    expect(compiled.querySelector('.today-year')?.textContent?.trim()).toMatch(/^\d{4}$/);
     expect(compiled.querySelector('[aria-label="Notifiche"] app-icona-foro svg')).toBeTruthy();
     expect(compiled.querySelector('[aria-label="Impostazioni"] app-icona-foro svg')).toBeTruthy();
+  });
+
+  it('propaga colori personali a titoli e pulsanti con contrasto automatico', () => {
+    const app = TestBed.createComponent(App).componentInstance;
+    app.dashboardForm.patchValue({ personalAccentColor: '#405f6d', colorePulsanti: '#f4e7c5' });
+    expect(document.documentElement.style.getPropertyValue('--section-title-color')).toBe('#405f6d');
+    expect(document.documentElement.style.getPropertyValue('--button-primary-bg')).toBe('#f4e7c5');
+    expect(document.documentElement.style.getPropertyValue('--button-primary-text')).toBe('#172b3a');
+  });
+
+  it('conserva il colore pulsanti nel layout utente senza estendere il contratto backend', () => {
+    const app = TestBed.createComponent(App).componentInstance;
+    const layout = (app as any).serializzaLayoutWidget('#456b78');
+    expect((app as any).leggiColorePulsanti(layout)).toBe('#456b78');
+    expect(JSON.parse(layout)[0]).toEqual(jasmine.objectContaining({ colorePulsanti: '#456b78' }));
+  });
+
+  it('mantiene un solo comando Nuovo appuntamento nella colonna del Calendario', () => {
+    const fixture = TestBed.createComponent(App); const app = fixture.componentInstance;
+    app.screen.set('scrivania');
+    app.expandedWidget.set(app.activeWidgets().find(widget => widget.key === 'calendario')!);
+    fixture.detectChanges();
+    const vista = fixture.nativeElement.querySelector('.calendar-modal') as HTMLElement;
+    expect(vista.querySelectorAll('.calendar-add').length).toBe(1);
+    expect(vista.querySelector('.calendar-commandbar .primary')).toBeNull();
   });
 
   describe('integrazione GridStack della Scrivania', () => {
