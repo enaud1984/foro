@@ -100,11 +100,15 @@ describe('App', () => {
     fixture.detectChanges();
 
     const scrivania = fixture.nativeElement.querySelector('.dashboard-shell') as HTMLElement;
-    const vistaIngrandita = scrivania.querySelector(':scope > .widget-modal');
+    const contenuto = scrivania.querySelector(':scope > .dashboard-content') as HTMLElement | null;
+    const vistaIngrandita = contenuto?.querySelector(':scope > .widget-modal');
 
     expect(scrivania.classList).toContain('vista-widget-aperta');
     expect(vistaIngrandita).not.toBeNull();
-    expect(vistaIngrandita?.parentElement).toBe(scrivania);
+    expect(vistaIngrandita?.parentElement).toBe(contenuto);
+    expect(contenuto?.querySelector('.dash-head')).not.toBeNull();
+    expect(getComputedStyle(contenuto!.querySelector('.dash-head')!).display).not.toBe('none');
+    expect(getComputedStyle(contenuto!.querySelector('.operational-grid')!).display).toBe('none');
   });
 
   it('prevede sempre il cambio password personale nelle impostazioni', () => {

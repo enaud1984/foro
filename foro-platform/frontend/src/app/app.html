@@ -229,7 +229,6 @@
           </article>
           </gridstack-item>
         </gridstack>
-      </section>
       <section class="widget-modal" *ngIf="expandedWidget() as widget" [class.calendar-modal]="widget.key === 'calendario'" [class.anagrafiche-modal]="widget.key === 'clienti'" [class.collaboratori-modal]="widget.key === 'collaboratori'" [class.pratiche-modal]="widget.key === 'pratiche'">
         <button class="torna-scrivania" type="button" (click)="closeExpandedWidget()">← Torna alla scrivania</button>
         <span class="eyebrow">VISTA INGRANDITA</span>
@@ -409,6 +408,7 @@
             </article>
           </div>
         </ng-template>
+      </section>
       </section>
     </div>
 
