@@ -1,8 +1,8 @@
 /* Token FORO: unica fonte per il linguaggio visivo dell'applicazione. */
 :root {
-  --foro-primary: #102a43;
-  --foro-primary-hover: #173f5f;
-  --foro-primary-active: #0b1f33;
+  --foro-primary: #496b78;
+  --foro-primary-hover: #3d5b66;
+  --foro-primary-active: #324c55;
   --foro-on-primary: #ffffff;
   --foro-surface: #ffffff;
   --foro-surface-muted: #f7f9fb;
@@ -21,7 +21,29 @@
   --foro-warning: #946200;
   --foro-info: #1d5f91;
 
-  --foro-primary-soft: #edf3f8;
+  --foro-primary-soft: #edf4f5;
+  /* Alias pubblici del tema: sono consumati da tutte le viste, incluse quelle complete. */
+  --color-primary: var(--foro-primary);
+  --color-primary-soft: var(--foro-primary-soft);
+  --color-surface: var(--foro-surface);
+  --color-surface-muted: var(--foro-surface-muted);
+  --color-border: var(--foro-border);
+  --color-text: var(--foro-text-primary);
+  --color-text-muted: var(--foro-text-secondary);
+  --button-primary-bg: var(--foro-primary);
+  --button-primary-bg-hover: var(--foro-primary-hover);
+  --button-primary-text: var(--foro-on-primary);
+  --section-title-color: #334e5a;
+  --radius-sm: 8px;
+  --radius-md: 11px;
+  --shadow-soft: var(--foro-shadow-soft);
+  --transition-fast: 180ms ease;
+  --app-header-height: 64px;
+  --z-workspace: 10;
+  --z-fullscreen-widget: 100;
+  --z-header: 200;
+  --z-dropdown: 300;
+  --z-modal: 400;
   --foro-icon-size: 34px;
   --foro-icon-radius: 9px;
   --foro-icon-calendar-bg: #eaf3fb;
@@ -44,8 +66,8 @@
   --foro-space-6: 24px;
   --foro-space-8: 32px;
   --foro-space-12: 48px;
-  --foro-radius-sm: 6px;
-  --foro-radius-md: 10px;
+  --foro-radius-sm: var(--radius-sm);
+  --foro-radius-md: var(--radius-md);
   --foro-radius-lg: 14px;
   --foro-shadow-card: 0 1px 2px rgba(16, 42, 67, .04);
   --foro-shadow-soft: 0 8px 24px rgba(16, 42, 67, .08);

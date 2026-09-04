@@ -9,7 +9,7 @@
   </header>
   <div class="comandi">
     <label><span class="sr-only">Cerca anagrafiche</span><input [formControl]="ricerca" placeholder="Cerca anagrafiche…"></label>
-    <button type="button" class="primario" (click)="nuova()">Nuova anagrafica</button>
+    <button type="button" class="primario" (click)="nuova()"><app-icona-foro nome="aggiungi"></app-icona-foro>Nuova anagrafica</button>
   </div>
   <ng-container *ngIf="!compatto">
     <div class="filtri">

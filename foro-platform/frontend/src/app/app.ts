@@ -407,7 +407,8 @@ export class App implements OnDestroy {
     this.dashboardForm = this.fb.nonNullable.group({
       themeMode: ['LIGHT' as ModalitaTema],
       dashboardDensity: ['COMFORTABLE' as DensitaScrivania],
-      personalAccentColor: ['#0f766e']
+      personalAccentColor: ['#3f6675'],
+      colorePulsanti: ['#496b78']
     });
     this.appuntamentoForm = this.fb.nonNullable.group({
       titolo: ['Nuovo appuntamento cliente', Validators.required],
@@ -440,6 +441,8 @@ export class App implements OnDestroy {
       confermaPassword: ['', [Validators.required, Validators.minLength(12)]]
     });
     this.ricercaPratica.valueChanges.pipe(debounceTime(250),distinctUntilChanged()).subscribe(testo=>this.cercaPraticheAgenda(testo));
+    this.dashboardForm.valueChanges.subscribe(valore => this.applicaColoriPersonali(
+      valore.personalAccentColor || '#3f6675', valore.colorePulsanti || '#496b78'));
   }
 
   ngOnDestroy(): void {
@@ -1115,8 +1118,9 @@ export class App implements OnDestroy {
     this.loading.set(true);
     this.settingsMessage.set('');
     const value = this.dashboardForm.getRawValue();
-    const widgetLayout = JSON.stringify(this.activeWidgets().map(({ key, x, y, w, h }) => ({ key, x, y, w, h, versioneLayout: VERSIONE_LAYOUT_GRIDSTACK })));
-    this.http.put<PreferenzeScrivania>('/api/v1/workspace/preferences', { ...value, widgetLayout }).subscribe({
+    const widgetLayout = this.serializzaLayoutWidget(value.colorePulsanti);
+    const { colorePulsanti: _colorePulsanti, ...preferenzeSupportate } = value;
+    this.http.put<PreferenzeScrivania>('/api/v1/workspace/preferences', { ...preferenzeSupportate, widgetLayout }).subscribe({
       next: preference => {
         this.dashboardPreference.set(preference);
         this.applyTheme(this.studioProfile(), preference);
@@ -1191,7 +1195,8 @@ export class App implements OnDestroy {
       this.dashboardForm.patchValue({
         themeMode: preference.themeMode,
         dashboardDensity: preference.dashboardDensity,
-        personalAccentColor: preference.personalAccentColor ?? this.studioProfile()?.accentColor ?? '#0f766e'
+        personalAccentColor: preference.personalAccentColor ?? this.studioProfile()?.accentColor ?? '#3f6675',
+        colorePulsanti: this.leggiColorePulsanti(preference.widgetLayout)
       });
       this.applyTheme(this.studioProfile(), preference);
     });
@@ -1337,7 +1342,7 @@ export class App implements OnDestroy {
   private ripristinaLayoutWidget(layoutSerializzato: string | null | undefined): void {
     if (!layoutSerializzato?.trim()) return;
     try {
-      const posizioni = JSON.parse(layoutSerializzato) as Array<Partial<PosizioneGriglia> & { key?: ChiaveWidget; versioneLayout?: number }>;
+      const posizioni = JSON.parse(layoutSerializzato) as Array<Partial<PosizioneGriglia> & { key?: ChiaveWidget; versioneLayout?: number; colorePulsanti?: string }>;
       if (!Array.isArray(posizioni)) return;
       const correnti = new Map(this.activeWidgets().map(widget => [widget.key, widget]));
       const versione = Math.max(0, ...posizioni.map(posizione => Number(posizione.versioneLayout) || 0));
@@ -1367,7 +1372,7 @@ export class App implements OnDestroy {
   private salvaLayoutWidget(): void {
     const preferenze = this.dashboardPreference();
     if (!preferenze) return;
-    const widgetLayout = JSON.stringify(this.activeWidgets().map(({ key, x, y, w, h }) => ({ key, x, y, w, h, versioneLayout: VERSIONE_LAYOUT_GRIDSTACK })));
+    const widgetLayout = this.serializzaLayoutWidget(this.dashboardForm.controls.colorePulsanti.value);
     this.http.put<PreferenzeScrivania>('/api/v1/workspace/preferences', { ...preferenze, widgetLayout }).subscribe({
       next: aggiornate => this.dashboardPreference.set(aggiornate),
       error: () => this.error.set('Layout della Scrivania non salvato. Riprova.')
@@ -1386,10 +1391,42 @@ export class App implements OnDestroy {
 
   private applyTheme(profile: ProfiloStudio | null, preference: PreferenzeScrivania | null): void {
     const root = document.documentElement;
-    root.style.setProperty('--foro-primary', profile?.primaryColor ?? '#111827');
-    root.style.setProperty('--foro-accent', preference?.personalAccentColor || profile?.accentColor || '#0f766e');
+    root.style.setProperty('--foro-primary', '#496b78');
+    this.applicaColoriPersonali(preference?.personalAccentColor || profile?.accentColor || '#3f6675', this.leggiColorePulsanti(preference?.widgetLayout));
     root.style.setProperty('--foro-secondary', profile?.secondaryColor ?? '#475569');
     root.dataset['foroMode'] = preference?.themeMode === 'DARK' ? 'dark' : 'light';
     root.dataset['foroDensity'] = preference?.dashboardDensity === 'COMPACT' ? 'compact' : 'comfortable';
+  }
+
+  private serializzaLayoutWidget(colorePulsanti: string): string {
+    const elementi = this.activeWidgets().map(({ key, x, y, w, h }) => ({
+      key, x, y, w, h, versioneLayout: VERSIONE_LAYOUT_GRIDSTACK, colorePulsanti
+    }));
+    return JSON.stringify(elementi.length ? elementi : [{ colorePulsanti }]);
+  }
+
+  private leggiColorePulsanti(layout?: string | null): string {
+    try {
+      const elementi = JSON.parse(layout || '[]') as Array<{ colorePulsanti?: string }>;
+      const colore = elementi.find(elemento => /^#[0-9a-f]{6}$/i.test(elemento.colorePulsanti || ''))?.colorePulsanti;
+      return colore || '#496b78';
+    } catch { return '#496b78'; }
+  }
+
+  private applicaColoriPersonali(coloreTitoli: string, colorePulsanti: string): void {
+    const root = document.documentElement;
+    const hover = `color-mix(in srgb, ${colorePulsanti} 86%, #000)`;
+    root.style.setProperty('--section-title-color', coloreTitoli);
+    root.style.setProperty('--button-primary-bg', colorePulsanti);
+    root.style.setProperty('--button-primary-bg-hover', hover);
+    root.style.setProperty('--button-primary-text', this.testoInContrasto(colorePulsanti));
+  }
+
+  private testoInContrasto(colore: string): string {
+    const valore = colore.replace('#', '');
+    if (!/^[0-9a-f]{6}$/i.test(valore)) return '#ffffff';
+    const [rosso, verde, blu] = [0, 2, 4].map(indice => parseInt(valore.slice(indice, indice + 2), 16));
+    const luminanza = (rosso * 299 + verde * 587 + blu * 114) / 1000;
+    return luminanza > 154 ? '#172b3a' : '#ffffff';
   }
 }

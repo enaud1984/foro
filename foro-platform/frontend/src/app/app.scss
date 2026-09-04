@@ -649,19 +649,11 @@
   background: rgba(255, 255, 255, .74);
 }
 
-.widget-modal {
-  position:fixed;inset:76px 0 0 0;transform:none;width:100%;max-height:none;height:calc(100vh - 76px);
-  border-radius:0;box-shadow:none;padding:24px 32px;overflow:auto;background:var(--foro-surface-muted);
-}
 .torna-scrivania{border:1px solid var(--foro-border);background:var(--foro-surface);color:var(--foro-on-secondary);border-radius:10px;padding:9px 14px;font-weight:700;cursor:pointer;margin-bottom:10px}
 
-.calendar-modal {
-  width:100%;height:calc(100vh - 76px);
-  padding: 22px;
-}
-.primary,.calendar-add,.primario{background:var(--foro-primary)!important;color:var(--foro-on-primary)!important}
-.primary:hover,.calendar-add:hover,.primario:hover{background:var(--foro-primary-hover)!important}
-.primary app-icona-foro,.calendar-add app-icona-foro,.primario app-icona-foro{color:var(--foro-on-primary)!important}
+.primary,.calendar-add,.primario{background:var(--button-primary-bg)!important;color:var(--button-primary-text)!important}
+.primary:hover,.calendar-add:hover,.primario:hover{background:var(--button-primary-bg-hover)!important}
+.primary app-icona-foro,.calendar-add app-icona-foro,.primario app-icona-foro{color:var(--button-primary-text)!important}
 
 .calendar-modal > h2,
 .calendar-modal > p,
@@ -1410,19 +1402,6 @@
 .event-notes { padding: 14px; border-radius: 12px; background: #f8fafc; }
 .event-notes p { margin: 6px 0 0; white-space: pre-wrap; }
 
-/* Le finestre operative restano sopra la dashboard e il Calendario sotto l'header. */
-.widget-modal-backdrop { z-index: 200; }
-.widget-modal { z-index: 201; }
-.calendar-modal {
-  top: 104px;
-  bottom: 16px;
-  height: auto;
-  max-height: none;
-  transform: translateX(-50%);
-  overflow: hidden;
-}
-.calendar-modal > .modal-close { z-index: 12; }
-
 .appointment-panel textarea {
   min-height: 82px;
   padding: 10px 12px;
@@ -1880,11 +1859,6 @@ textarea:focus-visible,
   outline-offset: 2px;
 }
 
-/* Le viste operative sono pagine a piena larghezza, non finestre modali. */
-.widget-modal,.widget-modal.calendar-modal,.widget-modal.anagrafiche-modal,.widget-modal.pratiche-modal{position:fixed;inset:76px 0 0;transform:none;width:100%;height:calc(100vh - 76px);max-height:none;border-radius:0;box-shadow:none;padding:24px 32px;overflow:auto;background:var(--foro-surface-muted)}
-.widget-modal.calendar-modal .outlook-calendar{min-height:calc(100vh - 150px)}
-@media(max-width:760px){.widget-modal,.widget-modal.calendar-modal,.widget-modal.anagrafiche-modal,.widget-modal.pratiche-modal{inset:64px 0 0;height:calc(100vh - 64px);padding:16px}.outlook-calendar{grid-template-columns:1fr}.calendar-sidebar{max-height:240px}.ag-theme-quartz{height:58vh}}
-
 /* Redesign 2026 — shell calma, gerarchia netta e disclosure progressiva. */
 .shell-dashboard {
   grid-template-rows: 64px 1fr;
@@ -2061,4 +2035,66 @@ textarea:focus-visible,
   .dashboard-content { padding: var(--foro-space-6) var(--foro-space-4) 80px; }
   .today-summary { display: none; }
   .widget-modal, .widget-modal.calendar-modal, .widget-modal.anagrafiche-modal, .widget-modal.pratiche-modal { inset: auto; height: 100%; padding: var(--foro-space-4) var(--foro-space-4) 80px; }
+}
+
+
+/* Tema applicativo 2026: layer e componenti condivisi anche dalle viste complete. */
+.shell-dashboard { position: relative; z-index: var(--z-workspace); grid-template-rows: var(--app-header-height) minmax(0,1fr); }
+.topbar { position: relative; z-index: var(--z-header); height: var(--app-header-height) !important; overflow: visible; }
+.notifications-panel { z-index: var(--z-dropdown); }
+.settings-backdrop { z-index: calc(var(--z-modal) - 1); }
+.settings-drawer { z-index: var(--z-modal); }
+.widget-modal,.widget-modal.calendar-modal,.widget-modal.anagrafiche-modal,.widget-modal.pratiche-modal {
+  position: relative; z-index: var(--z-fullscreen-widget); inset: auto; transform: none;
+  grid-column: 2; grid-row: 1; width: auto; height: 100%; max-height: 100%; min-height: 0;
+  padding: var(--foro-space-6) var(--foro-space-8); overflow: auto; border-radius: 0;
+}
+.widget-modal-backdrop { display: none; }
+.widget-modal > h2 { display:flex;align-items:center;gap:var(--foro-space-3);color:var(--section-title-color); }
+.widget-modal > p { margin-top:var(--foro-space-1);font-size:15px;line-height:1.5;color:var(--foro-text-secondary); }
+.calendar-modal > h2 { display:flex;margin:0 0 var(--foro-space-3);font-size:22px; }
+.calendar-modal > h2 app-icona-foro { width:36px;height:36px;padding:8px;border-radius:10px;background:var(--foro-icon-calendar-bg);color:var(--foro-icon-calendar); }
+
+.today-summary { display:flex;align-items:center;gap:6px;min-width:0; }
+.today-summary > :is(.today-weekday,.today-date,.today-day,.today-year) {
+  color:var(--foro-text-secondary);font-family:inherit;font-size:15px;font-weight:500;letter-spacing:0;text-transform:capitalize;
+}
+.today-summary .today-day { margin:0;font-size:15px;font-weight:650; }
+
+.preferenza-colore { display:flex;align-items:center;gap:var(--foro-space-3);padding:var(--foro-space-2);border-radius:var(--foro-radius-md); }
+.preferenza-colore:hover { background:var(--foro-surface-muted); }
+.drawer-form .preferenza-colore > input[type=color] {
+  width:40px;height:40px;min-height:40px;flex:0 0 40px;padding:3px;border:1px solid var(--foro-border-strong);border-radius:9px;background:var(--foro-surface);cursor:pointer;
+}
+.preferenza-colore > label { display:flex!important;flex:1;align-items:center;justify-content:space-between;gap:var(--foro-space-3);cursor:pointer; }
+.preferenza-colore label strong { font-size:13px;font-weight:600; }
+.preferenza-colore label small { color:var(--foro-text-tertiary);font:500 11px/1 ui-monospace,monospace;text-transform:uppercase; }
+
+/* Calendario: controlli uniformi, superficie chiara e segmented control leggero. */
+.outlook-calendar { border-color:var(--foro-border);border-radius:var(--foro-radius-lg);background:var(--foro-surface);box-shadow:var(--foro-shadow-card); }
+.calendar-sidebar { padding:var(--foro-space-4);background:var(--foro-surface-muted);border-color:var(--foro-border); }
+.mini-month header strong { color:var(--section-title-color);font-size:14px;font-weight:600;text-transform:capitalize; }
+.mini-month header button,.agenda-fullcalendar .fc-button {
+  min-width:36px;min-height:36px!important;padding:0 11px!important;border:1px solid var(--foro-border)!important;border-radius:9px!important;
+  background:var(--foro-surface)!important;color:var(--foro-text-secondary)!important;box-shadow:none!important;transition:background var(--transition-fast),border-color var(--transition-fast),color var(--transition-fast)!important;
+}
+.mini-month header button:hover,.agenda-fullcalendar .fc-button:hover { border-color:var(--foro-border-strong)!important;background:var(--foro-secondary-surface)!important;color:var(--foro-text-primary)!important; }
+.agenda-fullcalendar .fc-button:focus-visible,.mini-month button:focus-visible { outline:var(--foro-focus-ring)!important;outline-offset:2px!important;box-shadow:none!important; }
+.agenda-fullcalendar .fc-button-group { padding:3px;border:1px solid var(--foro-border);border-radius:var(--foro-radius-md);background:var(--foro-surface-muted);gap:2px; }
+.agenda-fullcalendar .fc-button-group .fc-button { border:0!important;background:transparent!important; }
+.agenda-fullcalendar .fc-button-group .fc-button-active { background:var(--foro-surface)!important;color:var(--section-title-color)!important;box-shadow:var(--foro-shadow-card)!important; }
+.agenda-fullcalendar .fc-toolbar-title { color:var(--section-title-color);font-size:20px;font-weight:600; }
+.calendar-commandbar { min-height:0;padding:0;border:0;background:transparent; }
+.calendar-add { min-height:40px;margin:var(--foro-space-4) 0;border-radius:var(--foro-radius-md);box-shadow:none;display:flex;align-items:center;justify-content:center;gap:8px; }
+.calendar-add app-icona-foro { width:17px;height:17px; }
+.mini-days button { border-radius:9px;color:var(--foro-text-secondary);transition:background var(--transition-fast),color var(--transition-fast); }
+.mini-days button:hover { background:var(--foro-primary-soft); }
+.mini-days button.today { box-shadow:inset 0 0 0 1px var(--button-primary-bg); }
+.mini-days button.selected { background:var(--button-primary-bg);color:var(--button-primary-text);box-shadow:none; }
+.calendar-share-add { border:1px solid var(--foro-border);border-radius:var(--foro-radius-md);background:var(--foro-surface);color:var(--foro-text-secondary);font-weight:600; }
+.calendar-main { grid-template-rows:auto auto minmax(0,1fr); }
+
+@media(max-width:700px){
+  .shell-dashboard { --app-header-height:56px; }
+  .widget-modal,.widget-modal.calendar-modal,.widget-modal.anagrafiche-modal,.widget-modal.pratiche-modal { grid-column:auto;height:100%;padding:var(--foro-space-4) var(--foro-space-4) 80px; }
 }
