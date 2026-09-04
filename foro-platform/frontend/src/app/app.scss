@@ -2053,8 +2053,7 @@ textarea:focus-visible,
 .dashboard-shell.vista-widget-aperta { overflow:hidden; }
 .dashboard-shell.vista-widget-aperta > .widget-sidebar { display:flex; }
 .dashboard-shell.vista-widget-aperta > .dashboard-content {
-  display:grid;grid-template-rows:auto minmax(0,1fr);grid-column:2;width:100%;height:100%;min-width:0;min-height:0;
-  padding:0;overflow:hidden;
+  grid-column:2;width:100%;min-width:0;padding:0;overflow-x:hidden;overflow-y:auto;
 }
 .dashboard-shell.vista-widget-aperta .dash-head {
   margin:0;padding:var(--foro-space-6) var(--foro-space-8);
@@ -2063,8 +2062,8 @@ textarea:focus-visible,
 .dashboard-shell.vista-widget-aperta .widget-modal.calendar-modal,
 .dashboard-shell.vista-widget-aperta .widget-modal.anagrafiche-modal,
 .dashboard-shell.vista-widget-aperta .widget-modal.pratiche-modal {
-  grid-column:auto;grid-row:auto;width:100%;max-width:100%;height:100%;max-height:100%;min-height:0;
-  margin:0;padding:var(--foro-space-6) var(--foro-space-8);box-sizing:border-box;overflow:auto;
+  grid-column:auto;grid-row:auto;width:100%;max-width:100%;height:auto;max-height:none;min-height:0;
+  margin:0;padding:var(--foro-space-6) var(--foro-space-8);box-sizing:border-box;overflow:visible;
 }
 .dashboard-shell.vista-widget-aperta .widget-sidebar button:disabled {
   opacity:.52;cursor:not-allowed;pointer-events:none;filter:saturate(.65);
@@ -2102,14 +2101,4 @@ textarea:focus-visible,
   .dashboard-shell.vista-widget-aperta .widget-modal.calendar-modal,
   .dashboard-shell.vista-widget-aperta .widget-modal.anagrafiche-modal,
   .dashboard-shell.vista-widget-aperta .widget-modal.pratiche-modal { height:auto;padding:var(--foro-space-4) 0 0; }
-}
-
-/* I pannelli operativi del Calendario riempiono la sua vista completa. */
-.dashboard-shell.vista-widget-aperta .appointment-panel{
-  inset:0;
-  width:100%;
-  max-width:100%;
-  height:100%;
-  box-sizing:border-box;
-  border-radius:0;
 }

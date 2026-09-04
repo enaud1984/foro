@@ -21,16 +21,3 @@
 .foglio-stampa{width:min(100%,650px);min-height:760px;margin:auto;padding:clamp(32px,6vw,64px);border:1px solid var(--foro-border,#e2e8ee);background:#fff;box-shadow:var(--foro-shadow-soft,0 8px 24px #102a4314);color:#243746}
 .intestazione-foglio{display:flex;justify-content:space-between;align-items:center;padding-bottom:18px;border-bottom:1px solid #dfe6ec}.marchio-foglio{color:#102a43;font-size:1rem;font-weight:750;letter-spacing:.12em}.intestazione-foglio small,.metadati-foglio{color:#738291}.foglio-stampa h2{margin:28px 0 2px;font-size:1.35rem}.foglio-stampa section{margin-top:24px}.foglio-stampa section h3{margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid #e8edf1;color:#334e68;font-size:.75rem;letter-spacing:.06em;text-transform:uppercase}.foglio-stampa p{margin:5px 0;font-size:.76rem}.foglio-stampa dl{grid-template-columns:120px 1fr;gap:5px 12px;font-size:.76rem}.foglio-stampa dt{color:#607181}.foglio-stampa dd{overflow-wrap:anywhere}
 @media(max-width:900px){.pannello-stampa{inset:2vh 2vw}.stampa-layout{grid-template-columns:1fr}.opzioni-stampa{border-right:0;border-bottom:1px solid var(--foro-border,#e2e8ee)}.preview-stampa-live{min-height:600px}.foglio-stampa{min-height:680px}}
-
-/* Le viste operative restano contenute nell'area del widget ingrandito. */
-.scheda-completa{position:absolute;inset:0;width:100%;height:100%;box-sizing:border-box;border-radius:0;box-shadow:none}
-.scheda-completa dl{grid-template-columns:minmax(10rem,.4fr) minmax(0,1fr)}
-.scheda-completa dd{min-width:0;overflow-wrap:anywhere}
-.metriche{grid-template-columns:repeat(3,minmax(0,1fr))}
-.metriche article{min-width:0}
-.documenti{min-width:0;overflow-x:auto}
-.sovrapposto,.anteprima-documento,.anteprima-stampa{position:absolute;inset:0;width:100%;height:100%;box-sizing:border-box;border-radius:0;box-shadow:none}
-.pannello-stampa{inset:0;border:0;border-radius:0;box-shadow:none}
-
-@media(max-width:900px){.pannello-stampa{inset:0}}
-@media(max-width:800px){.sovrapposto,.anteprima-documento,.anteprima-stampa{inset:0}}
