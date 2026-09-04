@@ -112,8 +112,9 @@ describe('App', () => {
     const sidebar = scrivania.querySelector(':scope > .widget-sidebar') as HTMLElement;
     expect(getComputedStyle(sidebar).display).not.toBe('none');
     expect(Array.from(sidebar.querySelectorAll('button')).every(pulsante => pulsante.disabled)).toBeTrue();
-    expect(getComputedStyle(contenuto!).overflowY).toBe('auto');
-    expect(getComputedStyle(vistaIngrandita!).overflow).toBe('visible');
+    expect(getComputedStyle(contenuto!).overflowY).toBe('hidden');
+    expect(getComputedStyle(vistaIngrandita!).overflow).toBe('auto');
+    expect(getComputedStyle(vistaIngrandita!).height).toBe(getComputedStyle(contenuto!).gridTemplateRows.split(' ')[1]);
 
     app.closeExpandedWidget();
     fixture.detectChanges();
