@@ -21,6 +21,22 @@
   --foro-warning: #946200;
   --foro-info: #1d5f91;
 
+  --foro-primary-soft: #edf3f8;
+  --foro-icon-size: 34px;
+  --foro-icon-radius: 9px;
+  --foro-icon-calendar-bg: #eaf3fb;
+  --foro-icon-calendar: #3f6f96;
+  --foro-icon-documents-bg: #e8f4f1;
+  --foro-icon-documents: #39776e;
+  --foro-icon-email-bg: #faeded;
+  --foro-icon-email: #9b5558;
+  --foro-icon-contacts-bg: #f2edf8;
+  --foro-icon-contacts: #705889;
+  --foro-icon-matters-bg: #f7f1e5;
+  --foro-icon-matters: #856b3e;
+  --foro-icon-members-bg: #e8f3f2;
+  --foro-icon-members: #356e6b;
+
   --foro-space-1: 4px;
   --foro-space-2: 8px;
   --foro-space-3: 12px;
@@ -32,6 +48,7 @@
   --foro-radius-md: 10px;
   --foro-radius-lg: 14px;
   --foro-shadow-card: 0 1px 2px rgba(16, 42, 67, .04);
+  --foro-shadow-soft: 0 8px 24px rgba(16, 42, 67, .08);
   --foro-shadow-overlay: 0 16px 40px rgba(16, 42, 67, .14);
   --foro-control-height: 40px;
   --foro-button-height: 40px;
@@ -44,7 +61,8 @@
   --foro-font-secondary: 12px;
   --foro-font-kpi: 28px;
   --foro-motion-fast: 140ms ease;
-  --foro-motion-standard: 180ms ease;
+  --foro-motion-standard: 200ms ease;
+  --foro-motion-widget: 240ms ease;
   --foro-focus-ring: 2px solid var(--foro-focus);
   --foro-focus-offset: 2px;
 }

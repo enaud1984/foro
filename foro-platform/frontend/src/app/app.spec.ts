@@ -1,5 +1,5 @@
 import { provideHttpClient } from '@angular/common/http';
-import { TestBed } from '@angular/core/testing';
+import { fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { App } from './app';
 
@@ -124,9 +124,25 @@ describe('App', () => {
     };
     app.studioProfile.set({ ...profiloBase, canEditBranding: false });
     expect(app.widgetDisponibili().some(widget => widget.key === 'collaboratori')).toBeFalse();
+    app.activeWidgets.update(widget => widget.filter(elemento => elemento.key !== 'collaboratori'));
     app.studioProfile.set({ ...profiloBase, canEditBranding: true });
     expect(app.widgetDisponibili().some(widget => widget.key === 'collaboratori')).toBeTrue();
   });
+
+  it('mantiene il widget nel catalogo durante l’animazione prima di aggiungerlo', fakeAsync(() => {
+    const app = TestBed.createComponent(App).componentInstance;
+    app.activeWidgets.update(widget => widget.filter(elemento => elemento.key !== 'documenti'));
+
+    app.aggiungiWidgetDaLibreria('documenti');
+    expect(app.widgetInUscita().has('documenti')).toBeTrue();
+    expect(app.widgetDisponibili().some(widget => widget.key === 'documenti')).toBeTrue();
+    expect(app.activeWidgets().some(widget => widget.key === 'documenti')).toBeFalse();
+
+    tick(240);
+    expect(app.widgetInUscita().has('documenti')).toBeFalse();
+    expect(app.widgetDisponibili().some(widget => widget.key === 'documenti')).toBeFalse();
+    expect(app.activeWidgets().some(widget => widget.key === 'documenti')).toBeTrue();
+  }));
 
   it('non richiede al titolare di scegliere la password temporanea', () => {
     const fixture = TestBed.createComponent(App);

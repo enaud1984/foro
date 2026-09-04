@@ -153,15 +153,16 @@
       <aside class="widget-sidebar">
         <div class="sidebar-intro">
           <span class="eyebrow">SCRIVANIA</span>
-          <h3>Personalizza il tuo spazio</h3>
+          <h3>Widget disponibili</h3>
         </div>
-        <details class="personalizza-widget" open>
-          <summary>Personalizza Scrivania</summary>
-          <p>Aggiungi gli strumenti rimossi dalla tua area di lavoro.</p>
-          <button type="button" *ngFor="let item of widgetDisponibili()" (click)="aggiungiWidgetDaLibreria(item.key)">
-            <app-icona-foro [nome]="item.icon"></app-icona-foro>{{ item.title }}
+        <nav class="catalogo-widget" aria-label="Widget disponibili">
+          <button type="button" *ngFor="let item of widgetDisponibili()" class="widget-disponibile"
+            [class.widget-in-uscita]="widgetInUscita().has(item.key)" (click)="aggiungiWidgetDaLibreria(item.key)"
+            [attr.aria-label]="'Aggiungi '+item.title+' alla scrivania'">
+            <span class="icona-soft" [attr.data-categoria]="item.key"><app-icona-foro [nome]="item.icon"></app-icona-foro></span>
+            <span><strong>{{ item.title }}</strong><small>{{ item.description }}</small></span>
           </button>
-        </details>
+        </nav>
         <button type="button" class="impostazioni-sidebar" (click)="toggleSettings()">
           <app-icona-foro nome="impostazioni"></app-icona-foro>Impostazioni
         </button>
@@ -176,8 +177,8 @@
           </div>
           <div class="today-summary" aria-label="Data odierna">
             <span class="today-weekday">{{ giornoSettimanaOggi }}</span>
-            <strong class="today-day">{{ giornoMeseOggi }}</strong>
-            <span class="today-period"><b>{{ meseOggi }}</b><small>{{ annoOggi }}</small></span>
+            <span class="today-date"><strong class="today-day">{{ giornoMeseOggi }}</strong> {{ meseOggi }}</span>
+            <small class="today-year">{{ annoOggi }}</small>
           </div>
         </div>
 
@@ -190,7 +191,7 @@
           <gridstack-item *ngFor="let widget of activeWidgets(); trackBy: identificaWidget" [options]="opzioniWidget(widget)">
           <article class="op-widget">
             <div class="op-head" tabindex="0" [attr.aria-label]="'Sposta widget '+widget.title">
-              <h3><app-icona-foro [nome]="widget.icon"></app-icona-foro>{{ widget.title }}</h3>
+              <h3><span class="icona-soft" [attr.data-categoria]="widget.key"><app-icona-foro [nome]="widget.icon"></app-icona-foro></span>{{ widget.title }}</h3>
               <div class="window-actions">
                 <button type="button" class="widget-actions-trigger" [attr.aria-expanded]="menuWidgetAperto()===widget.key"
                   [attr.aria-label]="'Azioni widget '+widget.title" (click)="toggleMenuWidget(widget,$event)">

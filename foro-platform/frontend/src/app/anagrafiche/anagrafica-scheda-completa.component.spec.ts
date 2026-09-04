@@ -42,6 +42,15 @@ describe('AnagraficaSchedaCompletaComponent',()=>{
     const f=crea();expect(f.componentInstance.opzioni().noteInterne).toBeFalse();expect(f.componentInstance.opzioni().elencoDocumenti).toBeFalse();
     expect(f.componentInstance.opzioni().datiGenerali).toBeTrue();expect(f.componentInstance.opzioni().pratiche).toBeTrue();
   });
+  it('mostra una anteprima locale che reagisce alle opzioni senza richieste aggiuntive',()=>{
+    const f=crea();f.componentInstance.stampaAperta.set(true);f.detectChanges();
+    const preview=f.nativeElement.querySelector('.preview-stampa-live') as HTMLElement;
+    expect(preview.textContent).toContain('Giulia Ferrari');expect(preview.textContent).toContain('Recapiti');
+    expect(preview.textContent).not.toContain('Nota riservata');
+    f.componentInstance.opzioniForm.controls.noteInterne.setValue(true);f.detectChanges();
+    expect(preview.textContent).toContain('Nota riservata');
+    http.expectNone(r=>r.url.includes('stampa-scheda'));
+  });
   it('annullando una stampa aperta dalla tabella torna all’elenco anagrafiche',()=>{
     const f=TestBed.createComponent(AnagraficaSchedaCompletaComponent);
     f.componentRef.setInput('soggetto',soggetto);f.componentRef.setInput('azioneIniziale','stampa');

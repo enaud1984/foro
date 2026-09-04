@@ -174,6 +174,7 @@ export class App implements OnDestroy {
   readonly nuovaPraticaRichiesta = signal(false);
   readonly praticheAgenda = signal<PraticaSintetica[]>([]);
   readonly menuWidgetAperto = signal<ChiaveWidget | null>(null);
+  readonly widgetInUscita = signal<Set<ChiaveWidget>>(new Set());
   readonly vistaCalendario = signal<VistaCalendario>('settimana');
   readonly dataCalendario = signal(this.inizioGiorno(new Date()));
   readonly oraAttuale = signal(new Date());
@@ -287,9 +288,10 @@ export class App implements OnDestroy {
     { key: 'pratiche', icon: 'pratiche', title: 'Pratiche', description: 'Fascicoli, scadenze e attività dello Studio' },
     { key: 'collaboratori', icon: 'collaboratori', title: 'Collaboratori', description: 'Avvocati, segreteria, ruoli e accessi' }
   ];
-  readonly widgetDisponibili = computed(() => this.widgetLibrary.filter(widget => widget.key !== 'collaboratori' || !!this.studioProfile()?.canEditBranding));
-
   readonly activeWidgets = signal<WidgetScrivania[]>(this.creaWidgetIniziali());
+  readonly widgetDisponibili = computed(() => this.widgetLibrary.filter(widget =>
+    (!this.activeWidgets().some(attivo => attivo.key === widget.key) || this.widgetInUscita().has(widget.key)) &&
+    (widget.key !== 'collaboratori' || !!this.studioProfile()?.canEditBranding)));
 
   readonly loginForm;
   readonly registerForm;
@@ -538,12 +540,16 @@ export class App implements OnDestroy {
   }
 
   aggiungiWidgetDaLibreria(key: ChiaveWidget): void {
-    if (this.activeWidgets().some(widget => widget.key === key)) return;
+    if (this.activeWidgets().some(widget => widget.key === key) || this.widgetInUscita().has(key)) return;
     const nuovoWidget = this.creaWidgetDaDefinizione(key, 1, 1);
     if (!nuovoWidget) return;
-    this.activeWidgets.update(widget => [...widget, nuovoWidget]);
-    queueMicrotask(() => this.grigliaScrivania?.updateAll());
-    this.salvaLayoutWidget();
+    this.widgetInUscita.update(chiavi => new Set(chiavi).add(key));
+    window.setTimeout(() => {
+      this.activeWidgets.update(widget => [...widget, nuovoWidget]);
+      this.widgetInUscita.update(chiavi => { const aggiornate = new Set(chiavi); aggiornate.delete(key); return aggiornate; });
+      queueMicrotask(() => this.grigliaScrivania?.updateAll());
+      this.salvaLayoutWidget();
+    }, 240);
   }
 
   opzioniWidget(widget: WidgetScrivania): GridStackWidget {

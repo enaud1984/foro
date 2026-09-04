@@ -7,3 +7,32 @@ button.primary,button.primario{border:1px solid var(--foro-primary)!important;bo
 button.secondary{min-height:var(--foro-button-height);border-radius:var(--foro-radius-sm)!important;padding:0 var(--foro-space-4)!important}
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:var(--foro-focus-ring);outline-offset:var(--foro-focus-offset)}
 .ag-theme-quartz{--ag-font-family:Aptos,"Segoe UI",sans-serif;--ag-foreground-color:var(--foro-text-primary);--ag-background-color:var(--foro-surface);--ag-header-background-color:var(--foro-secondary-surface);--ag-header-foreground-color:var(--foro-on-secondary);--ag-border-color:var(--foro-border);--ag-row-hover-color:var(--foro-secondary-surface);--ag-selected-row-background-color:#dbeafe;width:100%;height:min(62vh,680px)}
+
+/* Catalogo widget e icone Soft Fill condivise. */
+.catalogo-widget { display: grid; gap: var(--foro-space-2); }
+.widget-disponibile {
+  width: 100%; min-height: 58px; display: flex; align-items: center; gap: var(--foro-space-3);
+  padding: var(--foro-space-2); border: 1px solid transparent; border-radius: var(--foro-radius-md);
+  background: transparent; color: var(--foro-text-primary); text-align: left; cursor: pointer;
+  animation: widgetDisponibileEntra var(--foro-motion-widget) both;
+  transition: background var(--foro-motion-standard), border-color var(--foro-motion-standard), transform var(--foro-motion-standard), opacity var(--foro-motion-widget);
+}
+.widget-disponibile:hover { background: var(--foro-surface-muted); border-color: var(--foro-border); transform: translateY(-1px); }
+.widget-disponibile > span:last-child { min-width: 0; }
+.widget-disponibile strong, .widget-disponibile small { display: block; }
+.widget-disponibile strong { font-size: 13px; font-weight: 600; }
+.widget-disponibile small { margin-top: 2px; overflow: hidden; color: var(--foro-text-tertiary); font-size: 10px; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+.widget-disponibile.widget-in-uscita { pointer-events: none; animation: widgetDisponibileEsce var(--foro-motion-widget) both; }
+@keyframes widgetDisponibileEntra { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes widgetDisponibileEsce { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-8px); } }
+.icona-soft {
+  width: var(--foro-icon-size); height: var(--foro-icon-size); display: inline-grid; flex: 0 0 var(--foro-icon-size);
+  place-items: center; border-radius: var(--foro-icon-radius); background: var(--foro-primary-soft); color: var(--foro-primary);
+}
+.icona-soft app-icona-foro { width: 19px; height: 19px; }
+.icona-soft[data-categoria="calendario"] { background: var(--foro-icon-calendar-bg); color: var(--foro-icon-calendar); }
+.icona-soft[data-categoria="documenti"] { background: var(--foro-icon-documents-bg); color: var(--foro-icon-documents); }
+.icona-soft[data-categoria="email"] { background: var(--foro-icon-email-bg); color: var(--foro-icon-email); }
+.icona-soft[data-categoria="clienti"] { background: var(--foro-icon-contacts-bg); color: var(--foro-icon-contacts); }
+.icona-soft[data-categoria="pratiche"] { background: var(--foro-icon-matters-bg); color: var(--foro-icon-matters); }
+.icona-soft[data-categoria="collaboratori"] { background: var(--foro-icon-members-bg); color: var(--foro-icon-members); }
