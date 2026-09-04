@@ -1966,7 +1966,6 @@ textarea:focus-visible,
 .personalizza-widget p { padding: 0 var(--foro-space-3); font-size: 11px; }
 .personalizza-widget button { min-height: 36px; font-size: 12px; }
 .impostazioni-sidebar { margin-top: auto; font-size: 13px; }
-.widget-sidebar > .personalizza-widget { margin-top: 0; padding: 0 0 var(--foro-space-4); border-top: 0; border-bottom: 1px solid var(--foro-border); }
 .navigazione-intro { margin-top: var(--foro-space-4); }
 .errore-campo { color: var(--foro-danger); font-size: 12px; font-weight: 500; }
 
@@ -1980,7 +1979,15 @@ textarea:focus-visible,
 .today-status i { box-shadow: none; }
 .dash-head .welcome-copy h1 { margin: var(--foro-space-2) 0 var(--foro-space-1); color: var(--foro-text-primary); font-size: var(--foro-font-page); font-weight: 600; letter-spacing: -.02em; }
 .dash-head p { color: var(--foro-text-secondary); font-size: var(--foro-font-body); }
-.today-summary { padding: 0; border: 0; background: transparent; box-shadow: none; }
+.today-summary {
+  min-width: 148px; display: grid; grid-template-columns:auto 1fr; align-items: baseline; gap: 1px var(--foro-space-2);
+  padding: var(--foro-space-3) var(--foro-space-4); border: 1px solid var(--foro-border); border-radius: var(--foro-radius-md);
+  background: color-mix(in srgb, var(--foro-primary-soft) 72%, var(--foro-surface)); box-shadow: var(--foro-shadow-card); color: var(--foro-text-primary);
+}
+.today-weekday { grid-column: 1 / -1; color: var(--foro-text-secondary); font-size: 10px; font-weight: 650; letter-spacing: .1em; text-transform: uppercase; }
+.today-date { font-size: 15px; font-weight: 500; text-transform: capitalize; }
+.today-day { margin-right: 2px; font-size: 20px; font-weight: 650; }
+.today-year { color: var(--foro-text-tertiary); font-size: 12px; }
 
 .operational-grid { min-height: 700px; padding: 0; background: transparent; border-radius: 0; }
 .grid-stack > .grid-stack-item > .grid-stack-item-content { overflow: visible; }
@@ -1988,11 +1995,11 @@ textarea:focus-visible,
   height: 100%; min-height: 0; padding: var(--foro-space-6);
   border: 1px solid var(--foro-border); border-radius: var(--foro-radius-lg);
   background: var(--foro-surface); box-shadow: var(--foro-shadow-card);
-  transition: border-color var(--foro-motion-fast), box-shadow var(--foro-motion-fast);
+  transition: border-color var(--foro-motion-standard), box-shadow var(--foro-motion-standard), background var(--foro-motion-standard);
 }
-.op-widget:hover { transform: none; border-color: var(--foro-border-strong); box-shadow: 0 4px 14px rgba(16,42,67,.06); }
+.op-widget:hover { transform: none; border-color: var(--foro-border-strong); box-shadow: var(--foro-shadow-soft); }
 .op-head { margin-bottom: var(--foro-space-3); }
-.op-head h3 { gap: var(--foro-space-2); color: var(--foro-text-primary); font-size: var(--foro-font-section); font-weight: 600; }
+.op-head h3 { display: flex; align-items: center; gap: var(--foro-space-3); color: var(--foro-text-primary); font-size: var(--foro-font-section); font-weight: 600; }
 .op-widget > b { margin: var(--foro-space-2) 0; color: var(--foro-text-primary); font-size: var(--foro-font-kpi); font-weight: 600; }
 .op-widget p { margin: var(--foro-space-1) 0 var(--foro-space-3); color: var(--foro-text-secondary); font-size: 13px; }
 .window-actions button { border: 0; background: transparent; color: var(--foro-text-tertiary); }
@@ -2006,8 +2013,8 @@ textarea:focus-visible,
 .notification-card:hover { transform: none; background: var(--foro-surface-muted); box-shadow: none; }
 
 .widget-modal, .widget-modal.calendar-modal, .widget-modal.anagrafiche-modal, .widget-modal.pratiche-modal {
-  position: relative; inset: auto; grid-column: 2; grid-row: 1; min-width: 0;
-  width: auto; height: 100%; padding: var(--foro-space-8);
+  position: relative; inset: auto; grid-column: 2; grid-row: 1; min-width: 0; min-height: 0;
+  width: auto; height: 100%; max-height: 100%; padding: var(--foro-space-8); overflow: auto;
   background: var(--foro-surface-muted);
 }
 .dashboard-shell.vista-widget-aperta .dashboard-content { display: none; }
@@ -2022,7 +2029,9 @@ textarea:focus-visible,
 @media (max-width: 1024px) {
   .dashboard-shell { grid-template-columns: 72px minmax(0, 1fr); }
   .widget-sidebar { display: flex; padding-inline: var(--foro-space-2); }
-  .sidebar-intro, .voce-navigazione strong, .personalizza-widget, .impostazioni-sidebar { font-size: 0; }
+  .sidebar-intro, .widget-disponibile > span:last-child, .impostazioni-sidebar { display: none; }
+  .catalogo-widget { justify-items: center; }
+  .widget-disponibile { width: 48px; min-height: 48px; justify-content: center; padding: 0; }
   .voce-navigazione { justify-content: center; padding: 0; }
   .impostazioni-sidebar { justify-content: center; }
   .widget-modal, .widget-modal.calendar-modal, .widget-modal.anagrafiche-modal, .widget-modal.pratiche-modal { grid-column: 2; }
@@ -2045,6 +2054,7 @@ textarea:focus-visible,
   .ricerca-globale kbd, .top-actions .icon-action:last-child { display: none; }
   .dashboard-shell { display: block; }
   .widget-sidebar { position: fixed; z-index: 15; inset: auto 0 0; height: 62px; flex-direction: row; padding: var(--foro-space-2); border: 0; border-top: 1px solid var(--foro-border); overflow-x: auto; }
+  .catalogo-widget { display: flex; min-width: max-content; }
   .navigazione-principale { display: flex; min-width: max-content; gap: var(--foro-space-1); }
   .voce-navigazione { width: 48px; min-height: 46px; }
   .impostazioni-sidebar { display: none; }
