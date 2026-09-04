@@ -81,6 +81,24 @@ async function ridimensiona(page: Page, widget: Locator, dx = 100, dy = 60, dura
 }
 
 test.describe('Scrivania GridStack reale', () => {
+  test('apre la vista ingrandita nel contenuto della Scrivania', async ({ page }, testInfo) => {
+    await preparaApi(page); await apriScrivania(page);
+    const calendario = page.locator('[gs-id="calendario"]');
+    await calendario.getByRole('button', { name: 'Azioni widget Calendario' }).click();
+    await page.getByRole('button', { name: 'Apri vista completa' }).click();
+
+    const scrivania = page.locator('.dashboard-shell');
+    const barraLaterale = scrivania.locator(':scope > .widget-sidebar');
+    const vistaIngrandita = scrivania.locator(':scope > .widget-modal');
+    await expect(scrivania).toHaveClass(/vista-widget-aperta/);
+    await expect(barraLaterale).toBeVisible();
+    await expect(vistaIngrandita).toBeVisible();
+    const boxBarra = await barraLaterale.boundingBox();
+    const boxVista = await vistaIngrandita.boundingBox();
+    expect(boxVista!.x).toBeGreaterThanOrEqual(boxBarra!.x + boxBarra!.width - 1);
+    await page.screenshot({ path: testInfo.outputPath('vista-ingrandita-nella-scrivania.png'), fullPage: true });
+  });
+
   test('usa dimensioni moderate e consente tre widget sulla stessa riga', async ({ page }, testInfo) => {
     await preparaApi(page); await apriScrivania(page);
     const griglia = page.locator('.grid-stack');

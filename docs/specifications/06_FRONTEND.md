@@ -55,6 +55,10 @@ Le feature non importano internals di altre feature. I componenti condivisi risi
 
 Ogni deep link applica guard di autenticazione e visibilità oggetto.
 
+Le route delle viste complete sostituiscono il contenuto operativo della Dashboard dentro la
+Scrivania: header e navigazione laterale restano visibili. Non devono essere presentate come
+finestre modali sovrapposte alla pagina.
+
 ## 4. Design system
 
 Angular Material fornisce primitive accessibili. TailwindCSS è usato per layout e token approvati, non per creare varianti arbitrarie.

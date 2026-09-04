@@ -92,6 +92,21 @@ describe('App', () => {
     expect(compiled.querySelectorAll('.widget-modal button').length).toBe(1);
   });
 
+  it('mantiene la vista ingrandita del widget dentro la Scrivania', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.screen.set('scrivania');
+    app.expandedWidget.set(app.activeWidgets()[0]!);
+    fixture.detectChanges();
+
+    const scrivania = fixture.nativeElement.querySelector('.dashboard-shell') as HTMLElement;
+    const vistaIngrandita = scrivania.querySelector(':scope > .widget-modal');
+
+    expect(scrivania.classList).toContain('vista-widget-aperta');
+    expect(vistaIngrandita).not.toBeNull();
+    expect(vistaIngrandita?.parentElement).toBe(scrivania);
+  });
+
   it('prevede sempre il cambio password personale nelle impostazioni', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
