@@ -268,7 +268,21 @@ describe('App', () => {
     it('ricarica layout GridStack e converte deterministicamente quello storico', () => {
       const app = TestBed.createComponent(App).componentInstance; const chiave = app.activeWidgets()[0].key;
       (app as any).ripristinaLayoutWidget(JSON.stringify([{ key: chiave, x: 5, y: 4, w: 10, h: 7, versioneLayout: 3 }])); expect(app.activeWidgets()[0]).toEqual(jasmine.objectContaining({ x: 3, y: 4, w: 5, h: 7 }));
-      (app as any).ripristinaLayoutWidget(JSON.stringify([{ key: chiave, x: 3, y: 2, w: 4, h: 3 }])); expect(app.activeWidgets()[0]).toEqual(jasmine.objectContaining({ x: 3, y: 2, w: 4, h: 3 }));
+      (app as any).ripristinaLayoutWidget(JSON.stringify([{ key: chiave, x: 3, y: 2, w: 4, h: 3 }])); expect(app.activeWidgets()[0]).toEqual(jasmine.objectContaining({ x: 3, y: 2, w: 4, h: 5 }));
+    });
+    it('ripara coordinate sovrapposte e conserva i widget assenti dal layout salvato', () => {
+      const app = TestBed.createComponent(App).componentInstance;
+      const quantitaIniziale = app.activeWidgets().length;
+      (app as any).ripristinaLayoutWidget(JSON.stringify([
+        { key: 'calendario', x: 1, y: 1, w: 5, h: 6, versioneLayout: 4 },
+        { key: 'documenti', x: 1, y: 1, w: 4, h: 5, versioneLayout: 4 }
+      ]));
+      const widget = app.activeWidgets();
+      expect(widget.length).toBe(quantitaIniziale);
+      expect(widget.some(elemento => elemento.key === 'pratiche')).toBeTrue();
+      expect(widget.every((elemento, indice) => widget.slice(indice + 1).every(altro =>
+        elemento.x >= altro.x + altro.w || elemento.x + elemento.w <= altro.x ||
+        elemento.y >= altro.y + altro.h || elemento.y + elemento.h <= altro.y))).toBeTrue();
     });
   });
 

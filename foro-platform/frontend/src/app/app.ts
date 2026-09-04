@@ -21,6 +21,7 @@ import listPlugin from '@fullcalendar/list';
 import { AgendaFullCalendarMapper, EventoAgendaDto } from './agenda/agenda-fullcalendar.mapper';
 import { Router } from '@angular/router';
 import {
+  COLONNE_SCRIVANIA,
   CONFIGURAZIONE_GRIDSTACK,
   DIMENSIONI_WIDGET,
   VERSIONE_LAYOUT_GRIDSTACK
@@ -544,7 +545,8 @@ export class App implements OnDestroy {
 
   aggiungiWidgetDaLibreria(key: ChiaveWidget): void {
     if (this.activeWidgets().some(widget => widget.key === key) || this.widgetInUscita().has(key)) return;
-    const nuovoWidget = this.creaWidgetDaDefinizione(key, 1, 1);
+    const posizione = this.trovaPrimaPosizioneLibera(key);
+    const nuovoWidget = this.creaWidgetDaDefinizione(key, posizione.x, posizione.y);
     if (!nuovoWidget) return;
     this.widgetInUscita.update(chiavi => new Set(chiavi).add(key));
     window.setTimeout(() => {
@@ -1346,15 +1348,45 @@ export class App implements OnDestroy {
     queueMicrotask(() => this.grigliaScrivania?.updateAll());
   }
 
-  private trovaPrimaPosizioneLibera(key: ChiaveWidget): { x: number; y: number } {
-    const { w, h } = DIMENSIONI_WIDGET[key];
-    const occupata = (x: number, y: number): boolean => this.activeWidgets().some(widget =>
+  private trovaPrimaPosizioneLibera(
+    key: ChiaveWidget,
+    occupanti: WidgetScrivania[] = this.activeWidgets(),
+    dimensioni: { w: number; h: number } = DIMENSIONI_WIDGET[key]
+  ): { x: number; y: number } {
+    const { w, h } = dimensioni;
+    const occupata = (x: number, y: number): boolean => occupanti.some(widget =>
       x < widget.x + widget.w && x + w > widget.x && y < widget.y + widget.h && y + h > widget.y);
     for (let y = 1; ; y += 1) {
       for (let x = 1; x <= 12 - w + 1; x += 1) {
         if (!occupata(x, y)) return { x, y };
       }
     }
+  }
+
+  private normalizzaLayoutWidget(widget: WidgetScrivania[]): WidgetScrivania[] {
+    const posizionati: WidgetScrivania[] = [];
+    widget.forEach(elemento => {
+      const limiti = DIMENSIONI_WIDGET[elemento.key];
+      const w = Math.min(limiti.maxW, Math.max(limiti.minW, Math.round(elemento.w)));
+      const h = Math.min(limiti.maxH, Math.max(limiti.minH, Math.round(elemento.h)));
+      const candidato = {
+        ...elemento,
+        w,
+        h,
+        x: Math.min(COLONNE_SCRIVANIA - w + 1, Math.max(1, Math.round(elemento.x))),
+        y: Math.max(1, Math.round(elemento.y))
+      };
+      const sovrapposto = posizionati.some(esistente =>
+        candidato.x < esistente.x + esistente.w && candidato.x + candidato.w > esistente.x &&
+        candidato.y < esistente.y + esistente.h && candidato.y + candidato.h > esistente.y);
+      if (!sovrapposto) {
+        posizionati.push(candidato);
+        return;
+      }
+      const posizione = this.trovaPrimaPosizioneLibera(candidato.key, posizionati, { w, h });
+      posizionati.push({ ...candidato, ...posizione });
+    });
+    return posizionati;
   }
 
   private ripristinaLayoutWidget(layoutSerializzato: string | null | undefined): void {
@@ -1364,7 +1396,7 @@ export class App implements OnDestroy {
       if (!Array.isArray(posizioni)) return;
       const correnti = new Map(this.activeWidgets().map(widget => [widget.key, widget]));
       const versione = Math.max(0, ...posizioni.map(posizione => Number(posizione.versioneLayout) || 0));
-      const fattore = versione > 0 && versione < VERSIONE_LAYOUT_GRIDSTACK ? 0.5 : 1;
+      const fattore = versione > 0 && versione <= 3 ? 0.5 : 1;
       const ripristinati = posizioni
         .filter(posizione => posizione?.key && correnti.has(posizione.key) && [posizione.x, posizione.y, posizione.w, posizione.h].every(Number.isFinite))
         .map(posizione => ({
@@ -1375,12 +1407,14 @@ export class App implements OnDestroy {
           h: Math.max(1, Math.round(Number(posizione.h) * (fattore === 0.5 ? 1 : fattore)))
         }));
       if (ripristinati.length) {
-        ripristinati.forEach(widget => {
+        const perChiave = new Map(ripristinati.map(widget => [widget.key, widget]));
+        const normalizzati = this.normalizzaLayoutWidget([...correnti.values()].map(widget => perChiave.get(widget.key) ?? widget));
+        normalizzati.forEach(widget => {
           const opzioni = this.opzioniWidgetStabili.get(widget.key);
           if (opzioni) Object.assign(opzioni, { x: widget.x - 1, y: widget.y - 1, w: widget.w, h: widget.h });
         });
-        this.activeWidgets.set(ripristinati);
-        queueMicrotask(() => this.grigliaScrivania?.grid?.load(ripristinati.map(widget => this.opzioniWidget(widget))));
+        this.activeWidgets.set(normalizzati);
+        queueMicrotask(() => this.grigliaScrivania?.grid?.load(normalizzati.map(widget => this.opzioniWidget(widget))));
       }
     } catch {
       // Il layout applicativo resta invariato: GridStack compatterà soltanto coordinate valide.

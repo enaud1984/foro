@@ -44,7 +44,12 @@ describe('AnagraficaSchedaCompletaComponent',()=>{
   });
   it('mostra una anteprima locale che reagisce alle opzioni senza richieste aggiuntive',()=>{
     const f=crea();f.componentInstance.stampaAperta.set(true);f.detectChanges();
+    const fondale=f.nativeElement.querySelector('.fondale-stampa') as HTMLElement;
+    const finestra=f.nativeElement.querySelector('.pannello-stampa') as HTMLElement;
     const preview=f.nativeElement.querySelector('.preview-stampa-live') as HTMLElement;
+    expect(fondale).toBeTruthy();expect(finestra.classList).toContain('cdk-drag');
+    expect(finestra.querySelector('[aria-label="Chiudi opzioni stampa"]')).toBeTruthy();
+    expect(finestra.textContent).not.toContain('Annulla');
     expect(preview.textContent).toContain('Giulia Ferrari');expect(preview.textContent).toContain('Recapiti');
     expect(preview.textContent).not.toContain('Nota riservata');
     f.componentInstance.opzioniForm.controls.noteInterne.setValue(true);f.detectChanges();

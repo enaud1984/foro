@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { CdkDrag, CdkDragHandle } from '@angular/cdk/drag-drop';
 import { CatalogoAnagrafica, DocumentoAnagrafica, EventoTimelineAnagrafica, OpzioniScheda,
   PraticaCollegataAnagrafica, SchedaStampabile, Soggetto } from './anagrafiche.modelli';
 import { AnagraficheService } from './anagrafiche.service';
@@ -10,7 +11,7 @@ import { IconaForoComponent } from '../shared/icona-foro.component';
 @Component({
   selector:'app-anagrafica-scheda-completa',
   standalone:true,
-  imports:[CommonModule,ReactiveFormsModule,IconaForoComponent],
+  imports:[CommonModule,ReactiveFormsModule,IconaForoComponent,CdkDrag,CdkDragHandle],
   templateUrl:'./anagrafica-scheda-completa.component.html',
   styleUrl:'./anagrafica-scheda-completa.component.scss'
 })

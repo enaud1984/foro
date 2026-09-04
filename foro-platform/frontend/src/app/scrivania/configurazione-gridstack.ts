@@ -9,7 +9,7 @@ export type ChiaveWidgetScrivania =
   | 'collaboratori';
 
 export const COLONNE_SCRIVANIA = 12;
-export const VERSIONE_LAYOUT_GRIDSTACK = 4;
+export const VERSIONE_LAYOUT_GRIDSTACK = 5;
 
 export const CONFIGURAZIONE_GRIDSTACK = Object.freeze({
   column: COLONNE_SCRIVANIA,

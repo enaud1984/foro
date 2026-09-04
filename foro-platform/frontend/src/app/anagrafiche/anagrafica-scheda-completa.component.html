@@ -47,10 +47,15 @@
   </main>
 
   <div class="sovrapposto" *ngIf="uploadAperto()"><form [formGroup]="uploadForm" (ngSubmit)="carica()"><h3>Carica documento anagrafico</h3><label>File<input type="file" accept=".pdf,.png,.jpg,.jpeg,.docx,.txt" (change)="scegliFile($event)" required></label><label>Titolo<input formControlName="titolo"></label><label>Categoria<select formControlName="categoria"><option *ngFor="let c of categorie()" [value]="c.codice">{{c.descrizione}}</option></select></label><label>Data documento<input type="date" formControlName="dataDocumento"></label><label>Note non sensibili<textarea formControlName="note"></textarea></label><nav><button type="button" (click)="annullaUpload()">Annulla</button><button type="submit" class="primario" [disabled]="!file()||uploadForm.invalid||invio()">{{invio()?'Caricamento…':'Carica'}}</button></nav></form></div>
-  <div class="sovrapposto pannello-stampa" *ngIf="stampaAperta()" role="dialog" aria-modal="true" aria-labelledby="titolo-stampa">
-    <section class="stampa-layout">
+  <div class="fondale-stampa" *ngIf="stampaAperta()">
+    <section class="pannello-stampa" role="dialog" aria-modal="true" aria-labelledby="titolo-stampa"
+      cdkDrag cdkDragBoundary=".scheda-completa">
+      <header class="testata-stampa" cdkDragHandle>
+        <div><span class="icona-azione"><app-icona-foro nome="stampa"></app-icona-foro></span><span><h3 id="titolo-stampa">Opzioni stampa</h3><p>Scheda anagrafica</p></span></div>
+        <button type="button" class="pulsante-icona" aria-label="Chiudi opzioni stampa" (click)="annullaStampa()"><app-icona-foro nome="chiudi"></app-icona-foro></button>
+      </header>
+      <section class="stampa-layout">
       <form class="opzioni-stampa" [formGroup]="opzioniForm" (ngSubmit)="generaScheda()">
-        <header><span class="icona-azione"><app-icona-foro nome="stampa"></app-icona-foro></span><div><h3 id="titolo-stampa">Opzioni stampa</h3><p>Scheda anagrafica</p></div></header>
         <fieldset><legend>Campi da includere</legend>
           <label><input type="checkbox" formControlName="datiGenerali"><span>Dati generali</span></label>
           <label><input type="checkbox" formControlName="recapiti"><span>Recapiti</span></label>
@@ -60,7 +65,7 @@
           <label><input type="checkbox" formControlName="noteInterne"><span>Note interne</span></label>
         </fieldset>
         <p class="nota-stampa">Dati economici e file allegati non vengono mai inclusi.</p>
-        <nav><button type="button" (click)="annullaStampa()">Annulla</button><button type="submit" class="primario"><app-icona-foro nome="stampa"></app-icona-foro> Genera e stampa</button></nav>
+        <nav><button type="submit" class="primario"><app-icona-foro nome="stampa"></app-icona-foro> Genera e stampa</button></nav>
       </form>
       <section class="preview-stampa-live" aria-label="Anteprima della scheda anagrafica" aria-live="polite">
         <header><div><span>Anteprima</span><strong>A4 · aggiornamento automatico</strong></div></header>
@@ -74,6 +79,7 @@
           <section *ngIf="opzioniForm.controls.elencoDocumenti.value"><h3>Elenco documenti</h3><p *ngFor="let d of documenti()">{{d.titolo}} · {{d.categoriaCodice.replaceAll('_',' ')}}</p><p *ngIf="!documenti().length">Nessun documento disponibile.</p></section>
           <section *ngIf="opzioniForm.controls.noteInterne.value"><h3>Note interne</h3><p>{{soggetto.note||'—'}}</p></section>
         </div>
+      </section>
       </section>
     </section>
   </div>
