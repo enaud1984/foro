@@ -1,5 +1,5 @@
 import { provideHttpClient } from '@angular/common/http';
-import { fakeAsync, TestBed, tick } from '@angular/core/testing';
+import { fakeAsync, flushMicrotasks, TestBed, tick } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { App } from './app';
 
@@ -109,6 +109,18 @@ describe('App', () => {
     expect(contenuto?.querySelector('.dash-head')).not.toBeNull();
     expect(getComputedStyle(contenuto!.querySelector('.dash-head')!).display).not.toBe('none');
     expect(getComputedStyle(contenuto!.querySelector('.operational-grid')!).display).toBe('none');
+    const sidebar = scrivania.querySelector(':scope > .widget-sidebar') as HTMLElement;
+    expect(getComputedStyle(sidebar).display).not.toBe('none');
+    expect(Array.from(sidebar.querySelectorAll('button')).every(pulsante => pulsante.disabled)).toBeTrue();
+    expect(getComputedStyle(contenuto!).overflowY).toBe('auto');
+    expect(getComputedStyle(vistaIngrandita!).overflow).toBe('visible');
+
+    app.closeExpandedWidget();
+    fixture.detectChanges();
+    expect(scrivania.classList).not.toContain('vista-widget-aperta');
+    expect(getComputedStyle(sidebar).display).not.toBe('none');
+    expect(Array.from(sidebar.querySelectorAll('button')).every(pulsante => !pulsante.disabled)).toBeTrue();
+    expect(contenuto?.querySelector(':scope > .widget-modal')).toBeNull();
   });
 
   it('prevede sempre il cambio password personale nelle impostazioni', () => {
@@ -234,11 +246,25 @@ describe('App', () => {
       app.terminaSpostamentoGridStack({ event: new Event('dragstop'), el: elemento }); app.terminaRidimensionamentoGridStack({ event: new Event('resizestop'), el: elemento });
       expect(richiesta).toHaveBeenCalledTimes(2);
     });
-    it('gestisce aggiunta, rimozione e dimensioni predefinite', () => {
+    it('gestisce aggiunta, rimozione e dimensioni predefinite', fakeAsync(() => {
       const app = TestBed.createComponent(App).componentInstance; app.activeWidgets.set(app.activeWidgets().filter(widget => widget.key !== 'email')); app.aggiungiWidgetDaLibreria('email');
+      tick(240);
       expect(app.activeWidgets().find(widget => widget.key === 'email')).toEqual(jasmine.objectContaining({ w: 4, h: 5 }));
       app.rimuoviWidgetGridStack({ event: new Event('removed'), nodes: [{ id: 'email' } as any] }); expect(app.activeWidgets().some(widget => widget.key === 'email')).toBeFalse();
-    });
+    }));
+    it('aggiunge Collaboratori nella prima posizione libera e aggiorna GridStack', fakeAsync(() => {
+      const app = TestBed.createComponent(App).componentInstance;
+      const aggiorna = jasmine.createSpy('aggiornaGridStack');
+      app.grigliaScrivania = { updateAll: aggiorna } as any;
+      (app as any).aggiungiWidgetCollaboratoriSeAssente();
+      flushMicrotasks();
+      const collaboratori = app.activeWidgets().find(widget => widget.key === 'collaboratori');
+      expect(collaboratori).toBeTruthy();
+      expect(app.activeWidgets().filter(widget => widget.key !== 'collaboratori').every(widget =>
+        collaboratori!.x >= widget.x + widget.w || collaboratori!.x + collaboratori!.w <= widget.x ||
+        collaboratori!.y >= widget.y + widget.h || collaboratori!.y + collaboratori!.h <= widget.y)).toBeTrue();
+      expect(aggiorna).toHaveBeenCalled();
+    }));
     it('ricarica layout GridStack e converte deterministicamente quello storico', () => {
       const app = TestBed.createComponent(App).componentInstance; const chiave = app.activeWidgets()[0].key;
       (app as any).ripristinaLayoutWidget(JSON.stringify([{ key: chiave, x: 5, y: 4, w: 10, h: 7, versioneLayout: 3 }])); expect(app.activeWidgets()[0]).toEqual(jasmine.objectContaining({ x: 3, y: 4, w: 5, h: 7 }));
@@ -295,6 +321,25 @@ describe('App', () => {
     expect(compiled.querySelector('.calendar-create')?.textContent).toContain('Nuovo calendario');
     expect(compiled.querySelector('.calendar-management-list nav')?.textContent).toContain('Modifica');
     expect(compiled.querySelector('.calendar-management-list nav')?.textContent).toContain('Elimina');
+  });
+
+  it('espone la struttura Essential accessibile nella vista completa del Calendario', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.screen.set('scrivania');
+    const widgetCalendario = app.activeWidgets().find(widget => widget.key === 'calendario');
+    expect(widgetCalendario).toBeTruthy();
+    app.expandedWidget.set(widgetCalendario!);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const navigazioneMese = compiled.querySelector('.mini-month-navigation');
+    expect(compiled.querySelector('.calendar-modal > h2')?.textContent).toContain('Calendario');
+    expect(navigazioneMese).toBeTruthy();
+    expect(navigazioneMese?.querySelectorAll('button').length).toBe(2);
+    expect(navigazioneMese?.querySelector('[aria-label="Mese precedente"]')).toBeTruthy();
+    expect(navigazioneMese?.querySelector('[aria-label="Mese successivo"]')).toBeTruthy();
+    expect(compiled.querySelector('.agenda-fullcalendar')).toBeTruthy();
   });
 
   it('mostra una sola vista Collaboratori e traduce i ruoli tecnici in italiano', () => {

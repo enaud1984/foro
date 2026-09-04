@@ -158,12 +158,13 @@
         <nav class="catalogo-widget" aria-label="Widget disponibili">
           <button type="button" *ngFor="let item of widgetDisponibili()" class="widget-disponibile"
             [class.widget-in-uscita]="widgetInUscita().has(item.key)" (click)="aggiungiWidgetDaLibreria(item.key)"
+            [disabled]="!!expandedWidget()"
             [attr.aria-label]="'Aggiungi '+item.title+' alla scrivania'">
             <span class="icona-soft" [attr.data-categoria]="item.key"><app-icona-foro [nome]="item.icon"></app-icona-foro></span>
             <span><strong>{{ item.title }}</strong><small>{{ item.description }}</small></span>
           </button>
         </nav>
-        <button type="button" class="impostazioni-sidebar" (click)="toggleSettings()">
+        <button type="button" class="impostazioni-sidebar" [disabled]="!!expandedWidget()" (click)="toggleSettings()">
           <app-icona-foro nome="impostazioni"></app-icona-foro>Impostazioni
         </button>
       </aside>
@@ -238,7 +239,7 @@
         <div class="outlook-calendar" *ngIf="widget.key === 'calendario'">
           <aside class="calendar-sidebar">
             <div class="mini-month">
-              <header><button type="button" aria-label="Mese precedente" (click)="navigaMiniCalendario(-1)">‹</button><strong>{{ intestazioneMiniCalendario() }}</strong><button type="button" aria-label="Mese successivo" (click)="navigaMiniCalendario(1)">›</button></header>
+              <header class="mini-month-navigation"><button type="button" aria-label="Mese precedente" title="Mese precedente" (click)="navigaMiniCalendario(-1)">‹</button><strong>{{ intestazioneMiniCalendario() }}</strong><button type="button" aria-label="Mese successivo" title="Mese successivo" (click)="navigaMiniCalendario(1)">›</button></header>
               <div class="mini-week"><span>L</span><span>M</span><span>M</span><span>G</span><span>V</span><span>S</span><span>D</span></div>
               <div class="mini-days"><button type="button" *ngFor="let giorno of celleMese()" [class.today]="giorno.oggi" [class.selected]="giorno.iso === dataIsoLocale(dataCalendario())" [class.other-month]="!giorno.meseCorrente" (click)="selezionaGiornoMiniCalendario(giorno.iso)">{{ giorno.numero }}</button></div>
             </div>

@@ -543,6 +543,7 @@
 
   full-calendar { display: block; min-width: 0; }
   .agenda-actions { justify-content: flex-end; margin-bottom: .75rem; }
+  .agenda-actions:empty { display: none; }
 
   :is(.fc-button-primary) {
     background: var(--primary, #0b4f76);
@@ -988,7 +989,7 @@
   min-width: 0;
   min-height: 0;
   display: grid;
-  grid-template-rows: 64px auto 1fr;
+  grid-template-rows: auto auto 1fr;
   overflow: hidden;
 }
 
@@ -2049,11 +2050,32 @@ textarea:focus-visible,
   grid-column: 2; grid-row: 1; width: auto; height: 100%; max-height: 100%; min-height: 0;
   padding: var(--foro-space-6) var(--foro-space-8); overflow: auto; border-radius: 0;
 }
+.dashboard-shell.vista-widget-aperta { overflow:hidden; }
+.dashboard-shell.vista-widget-aperta > .widget-sidebar { display:flex; }
+.dashboard-shell.vista-widget-aperta > .dashboard-content {
+  grid-column:2;width:100%;min-width:0;padding:0;overflow-x:hidden;overflow-y:auto;
+}
+.dashboard-shell.vista-widget-aperta .dash-head {
+  margin:0;padding:var(--foro-space-6) var(--foro-space-8);
+}
+.dashboard-shell.vista-widget-aperta .widget-modal,
+.dashboard-shell.vista-widget-aperta .widget-modal.calendar-modal,
+.dashboard-shell.vista-widget-aperta .widget-modal.anagrafiche-modal,
+.dashboard-shell.vista-widget-aperta .widget-modal.pratiche-modal {
+  grid-column:auto;grid-row:auto;width:100%;max-width:100%;height:auto;max-height:none;min-height:0;
+  margin:0;padding:var(--foro-space-6) var(--foro-space-8);box-sizing:border-box;overflow:visible;
+}
+.dashboard-shell.vista-widget-aperta .widget-sidebar button:disabled {
+  opacity:.52;cursor:not-allowed;pointer-events:none;filter:saturate(.65);
+}
+.dashboard-shell.vista-widget-aperta .widget-sidebar button:disabled:hover {
+  color:var(--foro-text-secondary);background:transparent;transform:none;box-shadow:none;
+}
 .widget-modal-backdrop { display: none; }
 .widget-modal > h2 { display:flex;align-items:center;gap:var(--foro-space-3);color:var(--section-title-color); }
 .widget-modal > p { margin-top:var(--foro-space-1);font-size:15px;line-height:1.5;color:var(--foro-text-secondary); }
-.calendar-modal > h2 { display:flex;margin:0 0 var(--foro-space-3);font-size:22px; }
-.calendar-modal > h2 app-icona-foro { width:36px;height:36px;padding:8px;border-radius:10px;background:var(--foro-icon-calendar-bg);color:var(--foro-icon-calendar); }
+.calendar-modal > h2 { display:flex;align-items:center;gap:var(--foro-space-3);margin:0 0 var(--foro-space-5);font-size:clamp(24px,2vw,30px);font-weight:700;letter-spacing:-.025em; }
+.calendar-modal > h2 app-icona-foro { width:42px;height:42px;padding:10px;border:1px solid color-mix(in srgb,var(--foro-icon-calendar) 12%,transparent);border-radius:12px;background:var(--foro-icon-calendar-bg);color:var(--foro-icon-calendar); }
 
 .today-summary { display:flex;align-items:center;gap:6px;min-width:0; }
 .today-summary > :is(.today-weekday,.today-date,.today-day,.today-year) {
@@ -2070,31 +2092,13 @@ textarea:focus-visible,
 .preferenza-colore label strong { font-size:13px;font-weight:600; }
 .preferenza-colore label small { color:var(--foro-text-tertiary);font:500 11px/1 ui-monospace,monospace;text-transform:uppercase; }
 
-/* Calendario: controlli uniformi, superficie chiara e segmented control leggero. */
-.outlook-calendar { border-color:var(--foro-border);border-radius:var(--foro-radius-lg);background:var(--foro-surface);box-shadow:var(--foro-shadow-card); }
-.calendar-sidebar { padding:var(--foro-space-4);background:var(--foro-surface-muted);border-color:var(--foro-border); }
-.mini-month header strong { color:var(--section-title-color);font-size:14px;font-weight:600;text-transform:capitalize; }
-.mini-month header button,.agenda-fullcalendar .fc-button {
-  min-width:36px;min-height:36px!important;padding:0 11px!important;border:1px solid var(--foro-border)!important;border-radius:9px!important;
-  background:var(--foro-surface)!important;color:var(--foro-text-secondary)!important;box-shadow:none!important;transition:background var(--transition-fast),border-color var(--transition-fast),color var(--transition-fast)!important;
-}
-.mini-month header button:hover,.agenda-fullcalendar .fc-button:hover { border-color:var(--foro-border-strong)!important;background:var(--foro-secondary-surface)!important;color:var(--foro-text-primary)!important; }
-.agenda-fullcalendar .fc-button:focus-visible,.mini-month button:focus-visible { outline:var(--foro-focus-ring)!important;outline-offset:2px!important;box-shadow:none!important; }
-.agenda-fullcalendar .fc-button-group { padding:3px;border:1px solid var(--foro-border);border-radius:var(--foro-radius-md);background:var(--foro-surface-muted);gap:2px; }
-.agenda-fullcalendar .fc-button-group .fc-button { border:0!important;background:transparent!important; }
-.agenda-fullcalendar .fc-button-group .fc-button-active { background:var(--foro-surface)!important;color:var(--section-title-color)!important;box-shadow:var(--foro-shadow-card)!important; }
-.agenda-fullcalendar .fc-toolbar-title { color:var(--section-title-color);font-size:20px;font-weight:600; }
-.calendar-commandbar { min-height:0;padding:0;border:0;background:transparent; }
-.calendar-add { min-height:40px;margin:var(--foro-space-4) 0;border-radius:var(--foro-radius-md);box-shadow:none;display:flex;align-items:center;justify-content:center;gap:8px; }
-.calendar-add app-icona-foro { width:17px;height:17px; }
-.mini-days button { border-radius:9px;color:var(--foro-text-secondary);transition:background var(--transition-fast),color var(--transition-fast); }
-.mini-days button:hover { background:var(--foro-primary-soft); }
-.mini-days button.today { box-shadow:inset 0 0 0 1px var(--button-primary-bg); }
-.mini-days button.selected { background:var(--button-primary-bg);color:var(--button-primary-text);box-shadow:none; }
-.calendar-share-add { border:1px solid var(--foro-border);border-radius:var(--foro-radius-md);background:var(--foro-surface);color:var(--foro-text-secondary);font-weight:600; }
-.calendar-main { grid-template-rows:auto auto minmax(0,1fr); }
-
 @media(max-width:700px){
   .shell-dashboard { --app-header-height:56px; }
   .widget-modal,.widget-modal.calendar-modal,.widget-modal.anagrafiche-modal,.widget-modal.pratiche-modal { grid-column:auto;height:100%;padding:var(--foro-space-4) var(--foro-space-4) 80px; }
+  .dashboard-shell.vista-widget-aperta > .widget-sidebar { display:flex; }
+  .dashboard-shell.vista-widget-aperta > .dashboard-content { padding-bottom:80px; }
+  .dashboard-shell.vista-widget-aperta .widget-modal,
+  .dashboard-shell.vista-widget-aperta .widget-modal.calendar-modal,
+  .dashboard-shell.vista-widget-aperta .widget-modal.anagrafiche-modal,
+  .dashboard-shell.vista-widget-aperta .widget-modal.pratiche-modal { height:auto;padding:var(--foro-space-4) 0 0; }
 }

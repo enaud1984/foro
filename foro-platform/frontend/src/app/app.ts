@@ -1177,9 +1177,7 @@ export class App implements OnDestroy {
       });
       this.applyTheme(profile, this.dashboardPreference());
       if (profile.canEditBranding) {
-        if (!this.activeWidgets().some(widget=>widget.key==='collaboratori')) {
-          const widget=this.creaWidgetDaDefinizione('collaboratori',7,5); if(widget)this.activeWidgets.update(lista=>[...lista,widget]);
-        }
+        this.aggiungiWidgetCollaboratoriSeAssente();
       } else {
         this.activeWidgets.update(lista=>lista.filter(widget=>widget.key!=='collaboratori'));
         if(this.expandedWidget()?.key==='collaboratori')this.closeExpandedWidget();
@@ -1337,6 +1335,26 @@ export class App implements OnDestroy {
   private dimensioniPredefinite(key: ChiaveWidget): { w: number; h: number } {
     const { w, h } = DIMENSIONI_WIDGET[key];
     return { w, h };
+  }
+
+  private aggiungiWidgetCollaboratoriSeAssente(): void {
+    if (this.activeWidgets().some(widget => widget.key === 'collaboratori')) return;
+    const posizione = this.trovaPrimaPosizioneLibera('collaboratori');
+    const widget = this.creaWidgetDaDefinizione('collaboratori', posizione.x, posizione.y);
+    if (!widget) return;
+    this.activeWidgets.update(lista => [...lista, widget]);
+    queueMicrotask(() => this.grigliaScrivania?.updateAll());
+  }
+
+  private trovaPrimaPosizioneLibera(key: ChiaveWidget): { x: number; y: number } {
+    const { w, h } = DIMENSIONI_WIDGET[key];
+    const occupata = (x: number, y: number): boolean => this.activeWidgets().some(widget =>
+      x < widget.x + widget.w && x + w > widget.x && y < widget.y + widget.h && y + h > widget.y);
+    for (let y = 1; ; y += 1) {
+      for (let x = 1; x <= 12 - w + 1; x += 1) {
+        if (!occupata(x, y)) return { x, y };
+      }
+    }
   }
 
   private ripristinaLayoutWidget(layoutSerializzato: string | null | undefined): void {
